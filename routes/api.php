@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\AlokasiDana\PaguSumberDanaController;
 use App\Http\Controllers\Api\AlokasiDana\RealisasiTransferSumberDanaController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BerkasLainController;
-use App\Http\Controllers\Api\HakAkses\AksesKuasaBUDController;
+use App\Http\Controllers\Api\HakAkses\AksesKuasaBudController;
 use App\Http\Controllers\Api\HakAkses\AksesOperatorController;
 use App\Http\Controllers\Api\HakAkses\BatasWaktuController;
 use App\Http\Controllers\Api\HakAkses\UsersRoleController;
@@ -155,7 +155,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('/akses-operator', AksesOperatorController::class);
 
         // Akses Kuasa BUD
-        Route::apiResource('/akses-kuasa-bud', AksesKuasaBUDController::class);
+        Route::apiResource('/akses-kuasa-bud', AksesKuasaBudController::class);
 
         // Batas Waktu
         Route::apiResource('/batas-waktu', BatasWaktuController::class);

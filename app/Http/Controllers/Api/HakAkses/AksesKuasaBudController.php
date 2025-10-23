@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Resources\AksesKuasaBUDResource;
 use Illuminate\Support\Facades\DB;
 
-class AksesKuasaBUDController extends Controller
+class AksesKuasaBudController extends Controller
 {
     /**
      * List Akses Kuasa BUD (pagination + search)
