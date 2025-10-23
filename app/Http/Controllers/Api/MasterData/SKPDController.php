@@ -80,7 +80,7 @@ class SKPDController extends Controller
     {
         try {
             $data = DB::connection('oracle')
-                ->table(DB::raw('PENGEMBALIAN.REF_OPD'))
+                ->table(DB::raw('REF_OPD'))
                 ->whereRaw('TRIM(KD_OPD1) = ?', [$kd_opd1])
                 ->whereRaw('TRIM(KD_OPD2) = ?', [$kd_opd2])
                 ->whereRaw('TRIM(KD_OPD3) = ?', [$kd_opd3])
@@ -161,7 +161,7 @@ class SKPDController extends Controller
     {
         try {
             $affected = DB::connection('oracle')
-                ->table('PENGEMBALIAN.REF_OPD')
+                ->table('REF_OPD')
                 ->whereRaw('TRIM(KD_OPD1) = ?', [$kd_opd1])
                 ->whereRaw('TRIM(KD_OPD2) = ?', [$kd_opd2])
                 ->whereRaw('TRIM(KD_OPD3) = ?', [$kd_opd3])

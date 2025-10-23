@@ -66,7 +66,7 @@ class KategoriSPMController extends Controller
     {
         try {
             $data = DB::connection('oracle')
-                ->table(DB::raw('PENGEMBALIAN.KATEGORI_SPM'))
+                ->table(DB::raw('KATEGORI_SPM'))
                 ->where('id', $id)
                 ->whereNull('deleted_at')
                 ->first();
@@ -136,7 +136,7 @@ class KategoriSPMController extends Controller
     {
         try {
             $affected = DB::connection('oracle')
-                ->table('PENGEMBALIAN.KATEGORI_SPM')
+                ->table('KATEGORI_SPM')
                 ->where('id', $id)
                 ->update(['deleted_at' => now()]);
 

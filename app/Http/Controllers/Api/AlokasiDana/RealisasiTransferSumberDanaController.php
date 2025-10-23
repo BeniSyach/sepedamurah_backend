@@ -73,7 +73,7 @@ class RealisasiTransferSumberDanaController extends Controller
     {
         try {
             $sumber = DB::connection('oracle')
-                ->table(DB::raw('PENGEMBALIAN.SUMBER_DANA'))
+                ->table(DB::raw('SUMBER_DANA'))
                 ->whereRaw('ID = ?', [$id])
                 ->first();
 
@@ -152,7 +152,7 @@ class RealisasiTransferSumberDanaController extends Controller
     {
         try {
             $affected = DB::connection('oracle')
-                ->table('PENGEMBALIAN.SUMBER_DANA')
+                ->table('SUMBER_DANA')
                 ->where('ID', $id)
                 ->update([
                     'DELETED_AT' => now(),

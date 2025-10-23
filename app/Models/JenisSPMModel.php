@@ -49,7 +49,7 @@ class JenisSPMModel extends Model
         static::creating(function ($model) {
             // Auto generate ID dari sequence Oracle jika belum diisi
             if (empty($model->id)) {
-                $model->id = DB::selectOne('SELECT pengembalian.seq_ref_jenis_spm.NEXTVAL AS id FROM dual')->id;
+                $model->id = DB::selectOne('SELECT seq_ref_jenis_spm.NEXTVAL AS id FROM dual')->id;
             }
 
             // Isi tanggal pembuatan jika belum ada

@@ -10,7 +10,7 @@ class BidangUrusanModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'PENGEMBALIAN.REF_BIDANG_URUSAN';
+    protected $table = 'REF_BIDANG_URUSAN';
     public $incrementing = false;
     protected $primaryKey = null; // Composite key
     protected $keyType = 'string';

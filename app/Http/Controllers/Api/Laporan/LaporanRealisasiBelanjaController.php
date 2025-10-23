@@ -40,7 +40,7 @@ class LaporanRealisasiBelanjaController extends Controller
                     s.DITERIMA,
                     SUM(s.NILAI_BELANJA) AS TOTAL_NILAI
                 FROM SP2D s
-                LEFT JOIN PENGEMBALIAN.REF_JENIS_BELANJA rjb 
+                LEFT JOIN REF_JENIS_BELANJA rjb 
                     ON s.KD_BELANJA1 = rjb.KD_REF1
                     AND s.KD_BELANJA2 = rjb.KD_REF2
                     AND s.KD_BELANJA3 = rjb.KD_REF3
@@ -65,13 +65,13 @@ class LaporanRealisasiBelanjaController extends Controller
                     s.DITERIMA,
                     NVL(SUM(sr.NILAI), 0) AS TOTAL_NILAI
                 FROM SP2D s
-                LEFT JOIN PENGEMBALIAN.SP2D_REKENING sr 
+                LEFT JOIN SP2D_REKENING sr 
                     ON sr.SP2D_ID = s.ID_SP2D
-                LEFT JOIN PENGEMBALIAN.REF_JENIS_BELANJA rjb 
+                LEFT JOIN REF_JENIS_BELANJA rjb 
                     ON sr.KD_REKENING1 = rjb.KD_REF1
                     AND sr.KD_REKENING2 = rjb.KD_REF2
                     AND sr.KD_REKENING3 = rjb.KD_REF3
-                LEFT JOIN PENGEMBALIAN.REF_JENIS_BELANJA rjb2
+                LEFT JOIN REF_JENIS_BELANJA rjb2
                     ON s.KD_BELANJA1 = rjb2.KD_REF1
                     AND s.KD_BELANJA2 = rjb2.KD_REF2
                     AND s.KD_BELANJA3 = rjb2.KD_REF3

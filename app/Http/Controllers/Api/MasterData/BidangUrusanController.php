@@ -67,7 +67,7 @@ class BidangUrusanController extends Controller
     {
         try {
             $bidang = DB::connection('oracle')
-                ->table(DB::raw('PENGEMBALIAN.REF_BIDANG_URUSAN'))
+                ->table(DB::raw('REF_BIDANG_URUSAN'))
                 ->whereRaw('TRIM(KD_BU1) = ?', [trim($kd_bu1)])
                 ->whereRaw('TRIM(KD_BU2) = ?', [trim($kd_bu2)])
                 ->whereNull('DELETED_AT')
@@ -139,7 +139,7 @@ class BidangUrusanController extends Controller
     {
         try {
             $affected = DB::connection('oracle')
-                ->table('PENGEMBALIAN.REF_BIDANG_URUSAN')
+                ->table('REF_BIDANG_URUSAN')
                 ->whereRaw('TRIM(KD_BU1) = ?', [trim($kd_bu1)])
                 ->whereRaw('TRIM(KD_BU2) = ?', [trim($kd_bu2)])
                 ->update([

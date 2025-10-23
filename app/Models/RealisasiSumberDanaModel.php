@@ -45,7 +45,7 @@ class RealisasiSumberDanaModel extends Model
 
         static::creating(function ($model) {
             if (empty($model->id)) {
-                $model->id = DB::selectOne('SELECT pengembalian.no_sumber_dana.NEXTVAL AS id FROM dual')->id;
+                $model->id = DB::selectOne('SELECT no_sumber_dana.NEXTVAL AS id FROM dual')->id;
             }
         });
     }

@@ -81,7 +81,7 @@ class PaguSumberDanaController extends Controller
     {
         try {
             $data = DB::connection('oracle')
-                ->table(DB::raw('PENGEMBALIAN.PAGU_SUMBER_DANA'))
+                ->table(DB::raw('PAGU_SUMBER_DANA'))
                 ->whereRaw('TRIM(KD_REF1) = ?', [$kd_ref1])
                 ->whereRaw('TRIM(KD_REF2) = ?', [$kd_ref2])
                 ->whereRaw('TRIM(KD_REF3) = ?', [$kd_ref3])
@@ -165,7 +165,7 @@ class PaguSumberDanaController extends Controller
     {
         try {
             $affected = DB::connection('oracle')
-                ->table('PENGEMBALIAN.PAGU_SUMBER_DANA')
+                ->table('PAGU_SUMBER_DANA')
                 ->whereRaw('TRIM(KD_REF1) = ?', [$kd_ref1])
                 ->whereRaw('TRIM(KD_REF2) = ?', [$kd_ref2])
                 ->whereRaw('TRIM(KD_REF3) = ?', [$kd_ref3])

@@ -67,7 +67,7 @@ class JenisSPMController extends Controller
     {
         try {
             $data = DB::connection('oracle')
-                ->table(DB::raw('PENGEMBALIAN.REF_JENIS_SPM'))
+                ->table(DB::raw('REF_JENIS_SPM'))
                 ->where('id', $id)
                 ->whereNull('deleted_at')
                 ->first();
@@ -138,7 +138,7 @@ class JenisSPMController extends Controller
     {
         try {
             $affected = DB::connection('oracle')
-                ->table('PENGEMBALIAN.REF_JENIS_SPM')
+                ->table('REF_JENIS_SPM')
                 ->where('id', $id)
                 ->update([
                     'deleted_at' => now(),

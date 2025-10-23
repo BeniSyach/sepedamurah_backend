@@ -82,7 +82,7 @@ class BesaranUPSKPDController extends Controller
     {
         try {
             $data = DB::connection('oracle')
-                ->table(DB::raw('PENGEMBALIAN.PAGU_UP'))
+                ->table(DB::raw('PAGU_UP'))
                 ->whereRaw('TRIM(KD_OPD1) = ?', [$kd_opd1])
                 ->whereRaw('TRIM(KD_OPD2) = ?', [$kd_opd2])
                 ->whereRaw('TRIM(KD_OPD3) = ?', [$kd_opd3])
@@ -163,7 +163,7 @@ class BesaranUPSKPDController extends Controller
     {
         try {
             $affected = DB::connection('oracle')
-                ->table('PENGEMBALIAN.PAGU_UP')
+                ->table('PAGU_UP')
                 ->whereRaw('TRIM(KD_OPD1) = ?', [$kd_opd1])
                 ->whereRaw('TRIM(KD_OPD2) = ?', [$kd_opd2])
                 ->whereRaw('TRIM(KD_OPD3) = ?', [$kd_opd3])

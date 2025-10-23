@@ -77,7 +77,7 @@ class PengembalianController extends Controller
     }
 
     /**
-     * Tampilkan detail pengembalian.
+     * Tampilkan detail 
      */
     public function show($id)
     {
@@ -94,7 +94,7 @@ class PengembalianController extends Controller
     }
 
     /**
-     * Update data pengembalian.
+     * Update data 
      */
     public function update(Request $request, $id)
     {
@@ -142,7 +142,7 @@ class PengembalianController extends Controller
     }
 
     /**
-     * Soft delete data pengembalian.
+     * Soft delete data 
      */
     public function destroy($id)
     {

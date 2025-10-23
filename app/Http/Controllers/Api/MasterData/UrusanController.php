@@ -67,7 +67,7 @@ class UrusanController extends Controller
         try {
             // Query langsung ke Oracle
             $urusan = DB::connection('oracle')
-            ->table(DB::raw('PENGEMBALIAN.REF_URUSAN'))
+            ->table(DB::raw('REF_URUSAN'))
             ->whereRaw('TRIM(KD_URUSAN) = ?', [$id])
             ->whereRaw('DELETED_AT IS NULL')
             ->first();
@@ -153,7 +153,7 @@ class UrusanController extends Controller
      {
          try {
              $affected = DB::connection('oracle')
-                 ->table('PENGEMBALIAN.REF_URUSAN')
+                 ->table('REF_URUSAN')
                  ->whereRaw('TRIM(KD_URUSAN) = ?', [trim($id)])
                  ->update([
                      'DELETED_AT' => now(),

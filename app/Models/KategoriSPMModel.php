@@ -54,7 +54,7 @@ class KategoriSPMModel extends Model
         static::creating(function ($model) {
             // Ambil ID dari sequence Oracle jika belum diisi
             if (empty($model->id)) {
-                $model->id = DB::selectOne('SELECT pengembalian.seq_kategori_spm.NEXTVAL AS id FROM dual')->id;
+                $model->id = DB::selectOne('SELECT seq_kategori_spm.NEXTVAL AS id FROM dual')->id;
             }
 
             // Isi tanggal jika belum ada

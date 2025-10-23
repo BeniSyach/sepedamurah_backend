@@ -38,7 +38,7 @@ class UrusanModel extends Model
     // Override getTable untuk menambahkan schema
     public function getTable()
     {
-        return 'PENGEMBALIAN.REF_URUSAN';
+        return 'REF_URUSAN';
     }
 
     public function getRouteKeyName()

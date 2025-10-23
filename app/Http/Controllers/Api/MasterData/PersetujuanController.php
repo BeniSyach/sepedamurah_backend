@@ -64,7 +64,7 @@ class PersetujuanController extends Controller
     {
         try {
             $data = DB::connection('oracle')
-                ->table(DB::raw('PENGEMBALIAN.AGGREMENT'))
+                ->table(DB::raw('AGGREMENT'))
                 ->where('id', $id)
                 ->whereNull('deleted_at')
                 ->first();
@@ -133,7 +133,7 @@ class PersetujuanController extends Controller
     {
         try {
             $affected = DB::connection('oracle')
-                ->table('PENGEMBALIAN.AGGREMENT')
+                ->table('AGGREMENT')
                 ->where('id', $id)
                 ->update(['deleted_at' => now()]);
 
