@@ -18,12 +18,12 @@ class PengembalianController extends Controller
         $query = PengembalianModel::query();
 
         if ($search = $request->get('search')) {
-            $query->where('NAMA', 'like', "%{$search}%")
-                  ->orWhere('NIK', 'like', "%{$search}%")
-                  ->orWhere('NO_STS', 'like', "%{$search}%");
+            $query->where('nama', 'like', "%{$search}%")
+                  ->orWhere('nik', 'like', "%{$search}%")
+                  ->orWhere('no_sts', 'like', "%{$search}%");
         }
 
-        $data = $query->orderBy('TGL_REKAM', 'desc')
+        $data = $query->orderBy('tgl_rekam', 'desc')
                       ->paginate($request->get('per_page', 10));
 
         return PengembalianResource::collection($data);
