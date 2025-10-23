@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Sp2dRekening extends Model
+class SP2DRekeningModel extends Model
 {
     use SoftDeletes;
 
@@ -60,10 +60,10 @@ class Sp2dRekening extends Model
         return $this->belongsTo(Sp2dModel::class, 'sp2d_id', 'id_sp2d');
     }
 
-    // ============================
-    // Rekening (composite key)
-    // ============================
-    public function getRekeningAttribute()
+   // ==========================================================
+    // 🔗 Relasi ke Rekening (composite key)
+    // ==========================================================
+    public function rekeningRef()
     {
         return RekeningModel::where('kd_rekening1', $this->kd_rekening1)
             ->where('kd_rekening2', $this->kd_rekening2)
@@ -74,22 +74,32 @@ class Sp2dRekening extends Model
             ->first();
     }
 
-    public function rekening()
+    // accessor alias
+    public function getRekeningAttribute()
     {
-        return $this->hasOne(RekeningModel::class, null, null, null)
-            ->where('kd_rekening1', $this->kd_rekening1)
-            ->where('kd_rekening2', $this->kd_rekening2)
-            ->where('kd_rekening3', $this->kd_rekening3)
-            ->where('kd_rekening4', $this->kd_rekening4)
-            ->where('kd_rekening5', $this->kd_rekening5)
-            ->where('kd_rekening6', $this->kd_rekening6);
+        return $this->rekeningRef();
     }
 
-    // ============================
-    // Kegiatan (composite key)
-    // ============================
+    // ==========================================================
+    // 🔗 Relasi ke Program
+    // ==========================================================
+    public function programRef()
+    {
+        return ProgramModel::where('kd_prog1', $this->kd_prog1)
+            ->where('kd_prog2', $this->kd_prog2)
+            ->where('kd_prog3', $this->kd_prog3)
+            ->first();
+    }
 
-    public function getKegiatanAttribute()
+    public function getProgramAttribute()
+    {
+        return $this->programRef();
+    }
+
+    // ==========================================================
+    // 🔗 Relasi ke Kegiatan
+    // ==========================================================
+    public function kegiatanRef()
     {
         return KegiatanModel::where('kd_keg1', $this->kd_keg1)
             ->where('kd_keg2', $this->kd_keg2)
@@ -99,20 +109,15 @@ class Sp2dRekening extends Model
             ->first();
     }
 
-    public function kegiatan()
+    public function getKegiatanAttribute()
     {
-        return $this->hasOne(KegiatanModel::class, null, null, null)
-            ->where('kd_keg1', $this->kd_keg1)
-            ->where('kd_keg2', $this->kd_keg2)
-            ->where('kd_keg3', $this->kd_keg3)
-            ->where('kd_keg4', $this->kd_keg4)
-            ->where('kd_keg5', $this->kd_keg5);
+        return $this->kegiatanRef();
     }
 
-    // ============================
-    // SubKegiatan (composite key)
-    // ============================
-    public function getSubKegiatanAttribute()
+    // ==========================================================
+    // 🔗 Relasi ke Sub Kegiatan
+    // ==========================================================
+    public function subkegiatanRef()
     {
         return SubKegiatanModel::where('kd_subkeg1', $this->kd_subkeg1)
             ->where('kd_subkeg2', $this->kd_subkeg2)
@@ -123,51 +128,23 @@ class Sp2dRekening extends Model
             ->first();
     }
 
-    public function subkegiatan()
+    public function getSubkegiatanAttribute()
     {
-        return $this->hasOne(SubKegiatanModel::class, null, null, null)
-            ->where('kd_subkeg1', $this->kd_subkeg1)
-            ->where('kd_subkeg2', $this->kd_subkeg2)
-            ->where('kd_subkeg3', $this->kd_subkeg3)
-            ->where('kd_subkeg4', $this->kd_subkeg4)
-            ->where('kd_subkeg5', $this->kd_subkeg5)
-            ->where('kd_subkeg6', $this->kd_subkeg6);
+        return $this->subkegiatanRef();
     }
 
-    // ============================
-    // Program (composite key)
-    // ============================
-
-    public function getProgramAttribute()
-    {
-        return ProgramModel::where('kd_prog1', $this->kd_prog1)
-            ->where('kd_prog2', $this->kd_prog2)
-            ->where('kd_prog3', $this->kd_prog3)
-            ->first();
-    }
-
-    public function program()
-    {
-        return $this->hasOne(ProgramModel::class, null, null, null)
-            ->where('kd_prog1', $this->kd_prog1)
-            ->where('kd_prog2', $this->kd_prog2)
-            ->where('kd_prog3', $this->kd_prog3);
-    }
-
-     // ============================
-    // Bidang Urusan (composite key)
-    // ============================
-    public function getBuAttribute()
+    // ==========================================================
+    // 🔗 Relasi ke Bidang Urusan
+    // ==========================================================
+    public function buRef()
     {
         return BidangUrusanModel::where('kd_bu1', $this->kd_bu1)
             ->where('kd_bu2', $this->kd_bu2)
             ->first();
     }
 
-    public function bu()
+    public function getBuAttribute()
     {
-        return $this->hasOne(BidangUrusanModel::class, null, null, null)
-            ->where('kd_bu1', $this->kd_bu1)
-            ->where('kd_bu2', $this->kd_bu2);
+        return $this->buRef();
     }
 }

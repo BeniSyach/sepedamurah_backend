@@ -20,13 +20,14 @@ class PermohonanSPDController extends Controller
         ->with(['pengirim', 'operator']) // eager load relasi
         ->whereNull('deleted_at'); // pastikan soft delete diabaikan
 
-        if ($userId = $request->get('user_id')) {
-            $query->where('id_pengirim', $userId);
-        }
 
         if ($menu = $request->get('menu')) {
 
             if($menu == 'permohonan_spd'){
+                
+        if ($userId = $request->get('user_id')) {
+            $query->where('id_pengirim', $userId);
+        }
             // ambil data yg belum diperiksa operator
             $query->where('id_operator', '0');
             $query->whereNull('diterima')->whereNull('ditolak');
@@ -52,11 +53,19 @@ class PermohonanSPDController extends Controller
 
             // ✅ SPD Diterima
             if ($menu === 'spd_diterima') {
+                
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_pengirim', $userId);
+                }
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
             }
 
             // (opsional) kalau kamu juga punya 'spd_ditolak'
             if ($menu === 'spd_ditolak') {
+                
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_pengirim', $userId);
+                }
                 $query->whereNotNull('ditolak'); // hanya yang ditolak
             }
         }

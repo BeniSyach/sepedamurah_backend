@@ -49,7 +49,10 @@ class SP2DResource extends JsonResource
             'status_laporan' => $this->status_laporan,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-    'deleted_at' => $this->deleted_at,
+            'deleted_at' => $this->deleted_at,
+            'rekening'    => new RekeningResource($this->whenLoaded('rekening')),
+            'sumber_dana' => new SumberDanaResource($this->whenLoaded('sumberDana')),
+            'skpd' => new SKPDResource($this->whenLoaded('skpd')),
         ];
     }
 }

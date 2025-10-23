@@ -43,6 +43,9 @@ class SP2DSumberDanaModel extends Model
         return $this->belongsTo(Sp2dModel::class, 'sp2d_id', 'id_sp2d');
     }
 
+    /**
+     * Accessor untuk sumber dana (manual composite key)
+     */
     public function getSumberDanaAttribute()
     {
         return SumberDanaModel::where('kd_ref1', $this->kd_ref1)
@@ -52,19 +55,5 @@ class SP2DSumberDanaModel extends Model
             ->where('kd_ref5', $this->kd_ref5)
             ->where('kd_ref6', $this->kd_ref6)
             ->first();
-    }
-
-        /**
-     * Relasi ke tabel ref_sumber_dana (manual composite key)
-     */
-    public function sumberDana()
-    {
-        return $this->hasOne(SumberDanaModel::class, null, null, null)
-            ->where('kd_ref1', $this->kd_ref1)
-            ->where('kd_ref2', $this->kd_ref2)
-            ->where('kd_ref3', $this->kd_ref3)
-            ->where('kd_ref4', $this->kd_ref4)
-            ->where('kd_ref5', $this->kd_ref5)
-            ->where('kd_ref6', $this->kd_ref6);
     }
 }

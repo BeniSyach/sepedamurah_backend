@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SP2DModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\SP2DResource;
+use App\Models\AksesOperatorModel;
 use Illuminate\Support\Facades\DB;
 
 class SP2DController extends Controller
@@ -15,19 +16,163 @@ class SP2DController extends Controller
      */
     public function index(Request $request)
     {
-        $query = SP2DModel::query()->whereNull('deleted_at');
+        $perPage = $request->get('per_page', 10);
+        $search  = $request->get('search');
+    
+        // 🔍 Query dasar SP2D + relasi yang bisa di-eager-load
+        $query = Sp2dModel::query()
+            ->with(['rekening', 'sumberDana', 'sp2dkirim']) // relasi Eloquent valid
+            ->whereNull('deleted_at');
 
-        if ($search = $request->get('search')) {
-            $query->where('NAMA_USER', 'like', "%{$search}%")
-                  ->orWhere('NAMA_OPERATOR', 'like', "%{$search}%")
-                  ->orWhere('NAMA_FILE', 'like', "%{$search}%");
+        if ($menu = $request->get('menu')) {
+
+            if($menu == 'permohonan_sp2d'){
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+            // ambil data yg belum diperiksa operator
+            $query->where('id_operator', '0');
+            $query->whereNull('diterima')->whereNull('ditolak');
+            }
+
+            if($menu == 'berkas_masuk_sp2d'){
+                // Ambil data SKPD dari operator yang login
+                $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
+    
+                if ($operator) {
+                    // tampilkan berkas dari SKPD yang diampunya
+                    $query->where(function ($q) use ($operator) {
+                        $q->where('kd_opd1', $operator->kd_opd1)
+                        ->where('kd_opd2', $operator->kd_opd2)
+                        ->where('kd_opd3', $operator->kd_opd3)
+                        ->where('kd_opd4', $operator->kd_opd4)
+                        ->where('kd_opd5', $operator->kd_opd5);
+                    });
+                }
+                // hanya tampilkan yang belum diverifikasi
+                $query->whereNull('diterima')->whereNull('ditolak');
+            }
+
+            // ✅ SPD Diterima
+            if ($menu === 'sp2d_diterima') {
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+                $query->whereNotNull('diterima'); // hanya yang sudah diterima
+            }
+
+            // (opsional) kalau kamu juga punya 'sp2d_ditolak'
+            if ($menu === 'sp2d_ditolak') {
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+                $query->whereNotNull('ditolak'); // hanya yang ditolak
+            }
+
+            // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
+            if ($menu === 'sp2d_publish_kuasa_bud') {
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+                $query->whereHas('sp2dkirim', function ($q) {
+                    $q->whereNotNull('publish')
+                      ->where('publish', '1');
+                });
+            }
+
+            // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
+            if ($menu === 'sp2d_kirim_bank') {
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+                $query->whereNotNull('diterima');
+                $query->whereHas('sp2dkirim', function ($q) {
+                    $q->whereNotNull('tgl_kirim_kebank');
+                });
+            }
+
+            // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
+            if ($menu === 'sp2d_tte') {
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+                $query->whereNotNull('diterima');
+                $query->whereHas('sp2dkirim', function ($q) {
+                    $q->whereNull('tgl_tte');
+                });
+            }
         }
-
-        $data = $query->orderBy('TANGGAL_UPLOAD', 'desc')
-                      ->paginate($request->get('per_page', 10));
-
-        return SP2DResource::collection($data);
+    
+        // 🔎 Pencarian fleksibel
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_user', 'like', "%{$search}%")
+                  ->orWhere('nama_operator', 'like', "%{$search}%")
+                  ->orWhere('nama_file', 'like', "%{$search}%");
+            });
+        }
+    
+        // 🔽 Urutan dan pagination
+        $data = $query->orderBy('tanggal_upload', 'desc')
+                      ->paginate($perPage);
+    
+        // ==========================================================
+        // 🔗 Transformasi agar accessor & relasi manual ikut tampil
+        // ==========================================================
+        $data->getCollection()->transform(function ($item) {
+            // relasi accessor (akan menjalankan getXxxAttribute)
+            $item->program     = $item->program;
+            $item->kegiatan    = $item->kegiatan;
+            $item->subkegiatan = $item->subkegiatan;
+            $item->rekening    = $item->rekening;
+            $item->bu          = $item->bu;
+            $item->skpd        = $item->skpd;
+    
+            // kalau SP2D punya relasi rekening (hasMany)
+            if ($item->relationLoaded('rekening')) {
+                $item->rekening->transform(function ($rek) {
+                    $rek->program     = $rek->program;
+                    $rek->kegiatan    = $rek->kegiatan;
+                    $rek->subkegiatan = $rek->subkegiatan;
+                    $rek->rekening    = $rek->rekening;
+                    $rek->bu          = $rek->bu;
+                    return $rek;
+                });
+            }
+    
+            // kalau SP2D punya relasi sumberDana
+            if ($item->relationLoaded('sumberDana')) {
+                $item->sumberDana->transform(function ($sd) {
+                    $sd->referensi = $sd->sumberDana;
+                    return $sd;
+                });
+            }
+    
+            return $item;
+        });
+    
+        // 🔙 Return JSON lengkap dengan pagination meta
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar SP2D berhasil diambil',
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'per_page'     => $data->perPage(),
+                'total'        => $data->total(),
+                'last_page'    => $data->lastPage(),
+                'from'         => $data->firstItem(),
+                'to'           => $data->lastItem(),
+            ],
+            'links' => [
+                'first' => $data->url(1),
+                'last'  => $data->url($data->lastPage()),
+                'prev'  => $data->previousPageUrl(),
+                'next'  => $data->nextPageUrl(),
+            ],
+        ]);
     }
+    
 
     /**
      * Store SP2D baru

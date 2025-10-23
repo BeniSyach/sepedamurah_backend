@@ -121,4 +121,14 @@ class User extends Authenticatable implements JWTSubject
             'id'                              // primary key di tabel rules
         );
     }
+
+    public function getSkpdAttribute()
+    {
+        return SKPDModel::where('kd_opd1', $this->kd_opd1)
+            ->where('kd_opd2', $this->kd_opd2)
+            ->where('kd_opd3', $this->kd_opd3)
+            ->where('kd_opd4', $this->kd_opd4)
+            ->where('kd_opd5', $this->kd_opd5)
+            ->first();
+    }
 }

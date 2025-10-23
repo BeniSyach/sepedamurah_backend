@@ -14,17 +14,55 @@ class BerkasLainController extends Controller
      */
     public function index(Request $request)
     {
-        $query = BerkasLainModel::query()->whereNull('deleted_at');
+        // Query BerkasLain dengan relasi user
+        $query = BerkasLainModel::with('user')->whereNull('deleted_at');
 
+        // Filter pencarian
         if ($search = $request->get('search')) {
-            $query->where('nama_dokumen', 'like', "%{$search}%")
-                  ->orWhere('nama_file_asli', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_dokumen', 'like', "%{$search}%")
+                ->orWhere('nama_file_asli', 'like', "%{$search}%");
+            });
         }
 
-        $data = $query->orderBy('tgl_surat', 'desc')
-                      ->paginate($request->get('per_page', 10));
+        // Filter berdasarkan user_id jika ada
+        if ($userId = $request->get('user_id')) {
+            $query->where('users_id', $userId);
+        }
 
-        return BerkasLainResource::collection($data);
+        // Pagination dan urut berdasarkan tanggal surat
+        $data = $query->orderBy('tgl_surat', 'desc')
+                    ->paginate($request->get('per_page', 10));
+        
+        // Transform data supaya user->skpd ikut tampil
+        $data->getCollection()->transform(function ($item) {
+            if ($item->relationLoaded('user') && $item->user) {
+                $item->user->skpd = $item->user->skpd; // simpan ke properti baru
+            }
+            return $item;
+        });
+
+        // Return resource collection (pastikan BerkasLainResource menangani relasi user)
+       // 🔙 Return JSON lengkap dengan pagination meta
+       return response()->json([
+        'success' => true,
+        'message' => 'Daftar Berkas Lain berhasil diambil',
+        'data' => $data->items(),
+        'meta' => [
+            'current_page' => $data->currentPage(),
+            'per_page'     => $data->perPage(),
+            'total'        => $data->total(),
+            'last_page'    => $data->lastPage(),
+            'from'         => $data->firstItem(),
+            'to'           => $data->lastItem(),
+        ],
+        'links' => [
+            'first' => $data->url(1),
+            'last'  => $data->url($data->lastPage()),
+            'prev'  => $data->previousPageUrl(),
+            'next'  => $data->nextPageUrl(),
+        ],
+    ]);
     }
 
     /**

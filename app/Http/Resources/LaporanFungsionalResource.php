@@ -11,6 +11,7 @@ class LaporanFungsionalResource extends JsonResource
         return [
             'id' => $this->id,
             'id_pengirim' => $this->id_pengirim,
+            'pengirim' => new UserResource($this->whenLoaded('pengirim')),
             'kd_opd1' => $this->kd_opd1,
             'kd_opd2' => $this->kd_opd2,
             'kd_opd3' => $this->kd_opd3,
@@ -19,6 +20,7 @@ class LaporanFungsionalResource extends JsonResource
             'nama_pengirim' => $this->nama_pengirim,
             'id_operator' => $this->id_operator,
             'nama_operator' => $this->nama_operator,
+            'operator' => new UserResource($this->whenLoaded('operator')),
             'jenis_berkas' => $this->jenis_berkas,
             'nama_file' => $this->nama_file,
             'nama_file_asli' => $this->nama_file_asli,
@@ -35,6 +37,7 @@ class LaporanFungsionalResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'deleted_at' => $this->deleted_at,
+            'skpd' => new SKPDResource($this->skpd),
         ];
     }
 }

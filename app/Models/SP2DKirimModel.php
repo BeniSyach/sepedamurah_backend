@@ -5,64 +5,86 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class SP2DKirimModel extends Model
+class Sp2dKirimModel extends Model
 {
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    
-    // Nama tabel lengkap (schema + nama tabel)
-    protected $table = 'SP2D_KIRIM';
-
-    // Primary key
-    protected $primaryKey = 'ID';
-
-    public $incrementing = false; // Karena Oracle pakai sequence
+    protected $table = 'sp2d_kirim';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
     protected $keyType = 'int';
-
-    // Aktifkan timestamps Laravel
     public $timestamps = true;
 
-    // Kolom yang diperlakukan sebagai tanggal
     protected $dates = [
         'created_at',
         'updated_at',
         'deleted_at',
-        'TANGGAL_UPLOAD',
-        'TGL_TTE',
-        'TGL_KIRIM_KEBANK',
+        'tanggal_upload',
+        'tgl_tte',
+        'tgl_kirim_kebank',
     ];
 
-    // Kolom yang bisa diisi mass-assignment
     protected $fillable = [
-        'TAHUN',
-        'ID_BERKAS',
-        'ID_PENERIMA',
-        'NAMA_PENERIMA',
-        'ID_OPERATOR',
-        'NAMA_OPERATOR',
-        'NAMAFILE',
-        'NAMA_FILE_ASLI',
-        'TANGGAL_UPLOAD',
-        'KETERANGAN',
-        'DITERIMA',
-        'DITOLAK',
-        'TTE',
-        'STATUS',
-        'TGL_TTE',
-        'ALASAN_TOLAK',
-        'TGL_KIRIM_KEBANK',
-        'ID_PENANDATANGAN',
-        'NAMA_PENANDATANGAN',
-        'FILE_TTE',
-        'KD_OPD1',
-        'KD_OPD2',
-        'KD_OPD3',
-        'KD_OPD4',
-        'KD_OPD5',
-        'PUBLISH',
+        'tahun',
+        'id_berkas',
+        'id_penerima',
+        'nama_penerima',
+        'id_operator',
+        'nama_operator',
+        'namafile',
+        'nama_file_asli',
+        'tanggal_upload',
+        'keterangan',
+        'diterima',
+        'ditolak',
+        'tte',
+        'status',
+        'tgl_tte',
+        'alasan_tolak',
+        'tgl_kirim_kebank',
+        'id_penandatangan',
+        'nama_penandatangan',
+        'file_tte',
+        'kd_opd1',
+        'kd_opd2',
+        'kd_opd3',
+        'kd_opd4',
+        'kd_opd5',
+        'publish',
         'created_at',
         'updated_at',
         'deleted_at',
     ];
+
+    
+    public function sp2dPemohon()
+    {
+        return $this->belongsTo(Sp2dModel::class, 'id_berkas', 'id_sp2d');
+    }
+
+    public function penerima()
+    {
+        return $this->belongsTo(User::class, 'id_penerima');
+    }
+
+    public function operator()
+    {
+        return $this->belongsTo(User::class, 'id_operator');
+    }
+
+    public function penandatangan()
+    {
+        return $this->belongsTo(User::class, 'id_penandatangan');
+    }
+
+    public function getSkpdAttribute()
+    {
+        return SKPDModel::where('kd_opd1', $this->kd_opd1)
+            ->where('kd_opd2', $this->kd_opd2)
+            ->where('kd_opd3', $this->kd_opd3)
+            ->where('kd_opd4', $this->kd_opd4)
+            ->where('kd_opd5', $this->kd_opd5)
+            ->first();
+    }
 }

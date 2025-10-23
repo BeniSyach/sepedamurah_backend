@@ -69,6 +69,11 @@ class Sp2dModel extends Model
         'deleted_at',
     ];
 
+    public function sp2dkirim()
+    {
+        return $this->hasMany(Sp2dKirimModel::class, 'id_berkas', 'id_sp2d');
+    }
+
     /**
      * Relasi ke user (opsional)
      */
@@ -83,7 +88,7 @@ class Sp2dModel extends Model
      */
     public function rekening()
     {
-        return $this->hasMany(Sp2dRekening::class, 'sp2d_id', 'id_sp2d');
+        return $this->hasMany(SP2DRekeningModel::class, 'sp2d_id', 'id_sp2d');
     }
 
       /**
@@ -111,7 +116,7 @@ class Sp2dModel extends Model
         return $this->sumberDana()->sum('nilai');
     }
 
-    public function skpd()
+    public function getSkpdAttribute()
     {
         return SKPDModel::where('kd_opd1', $this->kd_opd1)
             ->where('kd_opd2', $this->kd_opd2)
