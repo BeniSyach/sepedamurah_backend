@@ -30,4 +30,10 @@ class UsersRoleModel extends Model
         'updated_at',
         'deleted_at',
     ];
+
+        // Relasi ke menu
+    public function menus()
+    {
+        return $this->hasMany(UsersRoleMenuModel::class, 'role_id', 'id');
+    }
 }

@@ -119,7 +119,7 @@ class User extends Authenticatable implements JWTSubject
             'users_rule_id',                  // foreign key di tabel pivot untuk rule
             'id',                             // primary key di tabel users
             'id'                              // primary key di tabel rules
-        );
+        )->with('menus');
     }
 
     public function getSkpdAttribute()

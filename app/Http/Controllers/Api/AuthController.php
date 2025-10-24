@@ -34,7 +34,9 @@ class AuthController extends Controller
         //     ], 400);
         // }
 
-         $user = User::with('rules')->where('nip', $request->nip)->first();
+        $user = User::with('rules.menus')
+        ->where('nip', $request->nip)
+        ->first();
 
         if (!$user || $user->DELETED) {
             return response()->json(['error' => 'User tidak ditemukan'], 404);
