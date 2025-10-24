@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\HakAkses\BatasWaktuController;
 use App\Http\Controllers\Api\HakAkses\UsersRoleController;
 use App\Http\Controllers\Api\History\LogHapusUsersController;
 use App\Http\Controllers\Api\History\LogTTEController;
+use App\Http\Controllers\Api\Laporan\LaporanDaftarBelanjaPerSKPDController;
+use App\Http\Controllers\Api\Laporan\LaporanRealisasiBelanjaController;
+use App\Http\Controllers\Api\Laporan\LaporanRealisasiSumberDanaController;
 use App\Http\Controllers\Api\LaporanFungsional\LaporanFungsionalController;
 use App\Http\Controllers\Api\MasterData\BidangUrusanController;
 use App\Http\Controllers\Api\MasterData\JenisBelanjaController;
@@ -199,6 +202,15 @@ Route::middleware('auth:api')->group(function () {
 
         // Laporan Fungsional
         Route::apiResource('/fungsional', LaporanFungsionalController::class);
+
+        // Laporan Realisasi Sumber Dana 
+        Route::get('/realisasi-sumber-dana', [LaporanRealisasiSumberDanaController::class, 'index']);
+
+        // Laporan Realisasi Belanja
+        Route::get('/realisasi-belanja', [LaporanRealisasiBelanjaController::class, 'index']);
+
+        // Laporan Daftar Belanja Per SKPD
+        Route::get('/daftar-belanja-skpd', [LaporanDaftarBelanjaPerSKPDController::class, 'index']);
     });
 
     // Berkas Berkas Lain

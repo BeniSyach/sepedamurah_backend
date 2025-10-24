@@ -10,8 +10,8 @@ class UrusanModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'REF_URUSAN'; // Hapus schema prefix
-    protected $primaryKey = 'KD_URUSAN';
+    protected $table = 'ref_urusan'; // hapus schema prefix
+    protected $primaryKey = 'kd_urusan';
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -21,29 +21,29 @@ class UrusanModel extends Model
         'deleted_at',
     ];
 
-    const CREATED_AT = 'CREATED_AT';
-    const UPDATED_AT = 'UPDATED_AT';
-    const DELETED_AT = 'DELETED_AT'; // Tambahkan ini untuk SoftDeletes
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = 'updated_at';
+    const DELETED_AT = 'deleted_at'; // tambahkan ini untuk SoftDeletes
 
     protected $casts = [
-        'DELETED_AT' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     protected $dates = [
-        'CREATED_AT',
-        'UPDATED_AT', 
-        'DELETED_AT',
+        'created_at',
+        'updated_at', 
+        'deleted_at',
     ];
 
-    // Override getTable untuk menambahkan schema
+    // override getTable untuk menambahkan schema
     public function getTable()
     {
-        return 'REF_URUSAN';
+        return 'ref_urusan';
     }
 
     public function getRouteKeyName()
     {
-        return 'KD_URUSAN';
+        return 'kd_urusan';
     }
 
     protected function asDateTime($value)
@@ -53,6 +53,6 @@ class UrusanModel extends Model
 
     public function getDeletedAtColumn()
     {
-        return 'DELETED_AT';
+        return 'deleted_at';
     }
 }

@@ -10,7 +10,7 @@ class UsersRoleModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'USERS_ROLE';
+    protected $table = 'users_role';
     protected $primaryKey = 'id';
     public $incrementing = false; // Karena ID diisi oleh trigger USR_RULE (sequence no_role)
     protected $keyType = 'int';

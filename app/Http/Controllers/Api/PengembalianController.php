@@ -25,6 +25,13 @@ class PengembalianController extends Controller
 
         $data = $query->orderBy('tgl_rekam', 'desc')
                       ->paginate($request->get('per_page', 10));
+        
+          // Attach skpd secara manual (karena tidak bisa eager load)
+        $data->getCollection()->transform(function ($item) {
+            $skpd = $item->skpd(); // panggil accessor manual
+            $item->setRelation('skpd', $skpd); // daftarkan ke relasi Eloquent
+            return $item;
+        });
 
         return PengembalianResource::collection($data);
     }

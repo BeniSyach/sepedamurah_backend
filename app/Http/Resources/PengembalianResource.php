@@ -29,16 +29,18 @@ class PengembalianResource extends JsonResource
             'kd_opd5' => $this->kd_opd5,
             'jml_pengembalian' => $this->jml_pengembalian,
             'tgl_rekam' => $this->tgl_rekam,
-            'jml_yang_disetor' => $this->jml_yang_disetor,
+            'jml_yg_disetor' => $this->jml_yg_disetor,
             'tgl_setor' => $this->tgl_setor,
             'nip_perekam' => $this->nip_perekam,
             'kode_pengesahan' => $this->kode_pengesahan,
             'kode_cabang' => $this->kode_cabang,
             'nama_channel' => $this->nama_channel,
             'status_pembayaran_pajak' => $this->status_pembayaran_pajak,
+            'status_bayar' => $this->status_bayar,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'deleted_at' => $this->deleted_at,
+            'skpd' => new SKPDResource($this->whenLoaded('skpd')),
         ];
     }
 }

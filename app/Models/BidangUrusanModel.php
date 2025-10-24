@@ -10,9 +10,9 @@ class BidangUrusanModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'REF_BIDANG_URUSAN';
+    protected $table = 'ref_bidang_urusan';
     public $incrementing = false;
-    protected $primaryKey = null; // Composite key
+    protected $primaryKey = null; // composite key
     protected $keyType = 'string';
     public $timestamps = true;
 
@@ -22,12 +22,12 @@ class BidangUrusanModel extends Model
         'nm_bu',
     ];
 
-    // === Mapping kolom tanggal (Oracle case-sensitive) ===
-    const CREATED_AT = 'CREATED_AT';
-    const UPDATED_AT = 'UPDATED_AT';
-    const DELETED_AT = 'DELETED_AT';
+    // === Mapping kolom tanggal (huruf kecil) ===
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = 'updated_at';
+    const DELETED_AT = 'deleted_at';
 
-    protected $dates = ['DELETED_AT'];
+    protected $dates = ['deleted_at'];
 
     /**
      * Override query untuk update berdasarkan composite key.
@@ -35,8 +35,8 @@ class BidangUrusanModel extends Model
     protected function setKeysForSaveQuery($query)
     {
         return $query
-            ->where('KD_BU1', '=', $this->getAttribute('KD_BU1'))
-            ->where('KD_BU2', '=', $this->getAttribute('KD_BU2'));
+            ->where('kd_bu1', '=', $this->getAttribute('kd_bu1'))
+            ->where('kd_bu2', '=', $this->getAttribute('kd_bu2'));
     }
 
     /**
@@ -44,19 +44,19 @@ class BidangUrusanModel extends Model
      */
     protected function performDeleteOnModel()
     {
-        // Soft delete (update kolom DELETED_AT)
+        // Soft delete (update kolom deleted_at)
         if ($this->usesSoftDeletes()) {
             $time = $this->freshTimestamp();
 
-            static::where('KD_BU1', $this->KD_BU1)
-                ->where('KD_BU2', $this->KD_BU2)
+            static::where('kd_bu1', $this->kd_bu1)
+                ->where('kd_bu2', $this->kd_bu2)
                 ->update([static::DELETED_AT => $this->fromDateTime($time)]);
 
             $this->setAttribute(static::DELETED_AT, $time);
         } else {
             // Hard delete (hapus baris)
-            static::where('KD_BU1', $this->KD_BU1)
-                ->where('KD_BU2', $this->KD_BU2)
+            static::where('kd_bu1', $this->kd_bu1)
+                ->where('kd_bu2', $this->kd_bu2)
                 ->delete();
         }
     }
@@ -67,8 +67,8 @@ class BidangUrusanModel extends Model
     public function restore()
     {
         if ($this->usesSoftDeletes()) {
-            static::where('KD_BU1', $this->KD_BU1)
-                ->where('KD_BU2', $this->KD_BU2)
+            static::where('kd_bu1', $this->kd_bu1)
+                ->where('kd_bu2', $this->kd_bu2)
                 ->update([static::DELETED_AT => null]);
 
             $this->setAttribute(static::DELETED_AT, null);

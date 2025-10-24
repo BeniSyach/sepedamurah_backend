@@ -18,13 +18,13 @@ class UsersController extends Controller
         $query = User::query();
 
         if ($search = $request->get('search')) {
-            $query->where('NAME', 'like', "%{$search}%")
-                  ->orWhere('EMAIL', 'like', "%{$search}%")
-                  ->orWhere('NIK', 'like', "%{$search}%")
-                  ->orWhere('NIP', 'like', "%{$search}%");
+            $query->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('nik', 'like', "%{$search}%")
+                  ->orWhere('nnip', 'like', "%{$search}%");
         }
 
-        $data = $query->orderBy('NAME', 'asc')
+        $data = $query->orderBy('name', 'asc')
                       ->paginate($request->get('per_page', 10));
 
         return UserResource::collection($data);

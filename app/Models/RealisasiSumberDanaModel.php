@@ -11,7 +11,7 @@ class RealisasiSumberDanaModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'SUMBER_DANA';
+    protected $table = 'sumber_dana';
     protected $primaryKey = 'id';
     public $incrementing = true; // karena ID di-generate dari sequence
     protected $keyType = 'int';

@@ -10,29 +10,29 @@ class UsersPermissionModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'USERS_PERMISSIONS';
-    protected $primaryKey = 'ID';
-    public $incrementing = false; // Karena ID di-generate oleh trigger (sequence Oracle)
+    protected $table = 'users_permissions';
+    protected $primaryKey = 'id';
+    public $incrementing = false; // karena id di-generate oleh trigger (sequence oracle)
     protected $keyType = 'int';
     public $timestamps = true;
 
-    const CREATED_AT = 'CREATED_AT';
-    const UPDATED_AT = 'UPDATED_AT';
-    const DELETED_AT = 'DELETED_AT';
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = 'updated_at';
+    const DELETED_AT = 'deleted_at';
 
     protected $fillable = [
-        'ID',
-        'USERS_ID',
-        'USERS_RULE_ID',
-        'CREATED_AT',
-        'UPDATED_AT',
-        'DELETED_AT',
+        'id',
+        'users_id',
+        'users_rule_id',
+        'created_at',
+        'updated_at',
+        'deleted_at',
     ];
 
     protected $dates = [
-        'CREATED_AT',
-        'UPDATED_AT',
-        'DELETED_AT',
+        'created_at',
+        'updated_at',
+        'deleted_at',
     ];
 
     /*
@@ -41,15 +41,15 @@ class UsersPermissionModel extends Model
     |--------------------------------------------------------------------------
     */
 
-    // Relasi ke tabel USERS (jika ada model Users)
+    // relasi ke tabel users (jika ada model User)
     public function user()
     {
-        return $this->belongsTo(User::class, 'USERS_ID', 'ID');
+        return $this->belongsTo(User::class, 'users_id', 'id');
     }
 
-    // Relasi ke tabel RULES (jika ada model UsersRule)
+    // relasi ke tabel rules (jika ada model UsersRoleModel)
     public function rule()
     {
-        return $this->belongsTo(UsersRoleModel::class, 'USERS_RULE_ID', 'ID');
+        return $this->belongsTo(UsersRoleModel::class, 'users_rule_id', 'id');
     }
 }

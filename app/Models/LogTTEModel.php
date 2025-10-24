@@ -10,7 +10,7 @@ class LogTTEModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'TTE_HISTORY';
+    protected $table = 'tte_history';
     protected $primaryKey = 'id';
     public $incrementing = false; // Karena Oracle pakai trigger dan sequence
     protected $keyType = 'int';
