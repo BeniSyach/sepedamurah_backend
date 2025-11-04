@@ -170,4 +170,62 @@ class ProgramController extends Controller
             ], 500);
         }
     }
+
+    public function get_program_sp2d(Request $request)
+    {
+        // Ambil user login dari JWT
+        $user = auth()->user();
+    
+        if (!$user) {
+            return response()->json(['error' => 'User tidak terautentikasi'], 401);
+        }
+    
+        // Ambil kd_bu dari request
+        $kd_bu1 = $request->input('kd_bu1');
+        $kd_bu2 = $request->input('kd_bu2');
+    
+        if (!$kd_bu1 && !$kd_bu2) {
+            return response()->json(['error' => 'Parameter kd_bu wajib diisi'], 400);
+        }
+    
+        // Query Builder Laravel
+        $query = DB::table('REF_PROGRAM')
+            ->distinct()
+            ->select('REF_PROGRAM.*')
+            ->join('PAGU_BELANJA', function ($join) {
+                $join->on('REF_PROGRAM.KD_PROG1', '=', 'PAGU_BELANJA.KD_PROG1')
+                     ->on('REF_PROGRAM.KD_PROG2', '=', 'PAGU_BELANJA.KD_PROG2')
+                     ->on('REF_PROGRAM.KD_PROG3', '=', 'PAGU_BELANJA.KD_PROG3');
+            })
+            ->join('REF_OPD', function ($join) {
+                $join->on(DB::raw("
+                    LOWER(REPLACE(COALESCE(REF_OPD.KODE_OPD, ''), ' ', ''))
+                "), '=', DB::raw("
+                    LOWER(REPLACE(
+                        COALESCE(PAGU_BELANJA.KD_OPD1, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD2, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD3, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD4, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD5, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD6, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD7, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD8, '')
+                    , ' ', ''))
+                "));
+            })
+            ->where('REF_OPD.KD_OPD1', $user->kd_opd1)
+            ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
+            ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
+            ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
+            ->where('REF_OPD.KD_OPD5', $user->kd_opd5)
+            ->where('REF_OPD.HIDDEN', 0)
+            ->where('PAGU_BELANJA.KD_PROG1', $kd_bu1)
+            ->where('PAGU_BELANJA.KD_PROG2', $kd_bu2)
+            ->where('PAGU_BELANJA.IS_DELETED', 0)
+            ->get();
+    
+            return response()->json([
+                'data' => $query
+            ]);
+    }
 }

@@ -63,36 +63,43 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('master-data')->group(function () {
         
         Route::apiResource('/urusan', UrusanController::class);
-        
+        Route::get('/urusan-by-pagu-belanja',[ UrusanController::class, 'get_urusan_sp2d']);
+
         // bidang Urusan
         Route::get('/bidang-urusan/{kd_bu1}/{kd_bu2}', [BidangUrusanController::class, 'show']);
         Route::put('/bidang-urusan/{kd_bu1}/{kd_bu2}', [BidangUrusanController::class, 'update']);
         Route::delete('/bidang-urusan/{kd_bu1}/{kd_bu2}', [BidangUrusanController::class, 'destroy']);
         Route::apiResource('/bidang-urusan', BidangUrusanController::class)->only(['index', 'store']);
+        Route::get('/bidang-urusan-by-pagu-belanja',[ BidangUrusanController::class, 'get_bidang_urusan_sp2d']);
         
         // Program
         Route::get('/program/{kd_prog1}/{kd_prog2}/{kd_prog3}', [ProgramController::class, 'show']);
         Route::put('/program/{kd_prog1}/{kd_prog2}/{kd_prog3}', [ProgramController::class, 'update']);
         Route::delete('/program/{kd_prog1}/{kd_prog2}/{kd_prog3}', [ProgramController::class, 'destroy']);
         Route::apiResource('/program', ProgramController::class)->only(['index', 'store']);
+        Route::get('/program-by-pagu-belanja',[ ProgramController::class, 'get_program_sp2d']);
 
         // Kegiatan
         Route::get('/kegiatan/{kd_keg1}/{kd_keg2}/{kd_keg3}/{kd_keg4}/{kd_keg5}', [KegiatanController::class, 'show']);
         Route::put('/kegiatan/{kd_keg1}/{kd_keg2}/{kd_keg3}/{kd_keg4}/{kd_keg5}', [KegiatanController::class, 'update']);
         Route::delete('/kegiatan/{kd_keg1}/{kd_keg2}/{kd_keg3}/{kd_keg4}/{kd_keg5}', [KegiatanController::class, 'destroy']);
         Route::apiResource('/kegiatan', KegiatanController::class)->only(['index', 'store']);
+        Route::get('/kegiatan-by-pagu-belanja', [KegiatanController::class, 'get_kegiatan_sp2d']);
 
         // Sub Kegiatan
         Route::get('/sub-kegiatan/{kd_subkeg1}/{kd_subkeg2}/{kd_subkeg3}/{kd_subkeg4}/{kd_subkeg5}/{kd_subkeg6}', [SubKegiatanController::class, 'show']);
         Route::put('/sub-kegiatan/{kd_subkeg1}/{kd_subkeg2}/{kd_subkeg3}/{kd_subkeg4}/{kd_subkeg5}/{kd_subkeg6}', [SubKegiatanController::class, 'update']);
         Route::delete('/sub-kegiatan/{kd_subkeg1}/{kd_subkeg2}/{kd_subkeg3}/{kd_subkeg4}/{kd_subkeg5}/{kd_subkeg6}', [SubKegiatanController::class, 'destroy']);
         Route::apiResource('/sub-kegiatan', SubKegiatanController::class)->only(['index', 'store']);
+        Route::get('/sub-kegiatan-by-pagu-belanja', [SubKegiatanController::class, 'get_sub_kegiatan_sp2d']);
 
         // Rekening
         Route::get('/rekening/{kd_rekening1}/{kd_rekening2}/{kd_rekening3}/{kd_rekening4}/{kd_rekening5}/{kd_rekening6}', [RekeningController::class, 'show']);
         Route::put('/rekening/{kd_rekening1}/{kd_rekening2}/{kd_rekening3}/{kd_rekening4}/{kd_rekening5}/{kd_rekening6}', [RekeningController::class, 'update']);
         Route::delete('/rekening/{kd_rekening1}/{kd_rekening2}/{kd_rekening3}/{kd_rekening4}/{kd_rekening5}/{kd_rekening6}', [RekeningController::class, 'destroy']);
         Route::apiResource('/rekening', RekeningController::class)->only(['index', 'store']);
+        Route::get('/rekening-by-pagu-belanja', [RekeningController::class, 'get_rekening_sp2d']);
+
 
         // Pagu Belanja
         Route::apiResource('/pagu-belanja', PaguBelanjaController::class);

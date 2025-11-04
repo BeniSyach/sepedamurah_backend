@@ -185,4 +185,75 @@ class RekeningController extends Controller
             ], 500);
         }
     }
+
+    public function get_rekening_sp2d(Request $request)
+    {
+        // 🔐 Ambil user yang sedang login (pastikan middleware auth:api aktif)
+        $user = auth()->user();
+    
+        if (!$user) {
+            return response()->json(['error' => 'User tidak terautentikasi'], 401);
+        }
+    
+        // 📥 Ambil kd_subkeg dari request
+        $kd_subkeg1 = $request->input('kd_subkeg1');
+        $kd_subkeg2 = $request->input('kd_subkeg2');
+        $kd_subkeg3 = $request->input('kd_subkeg3');
+        $kd_subkeg4 = $request->input('kd_subkeg4');
+        $kd_subkeg5 = $request->input('kd_subkeg5');
+        $kd_subkeg6 = $request->input('kd_subkeg6');
+    
+        if (!$kd_subkeg1) {
+            return response()->json(['error' => 'Parameter kd_subkeg wajib diisi'], 400);
+        }
+    
+        // ⚙️ Bangun query utama
+        $query = DB::table('REF_REKENING')
+            ->distinct()
+            ->select('REF_REKENING.*')
+            ->join('PAGU_BELANJA', function ($join) {
+                $join->on('REF_REKENING.KD_REKENING1', '=', 'PAGU_BELANJA.KD_REKENING1')
+                     ->on('REF_REKENING.KD_REKENING2', '=', 'PAGU_BELANJA.KD_REKENING2')
+                     ->on('REF_REKENING.KD_REKENING3', '=', 'PAGU_BELANJA.KD_REKENING3')
+                     ->on('REF_REKENING.KD_REKENING4', '=', 'PAGU_BELANJA.KD_REKENING4')
+                     ->on('REF_REKENING.KD_REKENING5', '=', 'PAGU_BELANJA.KD_REKENING5')
+                     ->on('REF_REKENING.KD_REKENING6', '=', 'PAGU_BELANJA.KD_REKENING6');
+            })
+            ->join('REF_OPD', function ($join) {
+                // Jika pakai PostgreSQL
+                $join->on(DB::raw("
+                    LOWER(REPLACE(COALESCE(REF_OPD.KODE_OPD, ''), ' ', ''))
+                "), '=', DB::raw("
+                    LOWER(REPLACE(
+                        COALESCE(PAGU_BELANJA.KD_OPD1, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD2, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD3, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD4, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD5, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD6, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD7, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD8, '')
+                    , ' ', ''))
+                "));
+            })
+            ->where('REF_OPD.KD_OPD1', $user->kd_opd1)
+            ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
+            ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
+            ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
+            ->where('REF_OPD.KD_OPD5', $user->kd_opd5)
+            ->where('REF_OPD.HIDDEN', 0)
+            ->where('PAGU_BELANJA.KD_SUBKEG1', $kd_subkeg1)
+            ->where('PAGU_BELANJA.KD_SUBKEG2', $kd_subkeg2)
+            ->where('PAGU_BELANJA.KD_SUBKEG3', $kd_subkeg3)
+            ->where('PAGU_BELANJA.KD_SUBKEG4', $kd_subkeg4)
+            ->where('PAGU_BELANJA.KD_SUBKEG5', $kd_subkeg5)
+            ->where('PAGU_BELANJA.KD_SUBKEG6', $kd_subkeg6)
+            ->where('PAGU_BELANJA.IS_DELETED', 0)
+            ->get();
+    
+        // 🔄 Kembalikan hasil JSON
+        return response()->json([
+            'data' => $query
+        ]);
+    }
 }

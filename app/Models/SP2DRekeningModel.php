@@ -147,4 +147,18 @@ class SP2DRekeningModel extends Model
     {
         return $this->buRef();
     }
+
+    // ==========================================================
+    // 🔗 Relasi ke Urusan
+    // ==========================================================
+    public function urusanRef()
+    {
+        return UrusanModel::where('kd_urusan', $this->kd_urusan)
+            ->first();
+    }
+
+    public function getUrusanAttribute()
+    {
+        return $this->urusanRef();
+    }
 }

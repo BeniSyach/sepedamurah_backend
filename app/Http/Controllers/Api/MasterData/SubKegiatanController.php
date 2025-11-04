@@ -185,4 +185,71 @@ class SubKegiatanController extends Controller
             ], 500);
         }
     }
+
+    public function get_sub_kegiatan_sp2d(Request $request)
+    {
+        // 🔐 Ambil user dari JWT (pastikan middleware auth:api aktif)
+        $user = auth()->user();
+    
+        if (!$user) {
+            return response()->json(['error' => 'User tidak terautentikasi'], 401);
+        }
+    
+        // 📥 Ambil kd_keg dari body request
+        $kd_keg1 = $request->input('kd_keg1');
+        $kd_keg2 = $request->input('kd_keg2');
+        $kd_keg3 = $request->input('kd_keg3');
+        $kd_keg4 = $request->input('kd_keg4');
+        $kd_keg5 = $request->input('kd_keg5');
+    
+        if (!$kd_keg1 && !$kd_keg2 && !$kd_keg3 && !$kd_keg4 && !$kd_keg5) {
+            return response()->json(['error' => 'Parameter kd_keg wajib diisi'], 400);
+        }
+    
+        // ⚙️ Bangun query Laravel
+        $query = DB::table('REF_SUBKEGIATAN')
+            ->distinct()
+            ->select('REF_SUBKEGIATAN.*')
+            ->join('PAGU_BELANJA', function ($join) {
+                $join->on('REF_SUBKEGIATAN.KD_SUBKEG1', '=', 'PAGU_BELANJA.KD_SUBKEG1')
+                     ->on('REF_SUBKEGIATAN.KD_SUBKEG2', '=', 'PAGU_BELANJA.KD_SUBKEG2')
+                     ->on('REF_SUBKEGIATAN.KD_SUBKEG3', '=', 'PAGU_BELANJA.KD_SUBKEG3')
+                     ->on('REF_SUBKEGIATAN.KD_SUBKEG4', '=', 'PAGU_BELANJA.KD_SUBKEG4')
+                     ->on('REF_SUBKEGIATAN.KD_SUBKEG5', '=', 'PAGU_BELANJA.KD_SUBKEG5')
+                     ->on('REF_SUBKEGIATAN.KD_SUBKEG6', '=', 'PAGU_BELANJA.KD_SUBKEG6');
+            })
+            ->join('REF_OPD', function ($join) {
+                $join->on(DB::raw("
+                    LOWER(REPLACE(COALESCE(REF_OPD.KODE_OPD, ''), ' ', ''))
+                "), '=', DB::raw("
+                    LOWER(REPLACE(
+                        COALESCE(PAGU_BELANJA.KD_OPD1, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD2, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD3, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD4, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD5, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD6, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD7, '') || '.' ||
+                        COALESCE(PAGU_BELANJA.KD_OPD8, '')
+                    , ' ', ''))
+                "));
+            })
+            ->where('REF_OPD.KD_OPD1', $user->kd_opd1)
+            ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
+            ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
+            ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
+            ->where('REF_OPD.KD_OPD5', $user->kd_opd5)
+            ->where('REF_OPD.HIDDEN', 0)
+            ->where('PAGU_BELANJA.KD_KEG1', $kd_keg1)
+            ->where('PAGU_BELANJA.KD_KEG2', $kd_keg2)
+            ->where('PAGU_BELANJA.KD_KEG3', $kd_keg3)
+            ->where('PAGU_BELANJA.KD_KEG4', $kd_keg4)
+            ->where('PAGU_BELANJA.KD_KEG5', $kd_keg5)
+            ->where('PAGU_BELANJA.IS_DELETED', 0)
+            ->get();
+    
+            return response()->json([
+                'data' => $query
+            ]);
+    }
 }

@@ -66,6 +66,8 @@ class User extends Authenticatable implements JWTSubject
         'password' => 'hashed',
     ];
 
+    protected $appends = ['skpd'];
+
      // Soft delete override karena kolom Oracle kamu pakai angka (DELETED)
     protected static function booted()
     {

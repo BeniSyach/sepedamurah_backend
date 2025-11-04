@@ -136,6 +136,7 @@ class SP2DController extends Controller
                     $rek->subkegiatan = $rek->subkegiatan;
                     $rek->rekening    = $rek->rekening;
                     $rek->bu          = $rek->bu;
+                    $rek->urusan          = $rek->urusan;
                     return $rek;
                 });
             }
