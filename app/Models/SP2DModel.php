@@ -71,7 +71,7 @@ class Sp2dModel extends Model
 
     public function sp2dkirim()
     {
-        return $this->hasMany(Sp2dKirimModel::class, 'id_berkas', 'id_sp2d');
+        return $this->hasMany(SP2DKirimModel::class, 'id_berkas', 'id_sp2d');
     }
 
     /**

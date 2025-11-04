@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Sp2dKirimModel extends Model
+class SP2DKirimModel extends Model
 {
     use SoftDeletes;
 
