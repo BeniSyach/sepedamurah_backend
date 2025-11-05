@@ -28,8 +28,11 @@ use App\Http\Controllers\Api\MasterData\RekAkunController;
 use App\Http\Controllers\Api\MasterData\RekeningController;
 use App\Http\Controllers\Api\MasterData\RekJenisController;
 use App\Http\Controllers\Api\MasterData\RekKelompokController;
+use App\Http\Controllers\Api\MasterData\RekObjekController;
+use App\Http\Controllers\Api\MasterData\RekRincianController;
 use App\Http\Controllers\Api\MasterData\SKPDController;
 use App\Http\Controllers\Api\MasterData\SubKegiatanController;
+use App\Http\Controllers\Api\MasterData\SubRincianController;
 use App\Http\Controllers\Api\MasterData\SumberDanaController;
 use App\Http\Controllers\Api\MasterData\UrusanController;
 use App\Http\Controllers\Api\PengembalianController;
@@ -146,6 +149,15 @@ Route::middleware('auth:api')->group(function () {
 
         // Rek Jenis
         Route::apiResource('/rek-jenis', RekJenisController::class);
+
+        // Rek Objek
+        Route::apiResource('/rek-objek', RekObjekController::class);
+
+        // Rek Rincian
+        Route::apiResource('/rek-rincian', RekRincianController::class);
+
+        // Sub Rincian
+        Route::apiResource('/sub-rincian', SubRincianController::class);
     });
 
     // alokasi Dana
