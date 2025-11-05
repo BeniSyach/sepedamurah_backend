@@ -24,7 +24,10 @@ use App\Http\Controllers\Api\MasterData\LevelRekeningController;
 use App\Http\Controllers\Api\MasterData\PaguBelanjaController;
 use App\Http\Controllers\Api\MasterData\PersetujuanController;
 use App\Http\Controllers\Api\MasterData\ProgramController;
+use App\Http\Controllers\Api\MasterData\RekAkunController;
 use App\Http\Controllers\Api\MasterData\RekeningController;
+use App\Http\Controllers\Api\MasterData\RekJenisController;
+use App\Http\Controllers\Api\MasterData\RekKelompokController;
 use App\Http\Controllers\Api\MasterData\SKPDController;
 use App\Http\Controllers\Api\MasterData\SubKegiatanController;
 use App\Http\Controllers\Api\MasterData\SumberDanaController;
@@ -134,6 +137,15 @@ Route::middleware('auth:api')->group(function () {
 
         // Level Rekening
         Route::apiResource('/level-rekening', LevelRekeningController::class);
+
+        // Rek Akun
+        Route::apiResource('/rek-akun', RekAkunController::class);
+
+        // Rek Kelompok
+        Route::apiResource('/rek-kelompok', RekKelompokController::class);
+
+        // Rek Jenis
+        Route::apiResource('/rek-jenis', RekJenisController::class);
     });
 
     // alokasi Dana
