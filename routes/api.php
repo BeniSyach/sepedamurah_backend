@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\MasterData\JenisBelanjaController;
 use App\Http\Controllers\Api\MasterData\JenisSPMController;
 use App\Http\Controllers\Api\MasterData\KategoriSPMController;
 use App\Http\Controllers\Api\MasterData\KegiatanController;
+use App\Http\Controllers\Api\MasterData\LevelRekeningController;
 use App\Http\Controllers\Api\MasterData\PaguBelanjaController;
 use App\Http\Controllers\Api\MasterData\PersetujuanController;
 use App\Http\Controllers\Api\MasterData\ProgramController;
@@ -130,6 +131,9 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/master-skpd/{kd_opd1}/{kd_opd2}/{kd_opd3}/{kd_opd4}/{kd_opd5}', [SKPDController::class, 'update']);
         Route::delete('/master-skpd/{kd_opd1}/{kd_opd2}/{kd_opd3}/{kd_opd4}/{kd_opd5}', [SKPDController::class, 'destroy']);
         Route::apiResource('/master-skpd', SKPDController::class)->only(['index', 'store']);
+
+        // Level Rekening
+        Route::apiResource('/level-rekening', LevelRekeningController::class);
     });
 
     // alokasi Dana
