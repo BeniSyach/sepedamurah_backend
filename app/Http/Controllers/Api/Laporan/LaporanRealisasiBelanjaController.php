@@ -100,4 +100,14 @@ class LaporanRealisasiBelanjaController extends Controller
             'data' => $data,
         ]);
     }
+
+    public function export_excel(Request $request)
+    {
+
+    }
+
+    public function export_pdf(Request $request)
+    {
+        
+    }
 }
