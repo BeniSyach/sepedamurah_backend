@@ -7,7 +7,7 @@ use App\Models\PermohonanSPDModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\PermohonanSPDResource;
 use App\Models\AksesOperatorModel;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PermohonanSPDController extends Controller
 {
@@ -25,12 +25,12 @@ class PermohonanSPDController extends Controller
 
             if($menu == 'permohonan_spd'){
                 
-        if ($userId = $request->get('user_id')) {
-            $query->where('id_pengirim', $userId);
-        }
-            // ambil data yg belum diperiksa operator
-            $query->where('id_operator', '0');
-            $query->whereNull('diterima')->whereNull('ditolak');
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_pengirim', $userId);
+                }
+                    // ambil data yg belum diperiksa operator
+                    $query->where('id_operator', '0');
+                    $query->whereNull('diterima')->whereNull('ditolak');
             }
 
             if($menu == 'berkas_masuk_spd'){
@@ -102,46 +102,59 @@ class PermohonanSPDController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'ID_PENGIRIM' => 'required|integer',
-            'NAMA_PENGIRIM' => 'required|string|max:255',
-            'ID_OPERATOR' => 'nullable|integer',
-            'NAMA_OPERATOR' => 'nullable|string|max:255',
-            'JENIS_BERKAS' => 'required|string|max:100',
-            'NAMA_FILE' => 'required|string|max:255',
-            'NAMA_FILE_ASLI' => 'nullable|string|max:255',
-            'TANGGAL_UPLOAD' => 'nullable|date',
-            'KODE_FILE' => 'nullable|string|max:100',
-            'DITERIMA' => 'nullable|date',
-            'DITOLAK' => 'nullable|date',
-            'ALASAN_TOLAK' => 'nullable|string|max:500',
-            'PROSES' => 'nullable|string|max:50',
-            'SUPERVISOR_PROSES' => 'nullable|string|max:50',
-            'KD_OPD1' => 'nullable|string|max:5',
-            'KD_OPD2' => 'nullable|string|max:5',
-            'KD_OPD3' => 'nullable|string|max:5',
-            'KD_OPD4' => 'nullable|string|max:5',
-            'KD_OPD5' => 'nullable|string|max:5',
+            'id_pengirim' => 'required|integer',
+            'nama_pengirim' => 'required|string|max:255',
+            'id_operator' => 'nullable|integer',
+            'nama_operator' => 'nullable|string|max:255',
+            'jenis_berkas' => 'nullable|string|max:100',
+            'nama_file' => 'required|string|max:255',
+            'nama_file_asli' => 'required|file|mimes:pdf|max:5120', // <= HARUS PDF, max 5MB
+            'kode_file' => 'nullable|string|max:100',
+            'kd_opd1' => 'nullable|string|max:5',
+            'kd_opd2' => 'nullable|string|max:5',
+            'kd_opd3' => 'nullable|string|max:5',
+            'kd_opd4' => 'nullable|string|max:5',
+            'kd_opd5' => 'nullable|string|max:5',
         ]);
 
         try {
-            // Ambil ID dari sequence Oracle
-            $id = DB::connection('oracle')->selectOne('SELECT NO_PERMOHONAN_SPD.NEXTVAL AS ID FROM dual')->ID;
+            // === 2️⃣ Simpan file PDF ke storage ===
+            $file = $request->file('nama_file_asli');
+            $tanggalFolder = now()->format('Ymd'); // contoh: 20251107
+            $folder = "permohonan_spd/{$tanggalFolder}";
 
-            $permohonan = PermohonanSPDModel::create(array_merge($validated, [
-                'ID' => $id,
-                'DATE_CREATED' => now(),
-            ]));
+            // Pastikan folder ada di storage/app/public
+            $path = $file->storeAs($folder, $file->getClientOriginalName(), 'public');
+
+            // === 3️⃣ Simpan data ke database ===
+            $permohonan = PermohonanSPDModel::create([
+                'id_pengirim' => $validated['id_pengirim'],
+                'nama_pengirim' => $validated['nama_pengirim'],
+                'id_operator' => $validated['id_operator'] ?? 0,
+                'nama_operator' => $validated['nama_operator'] ?? null,
+                'jenis_berkas' => $validated['jenis_berkas'] ?? null,
+                'nama_file' => $validated['nama_file'],
+                'nama_file_asli' => $path, // simpan path hasil upload
+                'kode_file' => $validated['kode_file'] ?? null,
+                'kd_opd1' => $validated['kd_opd1'] ?? null,
+                'kd_opd2' => $validated['kd_opd2'] ?? null,
+                'kd_opd3' => $validated['kd_opd3'] ?? null,
+                'kd_opd4' => $validated['kd_opd4'] ?? null,
+                'kd_opd5' => $validated['kd_opd5'] ?? null,
+                'tanggal_upload' => now(),
+                'date_created' => now(),
+            ]);
 
             return new PermohonanSPDResource($permohonan);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Terjadi kesalahan pada database',
+                'message' => 'Terjadi kesalahan saat menyimpan data ke database.',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
+    
 
     /**
      * Detail permohonan SPD
@@ -167,48 +180,68 @@ class PermohonanSPDController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $permohonan = PermohonanSPDModel::where('ID', $id)
-                                        ->whereNull('DELETED_AT')
+        $permohonan = PermohonanSPDModel::where('id', $id)
+                                        ->whereNull('deleted_at')
                                         ->first();
-
+    
         if (!$permohonan) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
+        // Validasi request
         $validated = $request->validate([
-            'ID_PENGIRIM' => 'required|integer',
-            'NAMA_PENGIRIM' => 'required|string|max:255',
-            'ID_OPERATOR' => 'nullable|integer',
-            'NAMA_OPERATOR' => 'nullable|string|max:255',
-            'JENIS_BERKAS' => 'required|string|max:100',
-            'NAMA_FILE' => 'required|string|max:255',
-            'NAMA_FILE_ASLI' => 'nullable|string|max:255',
-            'TANGGAL_UPLOAD' => 'nullable|date',
-            'KODE_FILE' => 'nullable|string|max:100',
-            'DITERIMA' => 'nullable|date',
-            'DITOLAK' => 'nullable|date',
-            'ALASAN_TOLAK' => 'nullable|string|max:500',
-            'PROSES' => 'nullable|string|max:50',
-            'SUPERVISOR_PROSES' => 'nullable|string|max:50',
-            'KD_OPD1' => 'nullable|string|max:5',
-            'KD_OPD2' => 'nullable|string|max:5',
-            'KD_OPD3' => 'nullable|string|max:5',
-            'KD_OPD4' => 'nullable|string|max:5',
-            'KD_OPD5' => 'nullable|string|max:5',
+            'id_pengirim' => 'nullable|integer',
+            'nama_pengirim' => 'nullable|string|max:255',
+            'id_operator' => 'nullable|integer',
+            'nama_operator' => 'nullable|string|max:255',
+            'jenis_berkas' => 'nullable|string|max:100',
+            'nama_file' => 'nullable|string|max:255',
+            'nama_file_asli' => 'nullable|file|mimes:pdf|max:10240', // max 10MB
+            'tanggal_upload' => 'nullable|date',
+            'kode_file' => 'nullable|string|max:100',
+            'diterima' => 'nullable|date',
+            'ditolak' => 'nullable|date',
+            'alasan_tolak' => 'nullable|string|max:500',
+            'proses' => 'nullable|string|max:50',
+            'supervisor_proses' => 'nullable|string|max:50',
+            'kd_opd1' => 'nullable|string|max:5',
+            'kd_opd2' => 'nullable|string|max:5',
+            'kd_opd3' => 'nullable|string|max:5',
+            'kd_opd4' => 'nullable|string|max:5',
+            'kd_opd5' => 'nullable|string|max:5',
         ]);
-
+    
+        $disk = Storage::disk('public');
+    
+        // Handle file update
+        if ($request->hasFile('nama_file_asli')) {
+            // Hapus file lama jika ada
+            if ($permohonan->nama_file_asli && $disk->exists($permohonan->nama_file_asli)) {
+                $disk->delete($permohonan->nama_file_asli);
+            }
+    
+            // Simpan file baru
+            $file = $request->file('nama_file_asli');
+            $path = $file->store('permohonan_spd/' . date('Ymd'), 'public');
+    
+            $validated['nama_file_asli'] = $path;
+        } else {
+            // Jika tidak ada file baru, biarkan tetap
+            unset($validated['nama_file_asli']);
+        }
+    
         try {
             $permohonan->update($validated);
-
+    
             return response()->json([
                 'status' => true,
                 'message' => 'Data berhasil diperbarui',
                 'data' => new PermohonanSPDResource($permohonan),
             ]);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -223,23 +256,48 @@ class PermohonanSPDController extends Controller
      */
     public function destroy($id)
     {
-        $permohonan = PermohonanSPDModel::where('ID', $id)
-                                        ->whereNull('DELETED_AT')
+        $permohonan = PermohonanSPDModel::where('id', $id)
+                                        ->whereNull('deleted_at')
                                         ->first();
-
+    
         if (!$permohonan) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
+        // Hapus file fisik jika ada
+        $disk = Storage::disk('public');
+        if ($permohonan->NAMA_FILE_ASLI && $disk->exists($permohonan->NAMA_FILE_ASLI)) {
+            $disk->delete($permohonan->NAMA_FILE_ASLI);
+        }
+    
+        // Soft delete di database
         $permohonan->DELETED_AT = now();
         $permohonan->save();
-
+    
         return response()->json([
             'status' => true,
-            'message' => 'Data berhasil dihapus (soft delete)',
+            'message' => 'Data berhasil dihapus dan file dihapus (soft delete)',
         ]);
+    }
+    
+
+    public function downloadBerkas(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = PermohonanSPDModel::findOrFail($id);
+
+        $filePath = $permohonan->nama_file_asli; // misal: permohonan_spd/20251107/testing.pdf
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
     }
 }

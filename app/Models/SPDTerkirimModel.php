@@ -70,4 +70,9 @@ class SpdTerkirimModel extends Model
             ->where('kd_opd5', $this->kd_opd5)
             ->first();
     }
+
+    public function permohonan()
+    {
+        return $this->belongsTo(PermohonanSpdModel::class, 'id_berkas', 'id');
+    }
 }

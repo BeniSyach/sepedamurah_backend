@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SPDTerkirimModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\SPDTerkirimResource;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SPDTerkirimController extends Controller
 {
@@ -15,15 +15,17 @@ class SPDTerkirimController extends Controller
      */
     public function index(Request $request)
     {
-        $query = SPDTerkirimModel::query()->whereNull('deleted_at');
-
+        $query = SPDTerkirimModel::with('permohonan')
+            ->whereNull('deleted_at');
+    
+        // Filter berdasarkan user
         if ($userId = $request->get('user_id')) {
             $query->where('id_penerima', $userId);
         }
-
+    
+        // Filter menu
         if ($menu = $request->get('menu')) {
             if ($menu === 'spd_tte') {
-                // 🔍 Ambil data yang belum di-TTE (selain 'Yes')
                 $query->where(function ($q) {
                     $q->where('tte', '!=', 'Yes')
                       ->orWhereNull('tte')
@@ -32,25 +34,29 @@ class SPDTerkirimController extends Controller
                 });
             }
         }
-
+    
+        // Filter search
         if ($search = $request->get('search')) {
-            $query->where('NAMA_PENERIMA', 'like', "%{$search}%")
-                  ->orWhere('NAMA_OPERATOR', 'like', "%{$search}%")
-                  ->orWhere('NAMAFILE', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_penerima', 'like', "%{$search}%")
+                  ->orWhere('nama_operator', 'like', "%{$search}%")
+                  ->orWhere('namafile', 'like', "%{$search}%");
+            });
         }
-
+    
+        // Pagination
         $data = $query->orderBy('created_at', 'desc')
                       ->paginate($request->get('per_page', 10));
-
-        // Attach skpd secara manual (karena tidak bisa eager load)
+    
+        // Attach skpd secara manual
         $data->getCollection()->transform(function ($item) {
-            $skpd = $item->skpd(); // panggil accessor manual
-            $item->setRelation('skpd', $skpd); // daftarkan ke relasi Eloquent
+            $item->setRelation('skpd', $item->skpd()); // panggil method manual
             return $item;
         });
-
+    
         return SPDTerkirimResource::collection($data);
     }
+    
 
     /**
      * Store SPD Terkirim baru
@@ -58,44 +64,75 @@ class SPDTerkirimController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'ID_BERKAS' => 'required|integer',
-            'ID_PENERIMA' => 'required|integer',
-            'NAMA_PENERIMA' => 'required|string|max:255',
-            'ID_OPERATOR' => 'nullable|integer',
-            'NAMA_OPERATOR' => 'nullable|string|max:255',
-            'NAMAFILE' => 'required|string|max:255',
-            'NAMA_FILE_ASLI' => 'nullable|string|max:255',
-            'NAMA_FILE_LAMPIRAN' => 'nullable|string|max:255',
-            'TANGGAL_UPLOAD' => 'nullable|date',
-            'KETERANGAN' => 'nullable|string|max:500',
-            'PARAF_KBUD' => 'nullable|string|max:50',
-            'TGL_PARAF' => 'nullable|date',
-            'TTE' => 'nullable|string|max:255',
-            'PASSPHARASE' => 'nullable|string|max:255',
-            'STATUS' => 'nullable|string|max:50',
-            'TGL_TTE' => 'nullable|date',
-            'ID_PENANDATANGAN' => 'nullable|integer',
-            'NAMA_PENANDATANGAN' => 'nullable|string|max:255',
-            'KD_OPD1' => 'nullable|string|max:5',
-            'KD_OPD2' => 'nullable|string|max:5',
-            'KD_OPD3' => 'nullable|string|max:5',
-            'KD_OPD4' => 'nullable|string|max:5',
-            'KD_OPD5' => 'nullable|string|max:5',
-            'FILE_TTE' => 'nullable|string|max:255',
-            'PUBLISH' => 'nullable|boolean',
+            'id_berkas' => 'nullable|integer',
+            'id_penerima' => 'required|integer',
+            'nama_penerima' => 'required|string|max:255',
+            'id_operator' => 'nullable|integer',
+            'nama_operator' => 'nullable|string|max:255',
+            'nama_file' => 'required|string|max:255',
+            'nama_file_asli' => 'required|file|mimes:pdf|max:5120', // wajib PDF, max 5MB
+            'nama_file_lampiran' => 'nullable|string|max:255',
+            'tanggal_upload' => 'nullable|date',
+            'keterangan' => 'nullable|string|max:500',
+            'paraf_kbud' => 'nullable|string|max:50',
+            'tgl_paraf' => 'nullable|date',
+            'tte' => 'nullable|string|max:255',
+            'passpharase' => 'nullable|string|max:255',
+            'status' => 'nullable|string|max:50',
+            'tgl_tte' => 'nullable|date',
+            'id_penandatangan' => 'nullable|integer',
+            'nama_penandatangan' => 'nullable|string|max:255',
+            'kd_opd1' => 'nullable|string|max:5',
+            'kd_opd2' => 'nullable|string|max:5',
+            'kd_opd3' => 'nullable|string|max:5',
+            'kd_opd4' => 'nullable|string|max:5',
+            'kd_opd5' => 'nullable|string|max:5',
+            'file_tte' => 'nullable|string|max:255',
+            'publish' => 'nullable|boolean',
         ]);
-
+    
         try {
-            // Ambil ID dari sequence Oracle
-            $id = DB::connection('oracle')->selectOne('SELECT NO_SPD_TERKIRIM.NEXTVAL AS ID FROM dual')->ID;
-
-            $spd = SPDTerkirimModel::create(array_merge($validated, [
-                'ID' => $id,
-                'CREATED_AT' => now(),
-            ]));
-
+            // === 1️⃣ Simpan file PDF ke storage ===
+            $file = $request->file('nama_file_asli');
+            $tanggalFolder = now()->format('Ymd'); // contoh: 20251108
+            $folder = "spd_terkirim/{$tanggalFolder}";
+    
+            // Simpan di storage/app/public/spd_terkirim/20251108/
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs($folder, $filename, 'public');
+    
+            // === 2️⃣ Simpan data ke database ===
+            $spd = SPDTerkirimModel::create([
+                'id_berkas' => $validated['id_berkas'] ?? null,
+                'id_penerima' => $validated['id_penerima'],
+                'nama_penerima' => $validated['nama_penerima'],
+                'id_operator' => $validated['id_operator'] ?? null,
+                'nama_operator' => $validated['nama_operator'] ?? null,
+                'namafile' => $validated['nama_file'],
+                'nama_file_asli' => $path, // path hasil upload
+                'nama_file_lampiran' => $validated['nama_file_lampiran'] ?? null,
+                'tanggal_upload' => now(),
+                'keterangan' => $validated['keterangan'] ?? null,
+                'paraf_kbud' => $validated['paraf_kbud'] ?? null,
+                'tgl_paraf' => $validated['tgl_paraf'] ?? null,
+                'tte' => $validated['tte'] ?? null,
+                'passpharase' => $validated['passpharase'] ?? null,
+                'status' => $validated['status'] ?? null,
+                'tgl_tte' => $validated['tgl_tte'] ?? null,
+                'id_penandatangan' => $validated['id_penandatangan'] ?? null,
+                'nama_penandatangan' => $validated['nama_penandatangan'] ?? null,
+                'kd_opd1' => $validated['kd_opd1'] ?? null,
+                'kd_opd2' => $validated['kd_opd2'] ?? null,
+                'kd_opd3' => $validated['kd_opd3'] ?? null,
+                'kd_opd4' => $validated['kd_opd4'] ?? null,
+                'kd_opd5' => $validated['kd_opd5'] ?? null,
+                'file_tte' => $validated['file_tte'] ?? null,
+                'publish' => $validated['publish'] ?? false,
+                'created_at' => now(),
+            ]);
+    
             return new SPDTerkirimResource($spd);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -104,14 +141,15 @@ class SPDTerkirimController extends Controller
             ], 500);
         }
     }
+    
 
     /**
      * Detail SPD Terkirim
      */
     public function show($id)
     {
-        $spd = SPDTerkirimModel::where('ID', $id)
-                               ->whereNull('DELETED_AT')
+        $spd = SPDTerkirimModel::where('id', $id)
+                               ->whereNull('deleted_at')
                                ->first();
 
         if (!$spd) {
@@ -129,54 +167,90 @@ class SPDTerkirimController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $spd = SPDTerkirimModel::where('ID', $id)
-                               ->whereNull('DELETED_AT')
-                               ->first();
-
+        $spd = SPDTerkirimModel::where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+    
         if (!$spd) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
+        // Validasi input
         $validated = $request->validate([
-            'ID_BERKAS' => 'required|integer',
-            'ID_PENERIMA' => 'required|integer',
-            'NAMA_PENERIMA' => 'required|string|max:255',
-            'ID_OPERATOR' => 'nullable|integer',
-            'NAMA_OPERATOR' => 'nullable|string|max:255',
-            'NAMAFILE' => 'required|string|max:255',
-            'NAMA_FILE_ASLI' => 'nullable|string|max:255',
-            'NAMA_FILE_LAMPIRAN' => 'nullable|string|max:255',
-            'TANGGAL_UPLOAD' => 'nullable|date',
-            'KETERANGAN' => 'nullable|string|max:500',
-            'PARAF_KBUD' => 'nullable|string|max:50',
-            'TGL_PARAF' => 'nullable|date',
-            'TTE' => 'nullable|string|max:255',
-            'PASSPHARASE' => 'nullable|string|max:255',
-            'STATUS' => 'nullable|string|max:50',
-            'TGL_TTE' => 'nullable|date',
-            'ID_PENANDATANGAN' => 'nullable|integer',
-            'NAMA_PENANDATANGAN' => 'nullable|string|max:255',
-            'KD_OPD1' => 'nullable|string|max:5',
-            'KD_OPD2' => 'nullable|string|max:5',
-            'KD_OPD3' => 'nullable|string|max:5',
-            'KD_OPD4' => 'nullable|string|max:5',
-            'KD_OPD5' => 'nullable|string|max:5',
-            'FILE_TTE' => 'nullable|string|max:255',
-            'PUBLISH' => 'nullable|boolean',
+            'id_berkas' => 'nullable|integer',
+            'id_penerima' => 'nullable|integer',
+            'nama_penerima' => 'nullable|string|max:255',
+            'id_operator' => 'nullable|integer',
+            'nama_operator' => 'nullable|string|max:255',
+            'nama_file' => 'nullable|string|max:255',
+            'nama_file_asli' => 'nullable|file|mimes:pdf|max:5120', // max 5MB
+            'nama_file_lampiran' => 'nullable|string|max:255',
+            'tanggal_upload' => 'nullable|date',
+            'keterangan' => 'nullable|string|max:500',
+            'paraf_kbud' => 'nullable|string|max:50',
+            'tgl_paraf' => 'nullable|date',
+            'tte' => 'nullable|string|max:255',
+            'passpharase' => 'nullable|string|max:255',
+            'status' => 'nullable|string|max:50',
+            'tgl_tte' => 'nullable|date',
+            'id_penandatangan' => 'nullable|integer',
+            'nama_penandatangan' => 'nullable|string|max:255',
+            'kd_opd1' => 'nullable|string|max:5',
+            'kd_opd2' => 'nullable|string|max:5',
+            'kd_opd3' => 'nullable|string|max:5',
+            'kd_opd4' => 'nullable|string|max:5',
+            'kd_opd5' => 'nullable|string|max:5',
+            'file_tte' => 'nullable|file|mimes:pdf|max:5120', // file tte opsional
+            'publish' => 'nullable|boolean',
         ]);
-
+    
+        $disk = Storage::disk('public');
+    
+        // === Handle upload nama_file_asli ===
+        if ($request->hasFile('nama_file_asli')) {
+            // Hapus file lama jika ada
+            if ($spd->nama_file_asli && $disk->exists($spd->nama_file_asli)) {
+                $disk->delete($spd->nama_file_asli);
+            }
+    
+            // Simpan file baru
+            $file = $request->file('nama_file_asli');
+            $folder = 'spd_terkirim/' . now()->format('Ymd');
+            $path = $file->store($folder, 'public');
+            $validated['nama_file_asli'] = $path;
+        } else {
+            unset($validated['nama_file_asli']); // jangan timpa nilai lama
+        }
+    
+        // === Handle upload file_tte ===
+        if ($request->hasFile('file_tte')) {
+            // Hapus file TTE lama jika ada
+            if ($spd->file_tte && $disk->exists($spd->file_tte)) {
+                $disk->delete($spd->file_tte);
+            }
+    
+            $fileTte = $request->file('file_tte');
+            $folderTte = 'spd_tte/' . now()->format('Ymd');
+            $pathTte = $fileTte->store($folderTte, 'public');
+            $validated['file_tte'] = $pathTte;
+        } else {
+            unset($validated['file_tte']);
+        }
+    
         try {
-            $spd->update($validated);
-
+            $spd->update(array_merge($validated, [
+                'tanggal_upload' => $validated['tanggal_upload'] ?? now(),
+                'updated_at' => now(),
+            ]));
+    
             return response()->json([
                 'status' => true,
                 'message' => 'Data berhasil diperbarui',
                 'data' => new SPDTerkirimResource($spd),
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -191,8 +265,8 @@ class SPDTerkirimController extends Controller
      */
     public function destroy($id)
     {
-        $spd = SPDTerkirimModel::where('ID', $id)
-                               ->whereNull('DELETED_AT')
+        $spd = SPDTerkirimModel::where('id', $id)
+                               ->whereNull('deleted_at')
                                ->first();
 
         if (!$spd) {
@@ -202,12 +276,46 @@ class SPDTerkirimController extends Controller
             ], 404);
         }
 
-        $spd->DELETED_AT = now();
+        $spd->deleted_at = now();
         $spd->save();
 
         return response()->json([
             'status' => true,
             'message' => 'Data berhasil dihapus (soft delete)',
         ]);
+    }
+
+    public function downloadBerkas(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = SPDTerkirimModel::findOrFail($id);
+
+        $filePath = $permohonan->nama_file_asli; // misal: permohonan_spd/20251107/testing.pdf
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
+    }
+
+    public function downloadBerkasTTE(int $id)
+    {
+        // Ambil data spdTerkirim SPD berdasarkan id
+        $spdTerkirim = SPDTerkirimModel::findOrFail($id);
+
+        $filePath = $spdTerkirim->file_tte; 
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
     }
 }
