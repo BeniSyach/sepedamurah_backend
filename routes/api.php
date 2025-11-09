@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AlokasiDana\PaguSumberDanaController;
 use App\Http\Controllers\Api\AlokasiDana\RealisasiTransferSumberDanaController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BerkasLainController;
+use App\Http\Controllers\Api\DatRekeningController;
 use App\Http\Controllers\Api\HakAkses\AksesKuasaBudController;
 use App\Http\Controllers\Api\HakAkses\AksesOperatorController;
 use App\Http\Controllers\Api\HakAkses\BatasWaktuController;
@@ -61,6 +62,10 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/dat-rekening', [DatRekeningController::class, 'index']);
+Route::get('/master-data/master-skpd', [SKPDController::class, 'index']);
+Route::get('/pengembalian', [PengembalianController::class, 'index']);
+Route::post('/pengembalian', [PengembalianController::class, 'store']);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
@@ -136,7 +141,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/master-skpd/{kd_opd1}/{kd_opd2}/{kd_opd3}/{kd_opd4}/{kd_opd5}', [SKPDController::class, 'show']);
         Route::put('/master-skpd/{kd_opd1}/{kd_opd2}/{kd_opd3}/{kd_opd4}/{kd_opd5}', [SKPDController::class, 'update']);
         Route::delete('/master-skpd/{kd_opd1}/{kd_opd2}/{kd_opd3}/{kd_opd4}/{kd_opd5}', [SKPDController::class, 'destroy']);
-        Route::apiResource('/master-skpd', SKPDController::class)->only(['index', 'store']);
+        Route::post('/master-skpd', [SKPDController::class, 'store']);
 
         // Level Rekening
         Route::apiResource('/level-rekening', LevelRekeningController::class);
@@ -225,9 +230,12 @@ Route::middleware('auth:api')->group(function () {
 
         // Permohonan SP2D
         Route::apiResource('/permohonan-sp2d', SP2DController::class);
+        Route::get('/permohonan-sp2d/download/{id}', [SP2DController::class, 'downloadBerkas'])->name('permohonan-sp2d.download');
 
         // SP2D Terkirim
         Route::apiResource('/sp2d-kirim', SP2DKirimController::class);
+        Route::get('/sp2d-kirim/download/{id}', [SP2DKirimController::class, 'downloadBerkas'])->name('sp2d-kirim.download');
+        Route::get('/sp2d-kirim/downloadTTE/{id}', [SP2DKirimController::class, 'downloadBerkasTTE'])->name('sp2d-kirim.downloadtte');
 
         // SP2D Sumber Dana
         Route::apiResource('/sp2d-sumber-dana', SP2DSumberDanaController::class); //skip
@@ -240,6 +248,8 @@ Route::middleware('auth:api')->group(function () {
 
         // Laporan Fungsional
         Route::apiResource('/fungsional', LaporanFungsionalController::class);
+        Route::get('/fungsional/download/{id}', [LaporanFungsionalController::class, 'downloadBerkas'])->name('fungsional.download');
+        Route::get('/fungsional/downloadTTE/{id}', [LaporanFungsionalController::class, 'downloadBerkasTTE'])->name('fungsional.downloadtte');
 
         // Laporan Realisasi Sumber Dana 
         Route::get('/realisasi-sumber-dana', [LaporanRealisasiSumberDanaController::class, 'index']);
@@ -253,6 +263,11 @@ Route::middleware('auth:api')->group(function () {
 
     // Berkas Berkas Lain
     Route::apiResource('/berkas-lain', BerkasLainController::class);
+    Route::get('/berkas-lain/download/{id}', [BerkasLainController::class, 'downloadBerkas'])->name('berkas-lain.download');
+    Route::get('/berkas-lain/downloadTTE/{id}', [BerkasLainController::class, 'downloadBerkasTTE'])->name('berkas-lain.downloadtte');
 
-    Route::apiResource('/pengembalian', PengembalianController::class);
+    Route::apiResource('/pengembalian', PengembalianController::class)->except(['index', 'store']);
+
+    Route::apiResource('/dat-rekening', DatRekeningController::class)
+        ->except(['index']);
 });

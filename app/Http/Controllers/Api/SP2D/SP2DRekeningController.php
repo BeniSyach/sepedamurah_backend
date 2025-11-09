@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\SP2D;
 
 use App\Http\Controllers\Controller;
-use App\Models\Sp2dRekening;
+use App\Models\SP2DRekeningModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\Sp2dRekeningResource;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +15,7 @@ class SP2DRekeningController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Sp2dRekening::query()->whereNull('DELETED_AT');
+        $query = SP2DRekeningModel::query()->whereNull('DELETED_AT');
 
         if ($search = $request->get('search')) {
             $query->where('SP2D_ID', 'like', "%{$search}%")
@@ -63,7 +63,7 @@ class SP2DRekeningController extends Controller
         ]);
 
         try {
-            $rekening = Sp2dRekening::create(array_merge($validated, [
+            $rekening = SP2DRekeningModel::create(array_merge($validated, [
                 'CREATED_AT' => now(),
             ]));
 
@@ -83,7 +83,7 @@ class SP2DRekeningController extends Controller
      */
     public function show($id)
     {
-        $rekening = Sp2dRekening::where('ID', $id)
+        $rekening = SP2DRekeningModel::where('ID', $id)
                                  ->whereNull('DELETED_AT')
                                  ->first();
 
@@ -102,7 +102,7 @@ class SP2DRekeningController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $rekening = Sp2dRekening::where('ID', $id)
+        $rekening = SP2DRekeningModel::where('ID', $id)
                                  ->whereNull('DELETED_AT')
                                  ->first();
 
@@ -146,7 +146,7 @@ class SP2DRekeningController extends Controller
      */
     public function destroy($id)
     {
-        $rekening = Sp2dRekening::where('ID', $id)
+        $rekening = SP2DRekeningModel::where('ID', $id)
                                  ->whereNull('DELETED_AT')
                                  ->first();
 

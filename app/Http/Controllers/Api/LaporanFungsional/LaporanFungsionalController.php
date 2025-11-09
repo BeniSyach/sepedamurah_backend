@@ -7,6 +7,9 @@ use App\Models\LaporanFungsionalModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\LaporanFungsionalResource;
 use App\Models\AksesOperatorModel;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class LaporanFungsionalController extends Controller
 {
@@ -135,35 +138,72 @@ class LaporanFungsionalController extends Controller
     {
         $validated = $request->validate([
             'id_pengirim' => 'required|integer',
-            'kd_opd1' => 'nullable|string|max:10',
-            'kd_opd2' => 'nullable|string|max:10',
-            'kd_opd3' => 'nullable|string|max:10',
-            'kd_opd4' => 'nullable|string|max:10',
-            'kd_opd5' => 'nullable|string|max:10',
+            'kd_opd1' => 'required|string|max:10',
+            'kd_opd2' => 'required|string|max:10',
+            'kd_opd3' => 'required|string|max:10',
+            'kd_opd4' => 'required|string|max:10',
+            'kd_opd5' => 'required|string|max:10',
             'nama_pengirim' => 'required|string|max:255',
             'id_operator' => 'nullable|integer',
             'nama_operator' => 'nullable|string|max:255',
             'jenis_berkas' => 'required|string|max:50',
             'nama_file' => 'required|string|max:255',
-            'nama_file_asli' => 'nullable|string|max:255',
+            'nama_file_asli' => 'nullable|file|mimes:pdf|max:5120', // ubah ke file agar bisa upload
             'tanggal_upload' => 'nullable|date',
             'kode_file' => 'nullable|string|max:50',
             'tahun' => 'required|string|max:4',
+            'bulan' => 'required|string',
             'diterima' => 'nullable|date',
             'ditolak' => 'nullable|date',
             'alasan_tolak' => 'nullable|string',
             'proses' => 'nullable|string|max:50',
             'supervisor_proses' => 'nullable|string|max:255',
-            'berkas_tte' => 'nullable|string|max:255',
+            'berkas_tte' => 'nullable|file|mimes:pdf|max:5120', // file opsional
         ]);
-
+    
         try {
-            $laporan = LaporanFungsionalModel::create(array_merge($validated, [
+            // 🧩 Ambil folder dari 'jenis_berkas' (otomatis dari payload)
+            $folder = strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '_', $request->jenis_berkas));
+            // contoh: "Laporan Bulanan 2025" → "laporan_bulanan_2025"
+    
+            // 🚀 Simpan file nama_file_asli ke folder sesuai jenis_berkas
+            $pathNamaFile = $request->file('nama_file_asli')
+                ? $request->file('nama_file_asli')->store($folder, 'public')
+                : null;
+    
+            // 🚀 Simpan file berkas_tte ke folder yang sama (opsional)
+            $pathBerkasTte = $request->file('berkas_tte')
+                ? $request->file('berkas_tte')->store($folder, 'public')
+                : null;
+
+                        // Ambil tanggal dan waktu saat ini
+        $now = Carbon::now();
+
+        // Gabungkan tahun + bulan dari request, dengan tanggal & waktu dari server
+        $tanggal_upload = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            "{$validated['tahun']}-{$validated['bulan']}-01 " . $now->format('H:i:s')
+        );
+
+    
+            // 🧱 Simpan data ke database
+            $laporan = LaporanFungsionalModel::create([
+                ...$validated,
+               'tanggal_upload' => $tanggal_upload,
+               'kode_file' => Str::random(10),
+                'nama_file_asli' => $pathNamaFile,
+                'berkas_tte' => $pathBerkasTte,
                 'date_created' => now(),
-            ]));
-
-            return new LaporanFungsionalResource($laporan);
-
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'Data berhasil disimpan',
+                'data' => new LaporanFungsionalResource($laporan),
+            ], 201);
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -172,6 +212,7 @@ class LaporanFungsionalController extends Controller
             ], 500);
         }
     }
+    
 
     /**
      * Detail Laporan Fungsional
@@ -197,17 +238,19 @@ class LaporanFungsionalController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // 🔍 Cari data lama
         $laporan = LaporanFungsionalModel::where('id', $id)
                                          ->whereNull('deleted_at')
                                          ->first();
-
+    
         if (!$laporan) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
+        // 🧩 Validasi input
         $validated = $request->validate([
             'kd_opd1' => 'nullable|string|max:10',
             'kd_opd2' => 'nullable|string|max:10',
@@ -219,7 +262,7 @@ class LaporanFungsionalController extends Controller
             'nama_operator' => 'nullable|string|max:255',
             'jenis_berkas' => 'required|string|max:50',
             'nama_file' => 'required|string|max:255',
-            'nama_file_asli' => 'nullable|string|max:255',
+            'nama_file_asli' => 'nullable|file|mimes:pdf|max:5120',
             'tanggal_upload' => 'nullable|date',
             'kode_file' => 'nullable|string|max:50',
             'tahun' => 'required|string|max:4',
@@ -228,18 +271,48 @@ class LaporanFungsionalController extends Controller
             'alasan_tolak' => 'nullable|string',
             'proses' => 'nullable|string|max:50',
             'supervisor_proses' => 'nullable|string|max:255',
-            'berkas_tte' => 'nullable|string|max:255',
+            'berkas_tte' => 'nullable|file|mimes:pdf|max:5120',
         ]);
-
+    
         try {
-            $laporan->update($validated);
-
+            // 🧭 Tentukan folder berdasarkan jenis_berkas (dibersihkan agar aman untuk nama folder)
+            $folder = strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '_', $request->jenis_berkas));
+    
+            // 🗑️ Hapus file lama & upload file baru jika ada
+            if ($request->hasFile('nama_file_asli')) {
+                // Hapus file lama kalau masih ada
+                if ($laporan->nama_file_asli && Storage::disk('public')->exists($laporan->nama_file_asli)) {
+                    Storage::disk('public')->delete($laporan->nama_file_asli);
+                }
+    
+                // Upload file baru
+                $pathNamaFile = $request->file('nama_file_asli')->store($folder, 'public');
+                $validated['nama_file_asli'] = $pathNamaFile;
+            }
+    
+            if ($request->hasFile('berkas_tte')) {
+                // Hapus file lama kalau masih ada
+                if ($laporan->berkas_tte && Storage::disk('public')->exists($laporan->berkas_tte)) {
+                    Storage::disk('public')->delete($laporan->berkas_tte);
+                }
+    
+                // Upload file baru
+                $pathBerkasTte = $request->file('berkas_tte')->store($folder, 'public');
+                $validated['berkas_tte'] = $pathBerkasTte;
+            }
+    
+            // 💾 Update data di database
+            $laporan->update(array_merge($validated, [
+                'updated_at' => now(),
+            ]));
+    
+            // ✅ Berhasil
             return response()->json([
                 'status' => true,
                 'message' => 'Data berhasil diperbarui',
                 'data' => new LaporanFungsionalResource($laporan),
             ]);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -254,23 +327,72 @@ class LaporanFungsionalController extends Controller
      */
     public function destroy($id)
     {
+        // Ambil data laporan yang belum dihapus
         $laporan = LaporanFungsionalModel::where('id', $id)
                                          ->whereNull('deleted_at')
                                          ->first();
-
+    
         if (!$laporan) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
+        // 🗑️ Hapus file lama jika ada
+        $filesToDelete = [
+            $laporan->nama_file_asli ?? null,
+            $laporan->berkas_tte ?? null,
+        ];
+    
+        foreach ($filesToDelete as $file) {
+            if ($file && Storage::disk('public')->exists($file)) {
+                Storage::disk('public')->delete($file);
+            }
+        }
+    
+        // 💾 Soft delete
         $laporan->deleted_at = now();
         $laporan->save();
-
+    
         return response()->json([
             'status' => true,
-            'message' => 'Data berhasil dihapus (soft delete)',
+            'message' => 'Data berhasil dihapus (soft delete) dan file terkait dihapus',
         ]);
+    }
+    
+
+    public function downloadBerkas(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = LaporanFungsionalModel::findOrFail($id);
+
+        $filePath = $permohonan->nama_file_asli;
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
+    }
+
+    public function downloadBerkasTTE(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = LaporanFungsionalModel::findOrFail($id);
+
+        $filePath = $permohonan->berkas_tte;
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
     }
 }

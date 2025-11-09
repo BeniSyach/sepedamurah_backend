@@ -7,6 +7,7 @@ use App\Models\SP2DKirimModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\SP2DKirimResource;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SP2DKirimController extends Controller
 {
@@ -18,12 +19,12 @@ class SP2DKirimController extends Controller
         $query = SP2DKirimModel::query()->whereNull('deleted_at');
 
         if ($search = $request->get('search')) {
-            $query->where('NAMA_PENERIMA', 'like', "%{$search}%")
-                  ->orWhere('NAMA_OPERATOR', 'like', "%{$search}%")
-                  ->orWhere('NAMAFILE', 'like', "%{$search}%");
+            $query->where('nama_penerima', 'like', "%{$search}%")
+                  ->orWhere('nama_operator', 'like', "%{$search}%")
+                  ->orWhere('namafile', 'like', "%{$search}%");
         }
 
-        $data = $query->orderBy('TANGGAL_UPLOAD', 'desc')
+        $data = $query->orderBy('tanggal_upload', 'desc')
                       ->paginate($request->get('per_page', 10));
 
         return SP2DKirimResource::collection($data);
@@ -34,46 +35,62 @@ class SP2DKirimController extends Controller
      */
     public function store(Request $request)
     {
+        // 🧩 Validasi data
         $validated = $request->validate([
-            'TAHUN' => 'required|string|max:4',
-            'ID_BERKAS' => 'required|integer',
-            'ID_PENERIMA' => 'required|integer',
-            'NAMA_PENERIMA' => 'required|string|max:255',
-            'ID_OPERATOR' => 'nullable|integer',
-            'NAMA_OPERATOR' => 'nullable|string|max:255',
-            'NAMAFILE' => 'required|string|max:255',
-            'NAMA_FILE_ASLI' => 'nullable|string|max:255',
-            'TANGGAL_UPLOAD' => 'nullable|date',
-            'KETERANGAN' => 'nullable|string|max:500',
-            'DITERIMA' => 'nullable|date',
-            'DITOLAK' => 'nullable|date',
-            'TTE' => 'nullable|string|max:255',
-            'STATUS' => 'nullable|string|max:50',
-            'TGL_TTE' => 'nullable|date',
-            'ALASAN_TOLAK' => 'nullable|string|max:500',
-            'TGL_KIRIM_KEBANK' => 'nullable|date',
-            'ID_PENANDATANGAN' => 'nullable|integer',
-            'NAMA_PENANDATANGAN' => 'nullable|string|max:255',
-            'FILE_TTE' => 'nullable|string|max:255',
-            'KD_OPD1' => 'nullable|string|max:5',
-            'KD_OPD2' => 'nullable|string|max:5',
-            'KD_OPD3' => 'nullable|string|max:5',
-            'KD_OPD4' => 'nullable|string|max:5',
-            'KD_OPD5' => 'nullable|string|max:5',
-            'PUBLISH' => 'nullable|string|max:50',
+            'tahun' => 'required|string|max:4',
+            'id_berkas' => 'required|integer',
+            'id_penerima' => 'required|integer',
+            'nama_penerima' => 'required|string|max:255',
+            'id_operator' => 'nullable|integer',
+            'nama_operator' => 'nullable|string|max:255',
+            'namafile' => 'required|string|max:255',
+            'nama_file_asli' => 'required|file|mimes:pdf|max:5120', // max 5MB PDF
+            'tanggal_upload' => 'nullable|date',
+            'keterangan' => 'nullable|string|max:500',
+            'diterima' => 'nullable|date',
+            'ditolak' => 'nullable|date',
+            'tte' => 'nullable|string|max:255',
+            'status' => 'nullable|string|max:50',
+            'tgl_tte' => 'nullable|date',
+            'alasan_tolak' => 'nullable|string|max:500',
+            'tgl_kirim_kebank' => 'nullable|date',
+            'id_penandatangan' => 'nullable|integer',
+            'nama_penandatangan' => 'nullable|string|max:255',
+            'file_tte' => 'nullable|file|mimes:pdf|max:5120', // file PDF opsional
+            'kd_opd1' => 'nullable|string|max:5',
+            'kd_opd2' => 'nullable|string|max:5',
+            'kd_opd3' => 'nullable|string|max:5',
+            'kd_opd4' => 'nullable|string|max:5',
+            'kd_opd5' => 'nullable|string|max:5',
+            'publish' => 'nullable|string|max:50',
         ]);
-
+    
         try {
-            // Ambil ID dari sequence Oracle (jika ada trigger)
-            $id = DB::connection('oracle')->selectOne('SELECT NO_SP2D_KIRIM.NEXTVAL AS ID FROM dual')->ID;
-
-            $sp2d = SP2DKirimModel::create(array_merge($validated, [
-                'ID' => $id,
+            // 🚀 Simpan file ke folder berbeda
+            $pathNamaFile = $request->file('nama_file_asli')
+                ? $request->file('nama_file_asli')->store('sp2d_kirim', 'public')
+                : null;
+    
+            $pathFileTte = $request->file('file_tte')
+                ? $request->file('file_tte')->store('sp2d_tte', 'public')
+                : null;
+    
+            // 🧱 Simpan data ke database
+            $sp2d = SP2DKirimModel::create([
+                ...$validated,
+                'nama_file_asli' => $pathNamaFile,
+                'file_tte' => $pathFileTte,
+                'date_created' => now(),
                 'created_at' => now(),
-            ]));
-
-            return new SP2DKirimResource($sp2d);
-
+            ]);
+    
+            // 🟢 Response sukses
+            return response()->json([
+                'status' => true,
+                'message' => 'Data SP2D berhasil disimpan',
+                'data' => new SP2DKirimResource($sp2d),
+            ], 201);
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -81,14 +98,14 @@ class SP2DKirimController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }
+    }    
 
     /**
      * Detail SP2D Kirim
      */
     public function show($id)
     {
-        $sp2d = SP2DKirimModel::where('ID', $id)
+        $sp2d = SP2DKirimModel::where('id', $id)
                                ->whereNull('deleted_at')
                                ->first();
 
@@ -107,38 +124,87 @@ class SP2DKirimController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $sp2d = SP2DKirimModel::where('ID', $id)
-                               ->whereNull('deleted_at')
-                               ->first();
-
+        $sp2d = SP2DKirimModel::where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+    
         if (!$sp2d) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
+        // 🧩 Validasi data
         $validated = $request->validate([
-            'NAMA_PENERIMA' => 'required|string|max:255',
-            'NAMA_OPERATOR' => 'nullable|string|max:255',
-            'NAMAFILE' => 'required|string|max:255',
-            'NAMA_FILE_ASLI' => 'nullable|string|max:255',
-            'KETERANGAN' => 'nullable|string|max:500',
-            'TTE' => 'nullable|string|max:255',
-            'STATUS' => 'nullable|string|max:50',
-            'ALASAN_TOLAK' => 'nullable|string|max:500',
-            'PUBLISH' => 'nullable|string|max:50',
+            'tahun' => 'nullable|string|max:4',
+            'id_berkas' => 'nullable|integer',
+            'id_penerima' => 'nullable|integer',
+            'nama_penerima' => 'nullable|string|max:255',
+            'id_operator' => 'nullable|integer',
+            'nama_operator' => 'nullable|string|max:255',
+            'namafile' => 'nullable|string|max:255',
+            'nama_file_asli' => 'nullable|file|mimes:pdf|max:5120', // opsional, PDF max 5MB
+            'tanggal_upload' => 'nullable|date',
+            'keterangan' => 'nullable|string|max:500',
+            'diterima' => 'nullable|date',
+            'ditolak' => 'nullable|date',
+            'tte' => 'nullable|string|max:255',
+            'status' => 'nullable|string|max:50',
+            'tgl_tte' => 'nullable|date',
+            'alasan_tolak' => 'nullable|string|max:500',
+            'tgl_kirim_kebank' => 'nullable|date',
+            'id_penandatangan' => 'nullable|integer',
+            'nama_penandatangan' => 'nullable|string|max:255',
+            'file_tte' => 'nullable|file|mimes:pdf|max:5120', // opsional
+            'kd_opd1' => 'nullable|string|max:5',
+            'kd_opd2' => 'nullable|string|max:5',
+            'kd_opd3' => 'nullable|string|max:5',
+            'kd_opd4' => 'nullable|string|max:5',
+            'kd_opd5' => 'nullable|string|max:5',
+            'publish' => 'nullable|string|max:50',
         ]);
-
+    
         try {
+            // 🚀 Upload file baru jika ada
+            if ($request->hasFile('nama_file_asli')) {
+                $pathNamaFile = $request->file('nama_file_asli')->store('sp2d_kirim', 'public');
+    
+                // hapus file lama
+                if ($sp2d->nama_file_asli && Storage::disk('public')->exists($sp2d->nama_file_asli)) {
+                    Storage::disk('public')->delete($sp2d->nama_file_asli);
+                }
+    
+                $validated['nama_file_asli'] = $pathNamaFile;
+            }
+    
+            if ($request->hasFile('file_tte')) {
+                $pathFileTte = $request->file('file_tte')->store('sp2d_tte', 'public');
+    
+                // hapus file TTE lama
+                if ($sp2d->file_tte && Storage::disk('public')->exists($sp2d->file_tte)) {
+                    Storage::disk('public')->delete($sp2d->file_tte);
+                }
+    
+                $validated['file_tte'] = $pathFileTte;
+            }
+    
+            // 🕒 Update timestamp
+            $validated['updated_at'] = now();
+    
+            // Jika kolom date_created wajib isi (di Oracle kadang NOT NULL)
+            if (empty($sp2d->date_created)) {
+                $validated['date_created'] = now();
+            }
+    
             $sp2d->update($validated);
-
+    
             return response()->json([
                 'status' => true,
-                'message' => 'Data berhasil diperbarui',
-                'data' => new SP2DKirimResource($sp2d),
+                'message' => 'Data SP2D berhasil diperbarui',
+                'data' => new SP2DKirimResource($sp2d->fresh()),
             ]);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -146,14 +212,14 @@ class SP2DKirimController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }
+    }    
 
     /**
      * Soft delete SP2D Kirim
      */
     public function destroy($id)
     {
-        $sp2d = SP2DKirimModel::where('ID', $id)
+        $sp2d = SP2DKirimModel::where('id', $id)
                                ->whereNull('deleted_at')
                                ->first();
 
@@ -171,5 +237,40 @@ class SP2DKirimController extends Controller
             'status' => true,
             'message' => 'Data berhasil dihapus (soft delete)',
         ]);
+    }
+
+    public function downloadBerkas(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = SP2DKirimModel::findOrFail($id);
+
+        $filePath = $permohonan->nama_file_asli;
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
+    }
+
+    
+    public function downloadBerkasTTE(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = SP2DKirimModel::findOrFail($id);
+
+        $filePath = $permohonan->file_tte;
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
     }
 }

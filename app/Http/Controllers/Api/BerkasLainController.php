@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\BerkasLainModel;
 use App\Http\Resources\BerkasLainResource;
+use Illuminate\Support\Facades\Storage;
 
 class BerkasLainController extends Controller
 {
@@ -72,18 +73,25 @@ class BerkasLainController extends Controller
     {
         $validated = $request->validate([
             'tgl_surat' => 'required|date',
-            'nama_file_asli' => 'required|string|max:255',
+            'nama_file_asli' => 'required|file|mimes:pdf|max:5120', // file PDF max 5MB
             'nama_dokumen' => 'required|string|max:255',
             'status_tte' => 'nullable|string|max:50',
             'file_sdh_tte' => 'nullable|string|max:255',
             'users_id' => 'required|integer',
         ]);
-
+    
         try {
+            // Simpan file ke folder 'berkas_lain'
+            $pathNamaFile = $request->file('nama_file_asli')->store('berkas_lain', 'public');
+    
+            // Ganti validated field dengan path file yang disimpan
+            $validated['nama_file_asli'] = $pathNamaFile;
+    
+            // Simpan data ke database
             $berkas = BerkasLainModel::create($validated);
-
+    
             return new BerkasLainResource($berkas);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -92,6 +100,7 @@ class BerkasLainController extends Controller
             ], 500);
         }
     }
+    
 
     /**
      * Show detail Berkas Lain
@@ -120,32 +129,44 @@ class BerkasLainController extends Controller
         $berkas = BerkasLainModel::where('id', $id)
                                  ->whereNull('deleted_at')
                                  ->first();
-
+    
         if (!$berkas) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
         $validated = $request->validate([
             'tgl_surat' => 'required|date',
-            'nama_file_asli' => 'required|string|max:255',
+            'nama_file_asli' => 'nullable|file|mimes:pdf|max:5120', // file opsional untuk update
             'nama_dokumen' => 'required|string|max:255',
             'status_tte' => 'nullable|string|max:50',
             'file_sdh_tte' => 'nullable|string|max:255',
             'users_id' => 'required|integer',
         ]);
-
+    
         try {
+            // 🗑️ Hapus file lama & upload file baru jika ada
+            if ($request->hasFile('nama_file_asli')) {
+                if ($berkas->nama_file_asli && Storage::disk('public')->exists($berkas->nama_file_asli)) {
+                    Storage::disk('public')->delete($berkas->nama_file_asli);
+                }
+    
+                // Upload file baru
+                $pathNamaFile = $request->file('nama_file_asli')->store('berkas_lain', 'public');
+                $validated['nama_file_asli'] = $pathNamaFile;
+            }
+    
+            // Update data
             $berkas->update($validated);
-
+    
             return response()->json([
                 'status' => true,
                 'message' => 'Data berhasil diperbarui',
                 'data' => new BerkasLainResource($berkas),
             ]);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -154,6 +175,7 @@ class BerkasLainController extends Controller
             ], 500);
         }
     }
+    
 
     /**
      * Soft delete Berkas Lain
@@ -163,20 +185,65 @@ class BerkasLainController extends Controller
         $berkas = BerkasLainModel::where('id', $id)
                                  ->whereNull('deleted_at')
                                  ->first();
-
+    
         if (!$berkas) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
+        // 🗑️ Hapus file fisik jika ada
+        if ($berkas->nama_file_asli && Storage::disk('public')->exists($berkas->nama_file_asli)) {
+            Storage::disk('public')->delete($berkas->nama_file_asli);
+        }
+    
+        if ($berkas->file_sdh_tte && Storage::disk('public')->exists($berkas->file_sdh_tte)) {
+            Storage::disk('public')->delete($berkas->file_sdh_tte);
+        }
+    
+        // Soft delete
         $berkas->deleted_at = now();
         $berkas->save();
-
+    
         return response()->json([
             'status' => true,
-            'message' => 'Data berhasil dihapus (soft delete)',
+            'message' => 'Data berhasil dihapus (soft delete) dan file terkait juga dihapus',
         ]);
+    }
+    
+    public function downloadBerkas(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = BerkasLainModel::findOrFail($id);
+
+        $filePath = $permohonan->nama_file_asli;
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
+    }
+
+    
+    public function downloadBerkasTTE(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = BerkasLainModel::findOrFail($id);
+
+        $filePath = $permohonan->file_tte;
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
     }
 }

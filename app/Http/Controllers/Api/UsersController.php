@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Resources\UserResource;
+use App\Models\UsersPermissionModel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class UsersController extends Controller
 {
@@ -95,8 +97,81 @@ class UsersController extends Controller
         ]);
     }
     
-    
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'nik' => 'nullable|string|max:20',
+            'nip' => 'nullable|string|max:25',
+            'name' => 'required|string|max:128',
+            'email' => 'required|email|max:128|unique:USERS,email',
+            'no_hp' => 'nullable|string|max:20',
+            'kd_opd1' => 'nullable|string|size:2',
+            'kd_opd2' => 'nullable|string|size:2',
+            'kd_opd3' => 'nullable|string|size:2',
+            'kd_opd4' => 'nullable|string|size:2',
+            'kd_opd5' => 'nullable|string|size:2',
+            'image' => 'nullable|file|image|max:2048', // file opsional
+            'visualisasi_tte' => 'nullable|file|max:5120', // file opsional, max 5MB
+            'password' => 'required|string|min:8',
+            'confirmPassword' => 'required|string|min:8',
+            'chat_id' => 'nullable|string|max:225',
+            'role' => 'required|array|min:1', // pastikan array role dikirim
+            'role.*' => 'required|string',
+        ]);
 
+        if ($request->password !== $request->confirmPassword) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Password dan konfirmasi password tidak cocok',
+            ], 422);
+        }
+    
+        try {
+            $pathImage = $request->hasFile('image') ? $request->file('image')->store('users/images', 'public') : null;
+            $pathTte = $request->hasFile('visualisasi_tte') ? $request->file('visualisasi_tte')->store('users/tte', 'public') : null;
+    
+            $user = User::create([
+                'nik' => $validated['nik'] ?? null,
+                'nip' => $validated['nip'] ?? null,
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'no_hp' => $validated['no_hp'] ?? null,
+                'kd_opd1' => $validated['kd_opd1'] ?? null,
+                'kd_opd2' => $validated['kd_opd2'] ?? null,
+                'kd_opd3' => $validated['kd_opd3'] ?? null,
+                'kd_opd4' => $validated['kd_opd4'] ?? null,
+                'kd_opd5' => $validated['kd_opd5'] ?? null,
+                'image' => $pathImage,
+                'visualisasi_tte' => $pathTte,
+                'password' => bcrypt($validated['password']),
+                'is_active' => 0,
+                'chat_id' => $validated['chat_id'] ?? null,
+                'deleted' => 0,
+            ]);
+
+                    // ✅ Insert ke users_permissions
+                foreach ($validated['role'] as $roleId) {
+                    UsersPermissionModel::create([
+                        'users_id' => $user->id,
+                        'users_rule_id' => $roleId,
+                    ]);
+                }
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'User berhasil dibuat',
+                'data' => $user,
+            ], 201);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan pada database',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    
     /**
      * Show detail user
      */
@@ -133,63 +208,136 @@ class UsersController extends Controller
      */
     public function update(Request $request, $id)
     {
-        try {
-            $user = User::find($id);
-
-            if (!$user) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'User tidak ditemukan',
-                ], 404);
-            }
-
-            $validated = $request->validate([
-                'NAME' => 'required|string|max:255',
-                'EMAIL' => 'required|email|max:255',
-                'NO_HP' => 'nullable|string|max:20',
-                'IS_ACTIVE' => 'nullable|integer',
-                'VISUALISASI_TTE' => 'nullable|string',
-                'CHAT_ID' => 'nullable|string',
-            ]);
-
-            $user->update($validated);
-
-            return response()->json([
-                'status' => true,
-                'message' => 'User berhasil diperbarui',
-                'data' => new UserResource($user),
-            ]);
-        } catch (\Exception $e) {
+        $user = User::where('id', $id)
+                    ->where('deleted', 0)
+                    ->first();
+    
+        if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => 'Gagal memperbarui user',
-                'error' => $e->getMessage(),
-            ], 500);
+                'message' => 'User tidak ditemukan',
+            ], 404);
         }
+    
+        $validated = $request->validate([
+            'nik' => 'nullable|string|max:20',
+            'nip' => 'nullable|string|max:25',
+            'name' => 'nullable|string|max:128',
+            'email' => 'nullable|email|max:128|unique:USERS,email,' . $id,
+            'no_hp' => 'nullable|string|max:20',
+            'kd_opd1' => 'nullable|string|size:2',
+            'kd_opd2' => 'nullable|string|size:2',
+            'kd_opd3' => 'nullable|string|size:2',
+            'kd_opd4' => 'nullable|string|size:2',
+            'kd_opd5' => 'nullable|string|size:2',
+            'image' => 'nullable|file|image|max:2048',
+            'visualisasi_tte' => 'nullable|file|max:5120',
+            'password' => 'nullable|string|min:8',
+            'confirmPassword' => 'nullable|string|min:8',
+            'chat_id' => 'nullable|string|max:225',
+            'role' => 'nullable|array',
+            'role.*' => 'nullable|string',
+        ]);
+    
+        // Password validation jika diisi
+        if ($request->password || $request->confirmPassword) {
+            if ($request->password !== $request->confirmPassword) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Password dan konfirmasi password tidak cocok',
+                ], 422);
+            }
+            $user->password = bcrypt($validated['password']);
+        }
+    
+        // Hapus file lama & upload baru jika ada
+        if ($request->hasFile('image')) {
+            if ($user->image && Storage::disk('public')->exists($user->image)) {
+                Storage::disk('public')->delete($user->image);
+            }
+            $user->image = $request->file('image')->store('users/images', 'public');
+        }
+    
+        if ($request->hasFile('visualisasi_tte')) {
+            if ($user->visualisasi_tte && Storage::disk('public')->exists($user->visualisasi_tte)) {
+                Storage::disk('public')->delete($user->visualisasi_tte);
+            }
+            $user->visualisasi_tte = $request->file('visualisasi_tte')->store('users/tte', 'public');
+        }
+    
+        // Update field lain
+        $user->nik = $validated['nik'] ?? $user->nik;
+        $user->nip = $validated['nip'] ?? $user->nip;
+        $user->name = $validated['name']?? $user->name;
+        $user->email = $validated['email'] ?? $user->email;
+        $user->no_hp = $validated['no_hp'] ?? $user->no_hp;
+        $user->kd_opd1 = $validated['kd_opd1'] ?? $user->kd_opd1;
+        $user->kd_opd2 = $validated['kd_opd2'] ?? $user->kd_opd2;
+        $user->kd_opd3 = $validated['kd_opd3'] ?? $user->kd_opd3;
+        $user->kd_opd4 = $validated['kd_opd4'] ?? $user->kd_opd4;
+        $user->kd_opd5 = $validated['kd_opd5'] ?? $user->kd_opd5;
+        $user->chat_id = $validated['chat_id'] ?? $user->chat_id;
+    
+        $user->save();
+    
+        // Sync roles
+        if (!empty($validated['role'])) {
+            // Hapus role lama
+            UsersPermissionModel::where('users_id', $user->id)->forceDelete();
+
+            // Insert role baru
+            foreach ($validated['role'] as $roleId) {
+                UsersPermissionModel::create([
+                    'users_id' => $user->id,
+                    'users_rule_id' => $roleId,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'User berhasil diperbarui',
+            'data' => $user,
+        ]);
     }
+    
 
     /**
      * Soft delete user
      */
     public function destroy($id)
     {
+        $user = User::where('id', $id)
+                    ->where('deleted', 0)
+                    ->first();
+    
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User tidak ditemukan',
+            ], 404);
+        }
+    
         try {
-            $affected = DB::connection('oracle')
-                ->table('USERS')
-                ->where('ID', $id)
-                ->update(['DELETED' => 1]);
-
-            if ($affected === 0) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'User tidak ditemukan',
-                ], 404);
+            // Hapus file image jika ada
+            if ($user->image && Storage::disk('public')->exists($user->image)) {
+                Storage::disk('public')->delete($user->image);
             }
-
+    
+            // Hapus file visualisasi_tte jika ada
+            if ($user->visualisasi_tte && Storage::disk('public')->exists($user->visualisasi_tte)) {
+                Storage::disk('public')->delete($user->visualisasi_tte);
+            }
+    
+            // Soft delete
+            $user->deleted = 1;
+            $user->save();
+    
             return response()->json([
                 'status' => true,
                 'message' => 'User berhasil dihapus (soft delete)',
             ]);
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -198,4 +346,5 @@ class UsersController extends Controller
             ], 500);
         }
     }
+    
 }

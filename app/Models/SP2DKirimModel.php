@@ -52,6 +52,7 @@ class SP2DKirimModel extends Model
         'kd_opd4',
         'kd_opd5',
         'publish',
+        'date_created',
         'created_at',
         'updated_at',
         'deleted_at',

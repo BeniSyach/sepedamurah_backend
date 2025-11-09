@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Resources\SP2DResource;
 use App\Models\AksesOperatorModel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SP2DController extends Controller
 {
@@ -181,56 +182,73 @@ class SP2DController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'TAHUN' => 'required|string|max:4',
-            'ID_USER' => 'required|integer',
-            'NAMA_USER' => 'required|string|max:255',
-            'ID_OPERATOR' => 'nullable|integer',
-            'NAMA_OPERATOR' => 'nullable|string|max:255',
-            'KD_OPD1' => 'nullable|string|max:5',
-            'KD_OPD2' => 'nullable|string|max:5',
-            'KD_OPD3' => 'nullable|string|max:5',
-            'KD_OPD4' => 'nullable|string|max:5',
-            'KD_OPD5' => 'nullable|string|max:5',
-            'NAMA_FILE' => 'required|string|max:255',
-            'NAMA_FILE_ASLI' => 'nullable|string|max:255',
-            'FILE_TTE' => 'nullable|string|max:255',
-            'TANGGAL_UPLOAD' => 'nullable|date',
-            'KODE_FILE' => 'nullable|string|max:255',
-            'DITERIMA' => 'nullable|date',
-            'DITOLAK' => 'nullable|date',
-            'ALASAN_TOLAK' => 'nullable|string|max:500',
-            'PROSES' => 'nullable|string|max:50',
-            'SUPERVISOR_PROSES' => 'nullable|string|max:255',
-            'URUSAN' => 'nullable|string|max:255',
-            'KD_REF1' => 'nullable|string|max:5',
-            'KD_REF2' => 'nullable|string|max:5',
-            'KD_REF3' => 'nullable|string|max:5',
-            'KD_REF4' => 'nullable|string|max:5',
-            'KD_REF5' => 'nullable|string|max:5',
-            'KD_REF6' => 'nullable|string|max:5',
-            'NO_SPM' => 'nullable|string|max:50',
-            'JENIS_BERKAS' => 'nullable|string|max:50',
-            'ID_BERKAS' => 'nullable|integer',
-            'AGREEMENT' => 'nullable|string|max:50',
-            'KD_BELANJA1' => 'nullable|string|max:5',
-            'KD_BELANJA2' => 'nullable|string|max:5',
-            'KD_BELANJA3' => 'nullable|string|max:5',
-            'JENIS_BELANJA' => 'nullable|string|max:50',
-            'NILAI_BELANJA' => 'nullable|numeric',
-            'STATUS_LAPORAN' => 'nullable|string|max:50',
+            'tahun' => 'required|string|max:4',
+            'id_user' => 'required|integer',
+            'nama_user' => 'required|string|max:255',
+            'id_operator' => 'nullable|integer',
+            'nama_operator' => 'nullable|string|max:255',
+            'kd_opd1' => 'nullable|string|max:5',
+            'kd_opd2' => 'nullable|string|max:5',
+            'kd_opd3' => 'nullable|string|max:5',
+            'kd_opd4' => 'nullable|string|max:5',
+            'kd_opd5' => 'nullable|string|max:5',
+            'nama_file' => 'required|string|max:255',
+            'nama_file_asli' => 'nullable|file|mimes:pdf,doc,docx|max:10240', // max 10MB
+            'file_tte' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'tanggal_upload' => 'nullable|date',
+            'kode_file' => 'nullable|string|max:255',
+            'diterima' => 'nullable|date',
+            'ditolak' => 'nullable|date',
+            'alasan_tolak' => 'nullable|string|max:500',
+            'proses' => 'nullable|string|max:50',
+            'supervisor_proses' => 'nullable|string|max:255',
+            'urusan' => 'nullable|string|max:255',
+            'kd_ref1' => 'nullable|string|max:5',
+            'kd_ref2' => 'nullable|string|max:5',
+            'kd_ref3' => 'nullable|string|max:5',
+            'kd_ref4' => 'nullable|string|max:5',
+            'kd_ref5' => 'nullable|string|max:5',
+            'kd_ref6' => 'nullable|string|max:5',
+            'no_spm' => 'nullable|string|max:50',
+            'jenis_berkas' => 'nullable|string|max:50',
+            'id_berkas' => 'nullable|integer',
+            'agreement' => 'nullable|string|max:50',
+            'kd_belanja1' => 'nullable|string|max:5',
+            'kd_belanja2' => 'nullable|string|max:5',
+            'kd_belanja3' => 'nullable|string|max:5',
+            'jenis_belanja' => 'nullable|string|max:50',
+            'nilai_belanja' => 'nullable|numeric',
+            'status_laporan' => 'nullable|string|max:50',
         ]);
-
+    
         try {
-            // Ambil ID dari sequence Oracle (jika ada)
-            $id = DB::connection('oracle')->selectOne('SELECT NO_SP2D.NEXTVAL AS ID FROM dual')->ID;
-
+            $disk = Storage::disk('public');
+            $folder = 'sp2d/' . date('Ymd');
+    
+            // Simpan file nama_file_asli jika ada
+            if ($request->hasFile('nama_file_asli')) {
+                $file = $request->file('nama_file_asli');
+                $path = $file->store($folder, 'public');
+                $validated['nama_file_asli'] = $path;
+            }
+    
+            // Simpan file file_tte jika ada
+            if ($request->hasFile('file_tte')) {
+                $fileTte = $request->file('file_tte');
+                $pathTte = $fileTte->store($folder, 'public');
+                $validated['file_tte'] = $pathTte;
+            }
+    
+            // Simpan data ke database
             $sp2d = SP2DModel::create(array_merge($validated, [
-                'ID_SP2D' => $id,
                 'created_at' => now(),
             ]));
-
-            return new SP2DResource($sp2d);
-
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'Data berhasil disimpan',
+                'data' => new SP2DResource($sp2d),
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -239,13 +257,14 @@ class SP2DController extends Controller
             ], 500);
         }
     }
+    
 
     /**
      * Detail SP2D
      */
     public function show($id)
     {
-        $sp2d = SP2DModel::where('ID_SP2D', $id)
+        $sp2d = SP2DModel::where('id_sp2d', $id)
                          ->whereNull('deleted_at')
                          ->first();
 
@@ -264,42 +283,68 @@ class SP2DController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $sp2d = SP2DModel::where('ID_SP2D', $id)
+        $sp2d = SP2DModel::where('id_sp2d', $id)
                          ->whereNull('deleted_at')
                          ->first();
-
+    
         if (!$sp2d) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
         $validated = $request->validate([
-            'TAHUN' => 'required|string|max:4',
-            'NAMA_USER' => 'required|string|max:255',
-            'ID_OPERATOR' => 'nullable|integer',
-            'NAMA_OPERATOR' => 'nullable|string|max:255',
-            'NAMA_FILE' => 'required|string|max:255',
-            'NAMA_FILE_ASLI' => 'nullable|string|max:255',
-            'FILE_TTE' => 'nullable|string|max:255',
-            'TANGGAL_UPLOAD' => 'nullable|date',
-            'ALASAN_TOLAK' => 'nullable|string|max:500',
-            'PROSES' => 'nullable|string|max:50',
-            'SUPERVISOR_PROSES' => 'nullable|string|max:255',
-            'URUSAN' => 'nullable|string|max:255',
-            'STATUS_LAPORAN' => 'nullable|string|max:50',
+            'tahun' => 'nullable|string|max:4',
+            'nama_user' => 'nullable|string|max:255',
+            'id_operator' => 'nullable|integer',
+            'nama_operator' => 'nullable|string|max:255',
+            'nama_file' => 'nullable|string|max:255',
+            'nama_file_asli' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'file_tte' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'tanggal_upload' => 'nullable|date',
+            'alasan_tolak' => 'nullable|string|max:500',
+            'proses' => 'nullable|string|max:50',
+            'supervisor_proses' => 'nullable|string|max:255',
+            'urusan' => 'nullable|string|max:255',
+            'status_laporan' => 'nullable|string|max:50',
         ]);
-
+    
         try {
+            $disk = Storage::disk('public');
+            $folder = 'sp2d/' . date('Ymd');
+    
+            // handle nama_file_asli
+            if ($request->hasFile('nama_file_asli')) {
+                if ($sp2d->nama_file_asli && $disk->exists($sp2d->nama_file_asli)) {
+                    $disk->delete($sp2d->nama_file_asli);
+                }
+                $file = $request->file('nama_file_asli');
+                $path = $file->store($folder, 'public');
+                $validated['nama_file_asli'] = $path;
+            } else {
+                unset($validated['nama_file_asli']);
+            }
+    
+            // handle file_tte
+            if ($request->hasFile('file_tte')) {
+                if ($sp2d->file_tte && $disk->exists($sp2d->file_tte)) {
+                    $disk->delete($sp2d->file_tte);
+                }
+                $fileTte = $request->file('file_tte');
+                $pathTte = $fileTte->store($folder, 'public');
+                $validated['file_tte'] = $pathTte;
+            } else {
+                unset($validated['file_tte']);
+            }
+    
             $sp2d->update($validated);
-
+    
             return response()->json([
                 'status' => true,
                 'message' => 'Data berhasil diperbarui',
                 'data' => new SP2DResource($sp2d),
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
@@ -308,13 +353,14 @@ class SP2DController extends Controller
             ], 500);
         }
     }
+    
 
     /**
      * Soft delete SP2D
      */
     public function destroy($id)
     {
-        $sp2d = SP2DModel::where('ID_SP2D', $id)
+        $sp2d = SP2DModel::where('id_sp2d', $id)
                          ->whereNull('deleted_at')
                          ->first();
 
@@ -332,5 +378,22 @@ class SP2DController extends Controller
             'status' => true,
             'message' => 'Data berhasil dihapus (soft delete)',
         ]);
+    }
+
+    public function downloadBerkas(int $id)
+    {
+        // Ambil data permohonan SPD berdasarkan id
+        $permohonan = SP2DModel::findOrFail($id);
+
+        $filePath = $permohonan->nama_file_asli;
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
+        }
+
+        // Download file dengan nama asli
+        return response()->download($disk->path($filePath), basename($filePath));
     }
 }
