@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class PermohonanSpdModel extends Model
+class PermohonanSPDModel extends Model
 {
     use SoftDeletes;
 

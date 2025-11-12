@@ -73,6 +73,6 @@ class SpdTerkirimModel extends Model
 
     public function permohonan()
     {
-        return $this->belongsTo(PermohonanSpdModel::class, 'id_berkas', 'id');
+        return $this->belongsTo(PermohonanSPDModel::class, 'id_berkas', 'id');
     }
 }

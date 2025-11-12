@@ -16,7 +16,7 @@ class PermohonanSPDController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PermohonanSpdModel::query()
+        $query = PermohonanSPDModel::query()
         ->with(['pengirim', 'operator']) // eager load relasi
         ->whereNull('deleted_at'); // pastikan soft delete diabaikan
 
