@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 
 <head>
@@ -5,181 +6,152 @@
     <style>
         body {
             font-family: "Calibri", sans-serif;
+            font-size: 14px;
+            color: #000;
+            margin-left: 40px;
+            margin-left: 40px;
         }
 
-        .table {
-            font-size: large;
+        .header-logo {
+            display: block;
+            margin: 0 auto;
+            width: 100px;
         }
 
-        .table td,
-        .table th {
-            vertical-align: middle;
-
+        .header-title {
+            text-align: center;
+            margin-top: 10px;
         }
 
-        .table thead th {
-            vertical-align: middle;
+        .header-title h2 {
+            margin: 0;
+            font-size: 22px;
+            text-decoration: underline;
+            font-weight: bold;
         }
 
-        @media (max-width: 767px) {
-
-            .table td,
-            .table th {
-                padding: 0 20px 0 20px;
-
-            }
-
+        .data-table td {
+            padding: 6px 4px;
+            vertical-align: top;
         }
 
-        .fix {
+        .right {
+            text-align: right;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .footer-logo {
             position: fixed;
             bottom: 0px;
+            left: 0;
             width: 100%;
-            margin-bottom: 0;
+        }
+
+        .footer-logo img {
+            width: 100%;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #000;
+            margin: 5px 0 10px 0;
         }
     </style>
-
 </head>
 
 <body>
-    <table border="0" class="table">
-        <tr>
-            <td align="left"><img src="<?= base_url('assets/img/logo_pemkab.png') ?>" style="max-width:30%"></td>
-            <td colspan=6 height="21" align="left">
-                <h2 style="margin-left:-80px">DATA PENGEMBALIAN</h2>
-            </td>
-        </tr>
-        <tr>
-            <td align="left" colspan="8"><br></td>
-        </tr>
 
-        <tr>
-            <td height="21" align="center"><br></td>
-            <td align="center"><br></td>
-            <td align="center"><br></td>
-            <td align="center"><br></td>
-            <td align="center"><br></td>
-            <td align="center"><br></td>
-            <td align="center"><br></td>
-            <td align="center"><br></td>
-        </tr>
-        <tr valign="top">
-            <td align="left" valign="top" style="display: table-cell;
-  line-height: 1.2em;
-  vertical-align:top;">
-                Nama Rekening</td>
-            <td align="left" valign="top" style="display: table-cell;
-  line-height: 1.2em;
-  vertical-align:top;">:
-            </td>
-            <td align="left" colspan="6"><?= $rekening ?></td>
-        </tr>
-        <tr>
-            <td align="left" colspan="8"><br></td>
-        </tr>
+    {{-- HEADER --}}
+    <div class="center">
+        <img src="{{ public_path('assets/img/logo_pemkab.png') }}" class="header-logo">
+    </div>
 
-        <tr>
-            <td align="left">NIK</td>
-            <td align="left">:</td>
-            <td align="left" colspan="6"><?= $nik ?> </td>
-        </tr>
-        <tr>
-            <td align="left" colspan="8"><br></td>
-        </tr>
+    <div class="header-title">
+        <h2>DATA PENGEMBALIAN</h2>
+    </div>
 
+    <br><br>
 
+    {{-- DATA UTAMA --}}
+    <table class="data-table">
         <tr>
-            <td align="left">Atas Nama</td>
-            <td align="left">:</td>
-            <td align="left" colspan="6"><?= $nama ?> </td>
+            <td width="30%">Nama Rekening</td>
+            <td width="3%">:</td>
+            <td>{{ $rekening }}</td>
         </tr>
         <tr>
-            <td align="left" colspan="8"><br></td>
-        </tr>
-
-        <tr>
-            <td align="left" width="300">Jumlah yang harus dikembalikan</td>
-            <td align="left">:</td>
-            <td align="left" colspan="6"><?= $jumlah ?></td>
+            <td>NIK</td>
+            <td>:</td>
+            <td>{{ $nik }}</td>
         </tr>
         <tr>
-            <td align="left" colspan="8"><br></td>
-        </tr>
-
-        <tr>
-            <td align="left">Terbilang</td>
-            <td align="left">:</td>
-            <td align="left" colspan="6"><?= $terbilang ?> Rupiah</td>
+            <td>Atas Nama</td>
+            <td>:</td>
+            <td>{{ $nama }}</td>
         </tr>
         <tr>
-            <td align="left" colspan="8"><br></td>
-        </tr>
-
-        <tr>
-            <td align="left">Keterangan</td>
-            <td align="left">:</td>
-            <td align="left" colspan="6"><?= $keterangan ?></td>
-        </tr>
-
-        <tr>
-            <td align="left" colspan="8"><br></td>
+            <td>Jumlah yang harus dikembalikan</td>
+            <td>:</td>
+            <td>{{ $jumlah }}</td>
         </tr>
         <tr>
-            <td align="left" colspan="8"><br></td>
+            <td>Terbilang</td>
+            <td>:</td>
+            <td><i>{{ ucfirst($terbilang) }} rupiah</i></td>
         </tr>
         <tr>
-            <td align="left" colspan="8"><br></td>
+            <td>Keterangan</td>
+            <td>:</td>
+            <td>{{ $keterangan }}</td>
         </tr>
-        <tr>
-            <td align="left"></td>
-            <td align="left"></td>
-            <td align="right" colspan="6">Sei Rampah, <?= $tanggal ?></td>
-        </tr>
-        <!--<tr>
-        <td align="left" colspan="8"><br></td>
-    </tr>
-    <tr>
-        <td align="left"><br></td><td align="left"></td>
-        <td align="right" colspan="6">Penyetor : <?= $penyetor ?></td>
-    </tr>
-    <tr>
-        <td align="left"><br></td><td align="left"></td>
-        <td align="right" colspan="6">Alamat : <?= $alamat ?></td>
-    </tr>-->
-
-        <tr>
-            <td align="left" colspan="6">No STS : <?php
-            $sts = "$no_billing";
-            // Mengambil 4 digit pertama
-            $part1 = substr($sts, 0, 4);
-            // Mengambil digit ke-5 sampai ke-11
-            $part2 = substr($sts, 4, 7);
-            // Mengambil sisanya
-            $part3 = substr($sts, -10);
-            // Menampilkan dengan titik sebagai pemisah
-            $angka_format = $part1 . '.' . $part2 . '.' . $part3;
-            echo '<b>' . $angka_format . '</b>'; ?>
-            </td>
-            <td align="left"></td>
-            <td align="left"></td>
-        </tr>
-        <tr>
-            <td align="left" colspan="8"><br></td>
-        </tr>
-
-        <tr>
-            <td align="left" colspan="8"><br></td>
-        </tr>
-
-        <tr>
-            <td align="center" colspan="8"><img src="<?= base_url('assets/img/logo_sepeda.png') ?>"
-                    style="max-width:18%"></td>
-        </tr>
-
-
     </table>
-    <!-- <img src="<?php echo base_url() . 'assets/img/footer-bg.png'; ?>" class="fix"/> -->
 
+    <br><br>
+
+    {{-- NO STS --}}
+    <table class="data-table">
+        <tr>
+            <td width="30%">No STS</td>
+            <td width="3%">:</td>
+            <td>
+                @php
+                    $sts = $no_billing;
+                    $part1 = substr($sts, 0, 4);
+                    $part2 = substr($sts, 4, 7);
+                    $part3 = substr($sts, -10);
+                    $angka_format = $part1 . '.' . $part2 . '.' . $part3;
+                @endphp
+                <b>{{ $angka_format }}</b>
+            </td>
+        </tr>
+    </table>
+
+    <br><br><br>
+
+    {{-- TANGGAL & TTD --}}
+    <table class="data-table" style="width: 100%; margin-top: 50px;">
+        <tr>
+            <td class="right">
+                Sei Rampah, {{ $tanggal }}<br><br><br>
+                <b>(...................................)</b>
+            </td>
+        </tr>
+    </table>
+
+    <br><br>
+
+    {{-- LOGO SEPEDA --}}
+    <div class="center">
+        <img src="{{ public_path('assets/img/logo_sepeda.png') }}" style="width: 100px; margin-top: 5px;">
+    </div>
+
+    {{-- FOOTER --}}
+    <div class="footer-logo">
+        <img src="{{ public_path('assets/img/footer-bg.png') }}">
+    </div>
 
 </body>
 

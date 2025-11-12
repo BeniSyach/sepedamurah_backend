@@ -185,6 +185,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
+        'Terbilang' => App\Helpers\Terbilang::class,
     ])->toArray(),
 
 ];

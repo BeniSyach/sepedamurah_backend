@@ -65,6 +65,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/dat-rekening', [DatRekeningController::class, 'index']);
 Route::get('/master-data/master-skpd', [SKPDController::class, 'index']);
 Route::get('/pengembalian', [PengembalianController::class, 'index']);
+Route::get('/pengembalian/download', [PengembalianController::class, 'tabelPrint'])->name('pengembalian.print');
 Route::post('/pengembalian', [PengembalianController::class, 'store']);
 
 Route::middleware('auth:api')->group(function () {
@@ -238,6 +239,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/sp2d-kirim/downloadTTE/{id}', [SP2DKirimController::class, 'downloadBerkasTTE'])->name('sp2d-kirim.downloadtte');
 
         // SP2D Sumber Dana
+        Route::get('/sp2d-sumber-dana/check_sd', [SP2DSumberDanaController::class, 'check_sd'])->name('sp2d-sumber-dana.check_sd');
         Route::apiResource('/sp2d-sumber-dana', SP2DSumberDanaController::class); //skip
 
         // SP2D Rekening
@@ -253,9 +255,13 @@ Route::middleware('auth:api')->group(function () {
 
         // Laporan Realisasi Sumber Dana 
         Route::get('/realisasi-sumber-dana', [LaporanRealisasiSumberDanaController::class, 'index']);
+        Route::get('/realisasi-sumber-dana/download/pdf/{tahun}', [LaporanRealisasiSumberDanaController::class, 'export_pdf'])->name('realisasi-sumber-dana.download_pdf');
+        Route::get('/realisasi-sumber-dana/download/excel/{tahun}', [LaporanRealisasiSumberDanaController::class, 'export_excel'])->name('realisasi-sumber-dana.download_excel');
 
         // Laporan Realisasi Belanja
         Route::get('/realisasi-belanja', [LaporanRealisasiBelanjaController::class, 'index']);
+        Route::get('/realisasi-belanja/download/pdf/{tahun}/{bulan}', [LaporanRealisasiBelanjaController::class, 'export_pdf'])->name('realisasi-belanja.download_pdf');
+        Route::get('/realisasi-belanja/download/excel/{tahun}/{bulan}', [LaporanRealisasiBelanjaController::class, 'export_excel'])->name('realisasi-belanja.download_excel');
 
         // Laporan Daftar Belanja Per SKPD
         Route::get('/daftar-belanja-skpd', [LaporanDaftarBelanjaPerSKPDController::class, 'index']);
@@ -267,6 +273,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/berkas-lain/downloadTTE/{id}', [BerkasLainController::class, 'downloadBerkasTTE'])->name('berkas-lain.downloadtte');
 
     Route::apiResource('/pengembalian', PengembalianController::class)->except(['index', 'store']);
+    Route::get('/pengembalian/rekap/pdf',[PengembalianController::class, 'rekapPengembalianPDF']);
+    Route::get('/pengembalian/rekap/excel', [PengembalianController::class, 'rekapPengembalianExcel']);
 
     Route::apiResource('/dat-rekening', DatRekeningController::class)
         ->except(['index']);
