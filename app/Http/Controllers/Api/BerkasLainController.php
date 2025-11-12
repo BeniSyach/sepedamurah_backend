@@ -218,7 +218,7 @@ class BerkasLainController extends Controller
         $permohonan = BerkasLainModel::findOrFail($id);
 
         $filePath = $permohonan->nama_file_asli;
-
+        return $filePath;
         // Cek apakah file ada di disk public
         $disk = Storage::disk('public');
         if (!$disk->exists($filePath)) {
