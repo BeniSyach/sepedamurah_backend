@@ -38,20 +38,28 @@ class SP2DController extends Controller
             $query->whereNull('diterima')->whereNull('ditolak');
             }
 
-            if($menu == 'berkas_masuk_sp2d'){
-                // Ambil data SKPD dari operator yang login
-                $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
+            if($menu == 'permohonan_sp2d_operator'){
+               // Ambil data SKPD dari operator yang login
+               $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
     
-                if ($operator) {
-                    // tampilkan berkas dari SKPD yang diampunya
-                    $query->where(function ($q) use ($operator) {
-                        $q->where('kd_opd1', $operator->kd_opd1)
-                        ->where('kd_opd2', $operator->kd_opd2)
-                        ->where('kd_opd3', $operator->kd_opd3)
-                        ->where('kd_opd4', $operator->kd_opd4)
-                        ->where('kd_opd5', $operator->kd_opd5);
-                    });
-                }
+               if ($operator) {
+                   // tampilkan berkas dari SKPD yang diampunya
+                   $query->where(function ($q) use ($operator) {
+                       $q->where('kd_opd1', $operator->kd_opd1)
+                       ->where('kd_opd2', $operator->kd_opd2)
+                       ->where('kd_opd3', $operator->kd_opd3)
+                       ->where('kd_opd4', $operator->kd_opd4)
+                       ->where('kd_opd5', $operator->kd_opd5);
+                   });
+               }
+                // ambil data yg belum diperiksa operator
+                $query->where('id_operator', '0');
+                $query->where('proses', '1');
+                $query->whereNull('supervisor_proses');
+                $query->whereNull('diterima')->whereNull('ditolak');
+            }
+
+            if($menu == 'berkas_masuk_sp2d'){
                 // hanya tampilkan yang belum diverifikasi
                 $query->whereNull('diterima')->whereNull('ditolak');
             }
