@@ -40,17 +40,22 @@ class SP2DController extends Controller
 
             if($menu == 'permohonan_sp2d_operator'){
                // Ambil data SKPD dari operator yang login
-               $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
+               $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+
     
-               if ($operator) {
-                   // tampilkan berkas dari SKPD yang diampunya
-                   $query->where(function ($q) use ($operator) {
-                       $q->where('kd_opd1', $operator->kd_opd1)
-                       ->where('kd_opd2', $operator->kd_opd2)
-                       ->where('kd_opd3', $operator->kd_opd3)
-                       ->where('kd_opd4', $operator->kd_opd4)
-                       ->where('kd_opd5', $operator->kd_opd5);
-                   });
+               if ($operatorSkpd) {
+                $query->where(function ($q) use ($operatorSkpd) {
+                    foreach ($operatorSkpd as $op) {
+                        $q->orWhere(function ($q2) use ($op) {
+                            $q2->where('kd_opd1', $op->kd_opd1)
+                               ->where('kd_opd2', $op->kd_opd2)
+                               ->where('kd_opd3', $op->kd_opd3)
+                               ->where('kd_opd4', $op->kd_opd4)
+                               ->where('kd_opd5', $op->kd_opd5);
+                        });
+                    }
+                });
+                
                }
                 // ambil data yg belum diperiksa operator
                 $query->where('id_operator', '0');
