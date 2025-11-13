@@ -38,6 +38,7 @@ class SP2DController extends Controller
             $query->whereNull('diterima')->whereNull('ditolak');
             }
 
+            // Operator
             if($menu == 'permohonan_sp2d_operator'){
                // Ambil data SKPD dari operator yang login
                $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
@@ -62,6 +63,110 @@ class SP2DController extends Controller
                 $query->where('proses', '1');
                 $query->whereNotNull('supervisor_proses');
                 $query->whereNull('diterima')->whereNull('ditolak');
+            }
+
+            if($menu == 'permohonan_sp2d_terima_operator'){
+                // Ambil data SKPD dari operator yang login
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+ 
+     
+                if ($operatorSkpd) {
+                 $query->where(function ($q) use ($operatorSkpd) {
+                     foreach ($operatorSkpd as $op) {
+                         $q->orWhere(function ($q2) use ($op) {
+                             $q2->where('kd_opd1', $op->kd_opd1)
+                                ->where('kd_opd2', $op->kd_opd2)
+                                ->where('kd_opd3', $op->kd_opd3)
+                                ->where('kd_opd4', $op->kd_opd4)
+                                ->where('kd_opd5', $op->kd_opd5);
+                         });
+                     }
+                 });
+                 
+                }
+                 // ambil data yg belum diperiksa operator
+                 $query->where('id_operator', '0');
+                 $query->where('proses', '1');
+                 $query->whereNotNull('supervisor_proses');
+                 $query->whereNotNull('diterima');
+            }
+
+            if($menu == 'permohonan_sp2d_tolak_operator'){
+                // Ambil data SKPD dari operator yang login
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+ 
+     
+                if ($operatorSkpd) {
+                 $query->where(function ($q) use ($operatorSkpd) {
+                     foreach ($operatorSkpd as $op) {
+                         $q->orWhere(function ($q2) use ($op) {
+                             $q2->where('kd_opd1', $op->kd_opd1)
+                                ->where('kd_opd2', $op->kd_opd2)
+                                ->where('kd_opd3', $op->kd_opd3)
+                                ->where('kd_opd4', $op->kd_opd4)
+                                ->where('kd_opd5', $op->kd_opd5);
+                         });
+                     }
+                 });
+                 
+                }
+                 // ambil data yg belum diperiksa operator
+                 $query->where('id_operator', '0');
+                 $query->where('proses', '1');
+                 $query->whereNotNull('supervisor_proses');
+                 $query->whereNotNull('ditolak');
+            }
+
+            if($menu == 'permohonan_sp2d_kirim_bank_operator'){
+                // Ambil data SKPD dari operator yang login
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+ 
+     
+                if ($operatorSkpd) {
+                 $query->where(function ($q) use ($operatorSkpd) {
+                     foreach ($operatorSkpd as $op) {
+                         $q->orWhere(function ($q2) use ($op) {
+                             $q2->where('kd_opd1', $op->kd_opd1)
+                                ->where('kd_opd2', $op->kd_opd2)
+                                ->where('kd_opd3', $op->kd_opd3)
+                                ->where('kd_opd4', $op->kd_opd4)
+                                ->where('kd_opd5', $op->kd_opd5);
+                         });
+                     }
+                 });
+                 
+                }
+                 // ambil data yg belum diperiksa operator
+                 $query->where('id_operator', '0');
+                 $query->where('proses', '1');
+                 $query->whereNotNull('supervisor_proses');
+                 $query->whereNotNull('diterima');
+            }
+            
+            if($menu == 'permohonan_sp2d_publish_operator'){
+                // Ambil data SKPD dari operator yang login
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+ 
+     
+                if ($operatorSkpd) {
+                 $query->where(function ($q) use ($operatorSkpd) {
+                     foreach ($operatorSkpd as $op) {
+                         $q->orWhere(function ($q2) use ($op) {
+                             $q2->where('kd_opd1', $op->kd_opd1)
+                                ->where('kd_opd2', $op->kd_opd2)
+                                ->where('kd_opd3', $op->kd_opd3)
+                                ->where('kd_opd4', $op->kd_opd4)
+                                ->where('kd_opd5', $op->kd_opd5);
+                         });
+                     }
+                 });
+                 
+                }
+                 // ambil data yg belum diperiksa operator
+                 $query->where('id_operator', '0');
+                 $query->where('proses', '1');
+                 $query->whereNotNull('supervisor_proses');
+                 $query->whereNotNull('diterima');
             }
 
             if($menu == 'berkas_masuk_sp2d'){
