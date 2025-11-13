@@ -230,8 +230,8 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('sp2d')->group(function () {
 
         // Permohonan SP2D
-        Route::apiResource('/permohonan-sp2d', SP2DController::class);
         Route::get('/permohonan-sp2d/download/{id}', [SP2DController::class, 'downloadBerkas'])->name('permohonan-sp2d.download');
+        Route::apiResource('/permohonan-sp2d', SP2DController::class);
 
         // SP2D Terkirim
         Route::apiResource('/sp2d-kirim', SP2DKirimController::class);

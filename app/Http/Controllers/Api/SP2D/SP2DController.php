@@ -9,6 +9,7 @@ use App\Http\Resources\SP2DResource;
 use App\Models\AksesOperatorModel;
 use App\Models\SP2DRekeningModel;
 use App\Models\SP2DSumberDanaModel;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
@@ -366,16 +367,29 @@ class SP2DController extends Controller
                 'kode_file' => $kodeFile,
                 'tanggal_upload' => now(),
             ]));
-            $sp2d = SP2DModel::where('kode_file', $kodeFile)->first();
-            // Simpan data sp2d_rek jika ada
-            if (!empty($validated['sp2d_rek'])) {
-                $sp2dRekPayload = json_decode($validated['sp2d_rek'], true);
-                $this->saveSp2dRekening($sp2d->id_sp2d, $sp2dRekPayload);
-            }
 
-            if (!empty($validated['sumber_dana'])) {
-                $sumberDanaPayload = json_decode($validated['sumber_dana'], true);
-                $this->saveSumberDana($sp2d->id_sp2d, $sumberDanaPayload);
+            // Pastikan data berhasil dibuat sebelum lanjut
+            if ($sp2d && $sp2d instanceof SP2DModel) {
+                // Ambil ulang data (jika perlu data lengkap dengan relasi)
+                $sp2d = SP2DModel::where('kode_file', $kodeFile)->first();
+
+                // Simpan data sp2d_rek jika ada
+                if (!empty($validated['sp2d_rek'])) {
+                    $sp2dRekPayload = json_decode($validated['sp2d_rek'], true);
+                    $this->saveSp2dRekening($sp2d->id_sp2d, $sp2dRekPayload);
+                }
+
+                // Simpan data sumber_dana jika ada
+                if (!empty($validated['sumber_dana'])) {
+                    $sumberDanaPayload = json_decode($validated['sumber_dana'], true);
+                    $this->saveSumberDana($sp2d->id_sp2d, $sumberDanaPayload);
+                }
+            } else {
+                // Jika gagal create
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan data SP2D.'
+                ], 500);
             }
         
             return response()->json([
@@ -534,7 +548,7 @@ class SP2DController extends Controller
         }
     
         $validated = $request->validate([
-           'tahun' => 'nullable|string|max:4',
+            'tahun' => 'nullable|string|max:4',
             'id_user' => 'nullable|integer',
             'nama_user' => 'nullable|string|max:255',
             'id_operator' => 'nullable|integer',
@@ -554,23 +568,25 @@ class SP2DController extends Controller
             'alasan_tolak' => 'nullable|string|max:500',
             'proses' => 'nullable|string|max:50',
             'supervisor_proses' => 'nullable|string|max:255',
-            'urusan' => 'nullable|string|max:255',
+            'urusan' => 'nullable|string',
             'kd_ref1' => 'nullable|string|max:5',
             'kd_ref2' => 'nullable|string|max:5',
             'kd_ref3' => 'nullable|string|max:5',
             'kd_ref4' => 'nullable|string|max:5',
             'kd_ref5' => 'nullable|string|max:5',
             'kd_ref6' => 'nullable|string|max:5',
-            'no_spm' => 'nullable|string|max:50',
-            'jenis_berkas' => 'nullable|string|max:50',
-            'id_berkas' => 'nullable|integer',
-            'agreement' => 'nullable|string|max:50',
+            'no_spm' => 'nullable|string|max:255',
+            'jenis_berkas' => 'nullable|string|max:255',
+            'id_berkas' => 'nullable|string',
+            'agreement' => 'nullable|string|max:255',
             'kd_belanja1' => 'nullable|string|max:5',
             'kd_belanja2' => 'nullable|string|max:5',
             'kd_belanja3' => 'nullable|string|max:5',
-            'jenis_belanja' => 'nullable|string|max:50',
-            'nilai_belanja' => 'nullable|numeric',
-            'status_laporan' => 'nullable|string|max:50',
+            'jenis_belanja' => 'nullable|string|max:255',
+            'nilai_belanja' => 'nullable|string',
+            'status_laporan' => 'nullable|string|max:255',
+            'sp2d_rek' => 'nullable|string',
+            'sumber_dana' => 'nullable|string'
         ]);
 
         $disk = Storage::disk('public');
@@ -601,8 +617,9 @@ class SP2DController extends Controller
         }
     
         try {
+
             $sp2d->update($validated);
-    
+
             return response()->json([
                 'status' => true,
                 'message' => 'Data berhasil diperbarui',
