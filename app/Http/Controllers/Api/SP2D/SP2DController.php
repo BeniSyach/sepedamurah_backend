@@ -55,7 +55,7 @@ class SP2DController extends Controller
                 // ambil data yg belum diperiksa operator
                 $query->where('id_operator', '0');
                 $query->where('proses', '1');
-                $query->whereNull('supervisor_proses');
+                $query->whereNotNull('supervisor_proses');
                 $query->whereNull('diterima')->whereNull('ditolak');
             }
 
