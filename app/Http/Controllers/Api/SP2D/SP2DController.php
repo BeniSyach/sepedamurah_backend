@@ -681,7 +681,6 @@ class SP2DController extends Controller
     
         // Update semua berkas yang dipilih
         $updated = Sp2dModel::whereIn('id_sp2d', $ids)->update([
-            'diterima' => now(),
             'proses' => 1,                     // status diterima
             'supervisor_proses' => $supervisor,
             'ditolak' => null,                 // pastikan ditolak kosong
