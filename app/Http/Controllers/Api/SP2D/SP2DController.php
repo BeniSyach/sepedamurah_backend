@@ -173,6 +173,7 @@ class SP2DController extends Controller
             }
 
             if($menu == 'berkas_masuk_sp2d'){
+                $query->whereNull('proses');
                 // hanya tampilkan yang belum diverifikasi
                 $query->whereNull('diterima')->whereNull('ditolak');
             }
