@@ -36,6 +36,7 @@ class SP2DController extends Controller
                 }
             // ambil data yg belum diperiksa operator
             $query->where('id_operator', '0');
+            $query->whereNull('proses');
             $query->whereNull('diterima')->whereNull('ditolak');
             }
 
@@ -180,6 +181,7 @@ class SP2DController extends Controller
                 if ($userId = $request->get('user_id')) {
                     $query->where('id_user', $userId);
                 }
+                $query->where('proses', '2');
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
                 $orderColumn = 'diterima';
                 $orderDir    = 'desc';
@@ -230,9 +232,9 @@ class SP2DController extends Controller
         // 🔎 Pencarian fleksibel
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('nama_user', 'like', "%{$search}%")
-                  ->orWhere('nama_operator', 'like', "%{$search}%")
-                  ->orWhere('nama_file', 'like', "%{$search}%");
+                $q->whereRaw("LOWER(nama_user) LIKE ?", ["%".strtolower($search)."%"])
+                ->orWhereRaw("LOWER(nama_operator) LIKE ?", ["%".strtolower($search)."%"])
+                ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%".strtolower($search)."%"]);
             });
         }
     
