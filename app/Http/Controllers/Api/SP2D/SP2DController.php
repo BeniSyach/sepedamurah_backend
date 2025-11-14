@@ -234,12 +234,26 @@ class SP2DController extends Controller
         // 🔎 Pencarian fleksibel
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->whereRaw("LOWER(nama_user) LIKE ?", ["%".strtolower($search)."%"])
-                ->orWhereRaw("LOWER(nama_operator) LIKE ?", ["%".strtolower($search)."%"])
-                ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%".strtolower($search)."%"])
-                ->orWhereRaw("LOWER(no_spm) LIKE ?", ["%".strtolower($search)."%"]);
+                $search = strtolower($search);
+        
+                $q->whereRaw("LOWER(nama_user) LIKE ?", ["%$search%"])
+                  ->orWhereRaw("LOWER(nama_operator) LIKE ?", ["%$search%"])
+                  ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%$search%"])
+                  ->orWhereRaw("LOWER(nilai_belanja) LIKE ?", ["%$search%"])
+                  ->orWhereRaw("LOWER(no_spm) LIKE ?", ["%$search%"]);
+        
+                  // 🔥 Tambah nm_opd
+                //   ->orWhereHas('opd', function ($qq) use ($search) {
+                //       $qq->whereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"]);
+                //   });
+        
+                //   // 🔥 Tambah referensi dari sumber dana
+                //   ->orWhereHas('sumberDana.referensi', function ($qq) use ($search) {
+                //       $qq->whereRaw("LOWER(nm_ref) LIKE ?", ["%$search%"]);
+                //   });
             });
         }
+        
     
         // 🔽 Urutan dan pagination
         $data = $query->orderBy($orderColumn, $orderDir)
@@ -705,18 +719,20 @@ class SP2DController extends Controller
         $validated = $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'integer',
-            'alasan' => 'required|string|max:500'
+            'alasan' => 'required|string|max:500',
+             'supervisor_proses' => 'required|string'
         ]);
 
         $ids = $validated['ids'];
         $alasan = $validated['alasan'];
+        $supervisor = $validated['supervisor_proses'];
 
         // Update semua berkas yang dipilih
         $updated = Sp2dModel::whereIn('id_sp2d', $ids)->update([
             'ditolak' => now(),
             'alasan_tolak' => $alasan,
-            'proses' => 0,              // status proses kalau ditolak
-            'supervisor_proses' => 0,   // sesuaikan jika butuh
+            'proses' => 1,              // status proses kalau ditolak
+            'supervisor_proses' => $supervisor,   // sesuaikan jika butuh
         ]);
 
         return response()->json([
