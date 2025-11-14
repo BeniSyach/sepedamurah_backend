@@ -234,7 +234,7 @@ class SP2DController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw("LOWER(nama_user) LIKE ?", ["%".strtolower($search)."%"])
                 ->orWhereRaw("LOWER(nama_operator) LIKE ?", ["%".strtolower($search)."%"])
-                ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%".strtolower($search)."%"]);
+                ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%".strtolower($search)."%"])
                 ->orWhereRaw("LOWER(no_spm) LIKE ?", ["%".strtolower($search)."%"]);
             });
         }
