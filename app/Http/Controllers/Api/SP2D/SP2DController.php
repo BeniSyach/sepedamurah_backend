@@ -22,6 +22,9 @@ class SP2DController extends Controller
         $perPage = $request->get('per_page', 10);
         $search  = $request->get('search');
         $orderColumn = 'tanggal_upload';
+        $dateFrom = $request->get('date_from'); // ex: '2025-11-14'
+        $dateTo   = $request->get('date_to');   // ex: '2025-11-14'
+
         $orderDir    = 'desc';
         // 🔍 Query dasar SP2D + relasi yang bisa di-eager-load
         $query = Sp2dModel::query()
@@ -254,10 +257,19 @@ class SP2DController extends Controller
             });
         }
         
+        if ($dateFrom) {
+            $query->whereDate($orderColumn, '>=', $dateFrom);
+        }
+        
+        if ($dateTo) {
+            $query->whereDate($orderColumn, '<=', $dateTo);
+        }
     
         // 🔽 Urutan dan pagination
         $data = $query->orderBy($orderColumn, $orderDir)
         ->paginate($perPage);
+
+        
     
         // ==========================================================
         // 🔗 Transformasi agar accessor & relasi manual ikut tampil
