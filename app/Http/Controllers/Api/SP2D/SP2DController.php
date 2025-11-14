@@ -9,7 +9,6 @@ use App\Http\Resources\SP2DResource;
 use App\Models\AksesOperatorModel;
 use App\Models\SP2DRekeningModel;
 use App\Models\SP2DSumberDanaModel;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
@@ -22,7 +21,8 @@ class SP2DController extends Controller
     {
         $perPage = $request->get('per_page', 10);
         $search  = $request->get('search');
-    
+        $orderColumn = 'tanggal_upload';
+        $orderDir    = 'desc';
         // 🔍 Query dasar SP2D + relasi yang bisa di-eager-load
         $query = Sp2dModel::query()
             ->with(['rekening', 'sumberDana', 'sp2dkirim']) // relasi Eloquent valid
@@ -181,6 +181,8 @@ class SP2DController extends Controller
                     $query->where('id_user', $userId);
                 }
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
+                $orderColumn = 'diterima';
+                $orderDir    = 'desc';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_ditolak'
@@ -235,8 +237,8 @@ class SP2DController extends Controller
         }
     
         // 🔽 Urutan dan pagination
-        $data = $query->orderBy('tanggal_upload', 'desc')
-                      ->paginate($perPage);
+        $data = $query->orderBy($orderColumn, $orderDir)
+        ->paginate($perPage);
     
         // ==========================================================
         // 🔗 Transformasi agar accessor & relasi manual ikut tampil
