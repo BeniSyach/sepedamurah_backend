@@ -665,6 +665,66 @@ class SP2DController extends Controller
         ]);
     }
 
+ /**
+     * Menolak banyak SP2D sekaligus
+     */
+    public function terimaMulti(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+            'supervisor_proses' => 'required|string'
+        ]);
+    
+        $ids = $validated['ids'];
+        $supervisor = $validated['supervisor_proses'];
+    
+        // Update semua berkas yang dipilih
+        $updated = Sp2dModel::whereIn('id_sp2d', $ids)->update([
+            'diterima' => now(),
+            'proses' => 1,                     // status diterima
+            'supervisor_proses' => $supervisor,
+            'ditolak' => null,                 // pastikan ditolak kosong
+            'alasan_tolak' => null,            // hapus alasan tolak
+        ]);
+    
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menerima $updated berkas SP2D.",
+            'updated' => $updated
+        ]);
+    }
+    
+
+     /**
+     * Menolak banyak SP2D sekaligus
+     */
+    public function tolakMulti(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+            'alasan' => 'required|string|max:500'
+        ]);
+
+        $ids = $validated['ids'];
+        $alasan = $validated['alasan'];
+
+        // Update semua berkas yang dipilih
+        $updated = Sp2dModel::whereIn('id_sp2d', $ids)->update([
+            'ditolak' => now(),
+            'alasan_tolak' => $alasan,
+            'proses' => 0,              // status proses kalau ditolak
+            'supervisor_proses' => 0,   // sesuaikan jika butuh
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menolak $updated berkas SP2D.",
+            'updated' => $updated
+        ]);
+    }
+
     public function downloadBerkas(int $id)
     {
         // Ambil data permohonan SPD berdasarkan id

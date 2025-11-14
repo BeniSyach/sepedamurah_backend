@@ -231,7 +231,11 @@ Route::middleware('auth:api')->group(function () {
 
         // Permohonan SP2D
         Route::get('/permohonan-sp2d/download/{id}', [SP2DController::class, 'downloadBerkas'])->name('permohonan-sp2d.download');
+        Route::post('/terima-multi', [SP2DController::class, 'terimaMulti']);
+        Route::post('/tolak-multi', [SP2DController::class, 'tolakMulti']);
         Route::apiResource('/permohonan-sp2d', SP2DController::class);
+  
+
 
         // SP2D Terkirim
         Route::apiResource('/sp2d-kirim', SP2DKirimController::class);
