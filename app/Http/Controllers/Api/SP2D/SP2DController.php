@@ -33,10 +33,11 @@ class SP2DController extends Controller
             if($menu == 'permohonan_sp2d'){
                 if ($userId = $request->get('user_id')) {
                     $query->where('id_user', $userId);
+                    $query->whereNull('proses');
                 }
             // ambil data yg belum diperiksa operator
             $query->where('id_operator', '0');
-            $query->whereNull('proses');
+        
             $query->whereNull('diterima')->whereNull('ditolak');
             }
 
