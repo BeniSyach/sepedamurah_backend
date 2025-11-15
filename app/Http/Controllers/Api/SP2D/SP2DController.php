@@ -335,6 +335,15 @@ class SP2DController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->has('id_berkas') && is_string($request->id_berkas)) {
+            $decoded = json_decode($request->id_berkas, true);
+        
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $request->merge([
+                    'id_berkas' => $decoded
+                ]);
+            }
+        }
         $validated = $request->validate([
             'tahun' => 'required|string|max:4',
             'id_user' => 'required|integer',
@@ -365,7 +374,8 @@ class SP2DController extends Controller
             'kd_ref6' => 'nullable|string|max:5',
             'no_spm' => 'nullable|string|max:255',
             'jenis_berkas' => 'nullable|string|max:255',
-            'id_berkas' => 'nullable|string',
+            'id_berkas' => 'nullable|array',
+            'id_berkas.*' => 'string',
             'agreement' => 'nullable|string|max:255',
             'kd_belanja1' => 'nullable|string|max:5',
             'kd_belanja2' => 'nullable|string|max:5',
@@ -392,6 +402,10 @@ class SP2DController extends Controller
                 $fileTte = $request->file('file_tte');
                 $pathTte = $fileTte->store($folder, 'public');
                 $validated['file_tte'] = $pathTte;
+            }
+            // Ubah array menjadi string (tanpa sort)
+            if (!empty($validated['id_berkas'])) {
+                $validated['id_berkas'] = implode(',', $validated['id_berkas']);
             }
             $kodeFile = Str::random(10);
             // Simpan data ke database
