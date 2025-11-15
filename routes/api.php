@@ -182,6 +182,12 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('/up-skpd', BesaranUPSKPDController::class)->only(['index', 'store']);
 
         // Realisasi Transfer Sumber Dana
+        Route::post('/sinkron-sumber-dana-pajak', 
+        [RealisasiTransferSumberDanaController::class, 'sumberDanaPajak']
+    );
+        Route::get('/detail-realisasi-transfer-sumber-dana', 
+    [RealisasiTransferSumberDanaController::class, 'detailTFSD']
+);
         Route::apiResource('/realisasi-transfer-sumber-dana', RealisasiTransferSumberDanaController::class);
 
     });
