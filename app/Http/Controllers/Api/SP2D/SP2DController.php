@@ -25,7 +25,7 @@ class SP2DController extends Controller
         $dateFrom = $request->get('date_from'); // ex: '2025-11-14'
         $dateTo   = $request->get('date_to');   // ex: '2025-11-14'
 
-        $orderDir    = 'desc';
+        $orderDir    = 'asc';
         // 🔍 Query dasar SP2D + relasi yang bisa di-eager-load
         $query = Sp2dModel::query()
             ->with(['rekening', 'sumberDana', 'sp2dkirim']) // relasi Eloquent valid
@@ -91,8 +91,8 @@ class SP2DController extends Controller
                  
                 }
                  // ambil data yg belum diperiksa operator
-                 $query->where('id_operator', '0');
-                 $query->where('proses', '1');
+                //  $query->where('id_operator', '0');
+                //  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('diterima');
             }
@@ -117,8 +117,8 @@ class SP2DController extends Controller
                  
                 }
                  // ambil data yg belum diperiksa operator
-                 $query->where('id_operator', '0');
-                 $query->where('proses', '1');
+                //  $query->where('id_operator', '0');
+                //  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('ditolak');
             }
@@ -732,7 +732,7 @@ class SP2DController extends Controller
             'ids' => 'required|array',
             'ids.*' => 'integer',
             'alasan' => 'required|string|max:500',
-             'supervisor_proses' => 'required|string'
+            'supervisor_proses' => 'required|string'
         ]);
 
         $ids = $validated['ids'];
