@@ -36,17 +36,17 @@ class RealisasiSumberDanaModel extends Model
     const UPDATED_AT = 'updated_at';
     const DELETED_AT = 'deleted_at';
 
-    /**
-     * Auto-generate ID sebelum insert
-     */
-    protected static function boot()
-    {
-        parent::boot();
+    // /**
+    //  * Auto-generate ID sebelum insert
+    //  */
+    // protected static function boot()
+    // {
+    //     parent::boot();
 
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = DB::selectOne('SELECT no_sumber_dana.NEXTVAL AS id FROM dual')->id;
-            }
-        });
-    }
+    //     static::creating(function ($model) {
+    //         if (empty($model->id)) {
+    //             $model->id = DB::selectOne('SELECT no_sumber_dana.NEXTVAL AS id FROM dual')->id;
+    //         }
+    //     });
+    // }
 }

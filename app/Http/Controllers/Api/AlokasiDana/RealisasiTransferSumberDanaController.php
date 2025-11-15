@@ -43,13 +43,28 @@ class RealisasiTransferSumberDanaController extends Controller
             'tgl_diterima' => 'required|date',
             'tahun' => 'required|string|max:4',
             'jumlah_sumber' => 'nullable|numeric',
-            'keterangan' => 'required|integer',
             'keterangan_2' => 'nullable|string|max:255',
         ]);
 
         try {
-            $sumber = RealisasiSumberDanaModel::create($validated);
-            return new RealisasiSumberDanaResource($sumber);
+          // Hitung data sama berdasarkan kode ref + tahun
+        $count_same = RealisasiSumberDanaModel::where([
+            'kd_ref1' => $validated['kd_ref1'],
+            'kd_ref2' => $validated['kd_ref2'],
+            'kd_ref3' => $validated['kd_ref3'],
+            'kd_ref4' => $validated['kd_ref4'],
+            'kd_ref5' => $validated['kd_ref5'],
+            'kd_ref6' => $validated['kd_ref6'],
+            'tahun'   => $validated['tahun'],
+        ])->count();
+
+        // Set nilai keterangan = count_same + 1
+        $validated['keterangan'] = $count_same + 1;
+
+        // Simpan data
+        $sumber = RealisasiSumberDanaModel::create($validated);
+
+        return new RealisasiSumberDanaResource($sumber);
         } catch (\Illuminate\Database\QueryException $e) {
             if (str_contains($e->getMessage(), 'ORA-00001')) {
                 return response()->json([
