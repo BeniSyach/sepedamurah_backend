@@ -421,6 +421,18 @@ class SP2DController extends Controller
             'sp2d_rek' => 'nullable|string',
             'sumber_dana' => 'required|string'
         ]);
+
+        // Cek apakah no_spm sudah ada
+        if (!empty($request->no_spm)) {
+            $exists = SP2DModel::where('no_spm', $request->no_spm)->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Nomor SPM sudah digunakan, tidak boleh duplikat.'
+                ], 422);
+            }
+        }
     
         try {
             $folder = 'sp2d/' . date('Ymd');
@@ -442,6 +454,8 @@ class SP2DController extends Controller
             if (!empty($validated['id_berkas'])) {
                 $validated['id_berkas'] = implode(',', $validated['id_berkas']);
             }
+
+
             $kodeFile = Str::random(10);
             // Simpan data ke database
             $sp2d = SP2DModel::create(array_merge($validated, [

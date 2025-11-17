@@ -64,6 +64,18 @@ class SP2DKirimController extends Controller
             'kd_opd5' => 'nullable|string|max:5',
             'publish' => 'nullable|string|max:50',
         ]);
+
+        // CEK namafile tidak boleh sama
+        if (!empty($request->namafile)) {
+            $exists = SP2DKirimModel::where('namafile', $request->namafile)->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Nama file sudah digunakan, tidak boleh duplikat.'
+                ], 422);
+            }
+        }
     
         try {
             // 🚀 Simpan file ke folder berbeda
