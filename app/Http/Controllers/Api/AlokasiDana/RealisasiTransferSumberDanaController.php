@@ -297,7 +297,7 @@ class RealisasiTransferSumberDanaController extends Controller
                 'kd_ref4' => $KD_REF4,
                 'kd_ref5' => $KD_REF5,
                 'kd_ref6' => $KD_REF6,
-            ])->delete();
+            ])->forceDelete();
 
             file_put_contents($logFile, "[" . now() . "] Data lama berhasil dihapus.\n", FILE_APPEND);
 
