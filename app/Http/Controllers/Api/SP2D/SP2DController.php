@@ -30,7 +30,7 @@ class SP2DController extends Controller
         $query = Sp2dModel::query()
             ->with(['rekening', 'sumberDana', 'sp2dkirim']) // relasi Eloquent valid
             ->whereNull('sp2d.deleted_at')
-            ->join('ref_opd', function ($join) {
+            ->join('ref_opd as opd', function ($join) {
                 $join->on('sp2d.kd_opd1', '=', 'ref_opd.kd_opd1')
                      ->on('sp2d.kd_opd2', '=', 'ref_opd.kd_opd2')
                      ->on('sp2d.kd_opd3', '=', 'ref_opd.kd_opd3')
@@ -61,11 +61,11 @@ class SP2DController extends Controller
                 $query->where(function ($q) use ($operatorSkpd) {
                     foreach ($operatorSkpd as $op) {
                         $q->orWhere(function ($q2) use ($op) {
-                            $q2->where('kd_opd1', $op->kd_opd1)
-                               ->where('kd_opd2', $op->kd_opd2)
-                               ->where('kd_opd3', $op->kd_opd3)
-                               ->where('kd_opd4', $op->kd_opd4)
-                               ->where('kd_opd5', $op->kd_opd5);
+                            $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                               ->where('sp2d.kd_opd2', $op->kd_opd2)
+                               ->where('sp2d.kd_opd3', $op->kd_opd3)
+                               ->where('sp2d.kd_opd4', $op->kd_opd4)
+                               ->where('sp2d.kd_opd5', $op->kd_opd5);
                         });
                     }
                 });
@@ -87,11 +87,11 @@ class SP2DController extends Controller
                  $query->where(function ($q) use ($operatorSkpd) {
                      foreach ($operatorSkpd as $op) {
                          $q->orWhere(function ($q2) use ($op) {
-                             $q2->where('kd_opd1', $op->kd_opd1)
-                                ->where('kd_opd2', $op->kd_opd2)
-                                ->where('kd_opd3', $op->kd_opd3)
-                                ->where('kd_opd4', $op->kd_opd4)
-                                ->where('kd_opd5', $op->kd_opd5);
+                             $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                                ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                ->where('sp2d.kd_opd5', $op->kd_opd5);
                          });
                      }
                  });
@@ -113,11 +113,11 @@ class SP2DController extends Controller
                  $query->where(function ($q) use ($operatorSkpd) {
                      foreach ($operatorSkpd as $op) {
                          $q->orWhere(function ($q2) use ($op) {
-                             $q2->where('kd_opd1', $op->kd_opd1)
-                                ->where('kd_opd2', $op->kd_opd2)
-                                ->where('kd_opd3', $op->kd_opd3)
-                                ->where('kd_opd4', $op->kd_opd4)
-                                ->where('kd_opd5', $op->kd_opd5);
+                             $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                                ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                ->where('sp2d.kd_opd5', $op->kd_opd5);
                          });
                      }
                  });
@@ -139,11 +139,11 @@ class SP2DController extends Controller
                  $query->where(function ($q) use ($operatorSkpd) {
                      foreach ($operatorSkpd as $op) {
                          $q->orWhere(function ($q2) use ($op) {
-                             $q2->where('kd_opd1', $op->kd_opd1)
-                                ->where('kd_opd2', $op->kd_opd2)
-                                ->where('kd_opd3', $op->kd_opd3)
-                                ->where('kd_opd4', $op->kd_opd4)
-                                ->where('kd_opd5', $op->kd_opd5);
+                             $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                                ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                ->where('sp2d.kd_opd5', $op->kd_opd5);
                          });
                      }
                  });
@@ -165,11 +165,11 @@ class SP2DController extends Controller
                  $query->where(function ($q) use ($operatorSkpd) {
                      foreach ($operatorSkpd as $op) {
                          $q->orWhere(function ($q2) use ($op) {
-                             $q2->where('kd_opd1', $op->kd_opd1)
-                                ->where('kd_opd2', $op->kd_opd2)
-                                ->where('kd_opd3', $op->kd_opd3)
-                                ->where('kd_opd4', $op->kd_opd4)
-                                ->where('kd_opd5', $op->kd_opd5);
+                             $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                                ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                ->where('sp2d.kd_opd5', $op->kd_opd5);
                          });
                      }
                  });
