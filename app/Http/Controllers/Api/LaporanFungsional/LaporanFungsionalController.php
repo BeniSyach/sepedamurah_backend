@@ -7,6 +7,8 @@ use App\Models\LaporanFungsionalModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\LaporanFungsionalResource;
 use App\Models\AksesOperatorModel;
+use App\Models\UsersPermissionModel;
+use App\Services\TelegramService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -24,6 +26,7 @@ class LaporanFungsionalController extends Controller
         if ($jenis = $request->get('jenis')) {
             if($jenis == 'Pengeluaran'){
                 $query->where('jenis_berkas', 'Pengeluaran');
+
                 if ($menu = $request->get('menu')) {
                     if($menu == 'pengeluaran'){
                         if ($userId = $request->get('user_id')) {
@@ -33,20 +36,82 @@ class LaporanFungsionalController extends Controller
                     }
 
                     if($menu == 'berkas_masuk_pengeluaran'){
+                        $query->whereNull('proses');
+                        // hanya tampilkan yang belum diverifikasi
+                        $query->whereNull('diterima')->whereNull('ditolak');
+                    }
+
+                    if($menu == 'operator_pengeluaran')
+                    {
                         // Ambil data SKPD dari operator yang login
-                      $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
-      
-                      if ($operator) {
-                          // tampilkan berkas dari SKPD yang diampunya
-                          $query->where(function ($q) use ($operator) {
-                              $q->where('kd_opd1', $operator->kd_opd1)
-                              ->where('kd_opd2', $operator->kd_opd2)
-                              ->where('kd_opd3', $operator->kd_opd3)
-                              ->where('kd_opd4', $operator->kd_opd4)
-                              ->where('kd_opd5', $operator->kd_opd5);
-                          });
-                      }
-                      $query->whereNull('diterima')->whereNull('ditolak');
+                        $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
+                        
+                        if ($operator) {
+                            // tampilkan berkas dari SKPD yang diampunya
+                            $query->where(function ($q) use ($operator) {
+                                $q->where('kd_opd1', $operator->kd_opd1)
+                                ->where('kd_opd2', $operator->kd_opd2)
+                                ->where('kd_opd3', $operator->kd_opd3)
+                                ->where('kd_opd4', $operator->kd_opd4)
+                                ->where('kd_opd5', $operator->kd_opd5);
+                            });
+                        }
+                        $query->where('id_operator', '0');
+                        $query->where('proses', '1');
+                        // $query->whereNotNull('supervisor_proses');
+                        $query->whereNull('diterima')->whereNull('ditolak');
+                    }
+                    
+                    if($menu == 'operator_pengeluaran_diterima'){
+                        // Ambil data SKPD dari operator yang login
+                        $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+        
+            
+                        if ($operatorSkpd) {
+                        $query->where(function ($q) use ($operatorSkpd) {
+                            foreach ($operatorSkpd as $op) {
+                                $q->orWhere(function ($q2) use ($op) {
+                                    $q2->where('kd_opd1', $op->kd_opd1)
+                                        ->where('kd_opd2', $op->kd_opd2)
+                                        ->where('kd_opd3', $op->kd_opd3)
+                                        ->where('kd_opd4', $op->kd_opd4)
+                                        ->where('kd_opd5', $op->kd_opd5);
+                                });
+                            }
+                        });
+                        
+                        }
+                        // ambil data yg belum diperiksa operator
+                        //  $query->where('id_operator', '0');
+                        $query->where('proses', '2');
+                        //  $query->whereNotNull('supervisor_proses');
+                        $query->whereNotNull('diterima');
+                    }
+
+                    if($menu == 'operator_pengeluaran_ditolak'){
+                        // Ambil data SKPD dari operator yang login
+                        $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+        
+            
+                        if ($operatorSkpd) {
+                        $query->where(function ($q) use ($operatorSkpd) {
+                            foreach ($operatorSkpd as $op) {
+                                $q->orWhere(function ($q2) use ($op) {
+                                    $q2->where('kd_opd1', $op->kd_opd1)
+                                        ->where('kd_opd2', $op->kd_opd2)
+                                        ->where('kd_opd3', $op->kd_opd3)
+                                        ->where('kd_opd4', $op->kd_opd4)
+                                        ->where('kd_opd5', $op->kd_opd5);
+                                });
+                            }
+                        });
+                        
+                        }
+                        // ambil data yg belum diperiksa operator
+                        //  $query->where('id_operator', '0');
+                        // $query->where('proses', '2');
+                        //  $query->whereNotNull('supervisor_proses');
+                        $query->whereNotNull('ditolak');
                     }
 
                     if($menu == 'fungsional_pengeluaran_diterima'){
@@ -67,6 +132,7 @@ class LaporanFungsionalController extends Controller
 
             if($jenis == 'Penerimaan'){
                 $query->where('jenis_berkas', 'Penerimaan');
+
                 if ($menu = $request->get('menu')) {
                     if($menu == 'penerimaan'){
                         if ($userId = $request->get('user_id')) {
@@ -74,10 +140,18 @@ class LaporanFungsionalController extends Controller
                         }
                         $query->whereNull('diterima')->whereNull('ditolak');
                     }
+
                     if($menu == 'berkas_masuk_penerimaan'){
-                          // Ambil data SKPD dari operator yang login
+                        $query->whereNull('proses');
+                        // hanya tampilkan yang belum diverifikasi
+                        $query->whereNull('diterima')->whereNull('ditolak');
+                    }
+
+                    if($menu == 'operator_penerimaan')
+                    {
+                        // Ambil data SKPD dari operator yang login
                         $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
-        
+                        
                         if ($operator) {
                             // tampilkan berkas dari SKPD yang diampunya
                             $query->where(function ($q) use ($operator) {
@@ -88,7 +162,62 @@ class LaporanFungsionalController extends Controller
                                 ->where('kd_opd5', $operator->kd_opd5);
                             });
                         }
+                        $query->where('id_operator', '0');
+                        $query->where('proses', '1');
+                        // $query->whereNotNull('supervisor_proses');
                         $query->whereNull('diterima')->whereNull('ditolak');
+                    }
+                    
+                    if($menu == 'operator_penerimaan_diterima'){
+                        // Ambil data SKPD dari operator yang login
+                        $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+        
+            
+                        if ($operatorSkpd) {
+                        $query->where(function ($q) use ($operatorSkpd) {
+                            foreach ($operatorSkpd as $op) {
+                                $q->orWhere(function ($q2) use ($op) {
+                                    $q2->where('kd_opd1', $op->kd_opd1)
+                                        ->where('kd_opd2', $op->kd_opd2)
+                                        ->where('kd_opd3', $op->kd_opd3)
+                                        ->where('kd_opd4', $op->kd_opd4)
+                                        ->where('kd_opd5', $op->kd_opd5);
+                                });
+                            }
+                        });
+                        
+                        }
+                        // ambil data yg belum diperiksa operator
+                        //  $query->where('id_operator', '0');
+                        $query->where('proses', '2');
+                        //  $query->whereNotNull('supervisor_proses');
+                        $query->whereNotNull('diterima');
+                    }
+
+                    if($menu == 'operator_penerimaan_ditolak'){
+                        // Ambil data SKPD dari operator yang login
+                        $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+        
+            
+                        if ($operatorSkpd) {
+                        $query->where(function ($q) use ($operatorSkpd) {
+                            foreach ($operatorSkpd as $op) {
+                                $q->orWhere(function ($q2) use ($op) {
+                                    $q2->where('kd_opd1', $op->kd_opd1)
+                                        ->where('kd_opd2', $op->kd_opd2)
+                                        ->where('kd_opd3', $op->kd_opd3)
+                                        ->where('kd_opd4', $op->kd_opd4)
+                                        ->where('kd_opd5', $op->kd_opd5);
+                                });
+                            }
+                        });
+                        
+                        }
+                        // ambil data yg belum diperiksa operator
+                        //  $query->where('id_operator', '0');
+                        // $query->where('proses', '2');
+                        //  $query->whereNotNull('supervisor_proses');
+                        $query->whereNotNull('ditolak');
                     }
 
                     if($menu == 'fungsional_penerimaan_diterima'){
@@ -134,7 +263,7 @@ class LaporanFungsionalController extends Controller
     /**
      * Store Laporan Fungsional baru
      */
-    public function store(Request $request)
+    public function store(Request $request, TelegramService $telegram)
     {
         $validated = $request->validate([
             'id_pengirim' => 'required|integer',
@@ -197,7 +326,30 @@ class LaporanFungsionalController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-    
+
+            if ($laporan) {
+                $supervisors = UsersPermissionModel::with('user')
+                    ->where('users_rule_id', 4)
+                    ->get();
+            
+                $jenis_berkas = $request->jenis_berkas;
+            
+                foreach ($supervisors as $supervisor) {
+                    $chatId = $supervisor->user->chat_id ?? null;
+            
+                    if (!$chatId) {
+                        continue; // skip kalau user tidak punya chat_id
+                    }
+            
+                    if ($jenis_berkas === 'Pengeluaran') {
+                        $telegram->sendFungsionalPengeluaranToSupervisor($chatId);
+                    }
+            
+                    if ($jenis_berkas === 'Penerimaan') {
+                        $telegram->sendFungsionalToSupervisor($chatId);
+                    }
+                }
+            }
             return response()->json([
                 'status' => true,
                 'message' => 'Data berhasil disimpan',
@@ -257,15 +409,15 @@ class LaporanFungsionalController extends Controller
             'kd_opd3' => 'nullable|string|max:10',
             'kd_opd4' => 'nullable|string|max:10',
             'kd_opd5' => 'nullable|string|max:10',
-            'nama_pengirim' => 'required|string|max:255',
+            'nama_pengirim' => 'nullable|string|max:255',
             'id_operator' => 'nullable|integer',
             'nama_operator' => 'nullable|string|max:255',
-            'jenis_berkas' => 'required|string|max:50',
-            'nama_file' => 'required|string|max:255',
+            'jenis_berkas' => 'nullable|string|max:50',
+            'nama_file' => 'nullable|string|max:255',
             'nama_file_asli' => 'nullable|file|mimes:pdf|max:5120',
             'tanggal_upload' => 'nullable|date',
             'kode_file' => 'nullable|string|max:50',
-            'tahun' => 'required|string|max:4',
+            'tahun' => 'nullable|string|max:4',
             'diterima' => 'nullable|date',
             'ditolak' => 'nullable|date',
             'alasan_tolak' => 'nullable|string',

@@ -9,8 +9,10 @@ use App\Http\Resources\SP2DResource;
 use App\Models\AksesOperatorModel;
 use App\Models\SP2DRekeningModel;
 use App\Models\SP2DSumberDanaModel;
+use App\Models\UsersPermissionModel;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use App\Services\TelegramService;
 
 class SP2DController extends Controller
 {
@@ -368,7 +370,7 @@ class SP2DController extends Controller
     /**
      * Store SP2D baru
      */
-    public function store(Request $request)
+    public function store(Request $request, TelegramService $telegram)
     {
         if ($request->has('id_berkas') && is_string($request->id_berkas)) {
             $decoded = json_decode($request->id_berkas, true);
@@ -479,6 +481,20 @@ class SP2DController extends Controller
                 if (!empty($validated['sumber_dana'])) {
                     $sumberDanaPayload = json_decode($validated['sumber_dana'], true);
                     $this->saveSumberDana($sp2d->id_sp2d, $sumberDanaPayload);
+                }
+                $supervisors = UsersPermissionModel::with('user')
+                    ->where('users_rule_id', 4)
+                    ->get();
+
+                $noSpm = $request->no_spm;
+                $namaFile = $request->namafile;
+
+                foreach ($supervisors as $supervisor) {
+                    $chatId = $supervisor->user->chat_id ?? null;
+
+                    if ($chatId) {
+                        $telegram->sendSp2dFromBendahara($chatId, $noSpm, $namaFile);
+                    }
                 }
             } else {
                 // Jika gagal create
