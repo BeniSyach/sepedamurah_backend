@@ -36,7 +36,21 @@ class SP2DController extends Controller
                      ->on('sp2d.kd_opd3', '=', 'ref_opd.kd_opd3')
                      ->on('sp2d.kd_opd4', '=', 'ref_opd.kd_opd4')
                      ->on('sp2d.kd_opd5', '=', 'ref_opd.kd_opd5');
-            });
+            })
+            ->select('sp2d.*', 'ref_opd.nm_opd')
+            ->selectSub(function ($q) {
+                $q->from('sp2d_sumber_dana as sd')
+                    ->join('ref_sumber_dana as r', function ($j) {
+                        $j->on('sd.kd_ref1', '=', 'r.kd_ref1')
+                          ->on('sd.kd_ref2', '=', 'r.kd_ref2')
+                          ->on('sd.kd_ref3', '=', 'r.kd_ref3')
+                          ->on('sd.kd_ref4', '=', 'r.kd_ref4')
+                          ->on('sd.kd_ref5', '=', 'r.kd_ref5')
+                          ->on('sd.kd_ref6', '=', 'r.kd_ref6');
+                    })
+                    ->whereColumn('sd.sp2d_id', 'sp2d.id_sp2d')
+                    ->selectRaw("LISTAGG(r.nm_ref, ', ') WITHIN GROUP (ORDER BY r.nm_ref)");
+            }, 'sumber_danas');
 
         if ($menu = $request->get('menu')) {
 
@@ -251,8 +265,21 @@ class SP2DController extends Controller
                   ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%$search%"])
                   ->orWhereRaw("LOWER(nilai_belanja) LIKE ?", ["%$search%"])
                   ->orWhereRaw("LOWER(no_spm) LIKE ?", ["%$search%"])
-                  ->orWhereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"]);
-        
+                  ->orWhereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"])
+                  ->orWhereRaw("
+                  EXISTS (
+                      SELECT 1 FROM sp2d_sumber_dana sd
+                      JOIN ref_sumber_dana r
+                      ON sd.kd_ref1 = r.kd_ref1
+                      AND sd.kd_ref2 = r.kd_ref2
+                      AND sd.kd_ref3 = r.kd_ref3
+                      AND sd.kd_ref4 = r.kd_ref4
+                      AND sd.kd_ref5 = r.kd_ref5
+                      AND sd.kd_ref6 = r.kd_ref6
+                      WHERE sd.sp2d_id = sp2d.id_sp2d
+                      AND LOWER(r.nm_ref) LIKE LOWER('%{$search}%')
+                  )
+              ");
                   // 🔥 Tambah nm_opd
                 //   ->orWhereHas('opd', function ($qq) use ($search) {
                 //       $qq->whereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"]);
