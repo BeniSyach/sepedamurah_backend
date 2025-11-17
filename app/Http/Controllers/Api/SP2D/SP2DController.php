@@ -30,7 +30,7 @@ class SP2DController extends Controller
         $query = Sp2dModel::query()
             ->with(['rekening', 'sumberDana', 'sp2dkirim']) // relasi Eloquent valid
             ->whereNull('sp2d.deleted_at')
-            ->join('ref_opd as opd', function ($join) {
+            ->join('ref_opd', function ($join) {
                 $join->on('sp2d.kd_opd1', '=', 'ref_opd.kd_opd1')
                      ->on('sp2d.kd_opd2', '=', 'ref_opd.kd_opd2')
                      ->on('sp2d.kd_opd3', '=', 'ref_opd.kd_opd3')
