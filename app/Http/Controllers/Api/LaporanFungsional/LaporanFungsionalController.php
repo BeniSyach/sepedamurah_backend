@@ -512,6 +512,62 @@ class LaporanFungsionalController extends Controller
             'message' => 'Data berhasil dihapus (soft delete) dan file terkait dihapus',
         ]);
     }
+
+     /**
+     * Menolak banyak Laporan Fungsional sekaligus
+     */
+    public function terimaMulti(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+        ]);
+    
+        $ids = $validated['ids'];
+    
+        // Update semua berkas yang dipilih
+        $updated = LaporanFungsionalModel::whereIn('id', $ids)->update([
+            'proses' => 1,                     // status diterima
+            'ditolak' => null,                 // pastikan ditolak kosong
+            'alasan_tolak' => null,            // hapus alasan tolak
+        ]);
+    
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menerima $updated berkas Laporan Fungsional.",
+            'updated' => $updated
+        ]);
+    }
+    
+
+     /**
+     * Menolak banyak Laporan Fungsional sekaligus
+     */
+    public function tolakMulti(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+            'alasan' => 'required|string|max:500',
+        ]);
+
+        $ids = $validated['ids'];
+        $alasan = $validated['alasan'];
+
+        // Update semua berkas yang dipilih
+        $updated = LaporanFungsionalModel::whereIn('id', $ids)->update([
+            'ditolak' => now(),
+            'alasan_tolak' => $alasan,
+            'proses' => 1,              // status proses kalau ditolak
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menolak $updated berkas Laporan Fungsional.",
+            'updated' => $updated
+        ]);
+    }
+
     
 
     public function downloadBerkas(int $id)

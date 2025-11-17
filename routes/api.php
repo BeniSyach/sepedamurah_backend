@@ -259,6 +259,8 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('laporan')->group(function () {
 
         // Laporan Fungsional
+        Route::post('/terima-multi', [LaporanFungsionalController::class, 'terimaMulti']);
+        Route::post('/tolak-multi', [LaporanFungsionalController::class, 'tolakMulti']);
         Route::apiResource('/fungsional', LaporanFungsionalController::class);
         Route::get('/fungsional/download/{id}', [LaporanFungsionalController::class, 'downloadBerkas'])->name('fungsional.download');
         Route::get('/fungsional/downloadTTE/{id}', [LaporanFungsionalController::class, 'downloadBerkasTTE'])->name('fungsional.downloadtte');
