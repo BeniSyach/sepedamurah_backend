@@ -752,25 +752,33 @@ class SP2DController extends Controller
      */
     public function destroy($id)
     {
-        $sp2d = SP2DModel::where('id_sp2d', $id)
-                         ->whereNull('deleted_at')
-                         ->first();
-
+        // Ambil data SP2D
+        $sp2d = Sp2dModel::where('id_sp2d', $id)
+                        ->whereNull('deleted_at')
+                        ->first();
+    
         if (!$sp2d) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
-        $sp2d->deleted_at = now();
-        $sp2d->save();
-
+    
+        // Hapus semua child berdasarkan sp2d_id
+        $deletedRekening = SP2DRekeningModel::where('sp2d_id', $id)->delete();
+        $deletedSumberDana = SP2DSumberDanaModel::where('sp2d_id', $id)->delete();
+    
+        // Soft delete master SP2D
+        $sp2d->delete();
+    
         return response()->json([
             'status' => true,
             'message' => 'Data berhasil dihapus (soft delete)',
+            'deleted_rekening' => $deletedRekening,
+            'deleted_sumber_dana' => $deletedSumberDana,
         ]);
     }
+    
 
  /**
      * Menolak banyak SP2D sekaligus
@@ -801,7 +809,6 @@ class SP2DController extends Controller
         ]);
     }
     
-
      /**
      * Menolak banyak SP2D sekaligus
      */
@@ -832,6 +839,36 @@ class SP2DController extends Controller
             'updated' => $updated
         ]);
     }
+
+         /**
+     * Hapus banyak SP2D sekaligus
+     */
+    public function HapusMulti(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+        ]);
+    
+        $ids = $validated['ids'];
+    
+        // Hapus anak-anaknya berdasarkan sp2d_id
+        $deletedRekening = SP2DRekeningModel::whereIn('sp2d_id', $ids)->delete();
+        $deletedSumberDana = SP2DSumberDanaModel::whereIn('sp2d_id', $ids)->delete();
+
+        // Hapus master SP2D
+        $deletedSp2d = Sp2dModel::whereIn('id_sp2d', $ids)->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menghapus SP2D beserta child-nya.",
+            'deleted_sp2d' => $deletedSp2d,
+            'deleted_rekening' => $deletedRekening,
+            'deleted_sumber_dana' => $deletedSumberDana,
+        ]);
+    }
+    
+
 
     public function downloadBerkas(int $id)
     {
