@@ -467,7 +467,7 @@ class SP2DController extends Controller
             ]));
 
             // Pastikan data berhasil dibuat sebelum lanjut
-            if ($sp2d && $sp2d instanceof SP2DModel) {
+            if ($sp2d) {
                 // Ambil ulang data (jika perlu data lengkap dengan relasi)
                 $sp2d = SP2DModel::where('kode_file', $kodeFile)->first();
 
