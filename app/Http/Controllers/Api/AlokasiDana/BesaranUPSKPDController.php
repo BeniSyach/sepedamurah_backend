@@ -15,12 +15,20 @@ class BesaranUPSKPDController extends Controller
      */
     public function index(Request $request)
     {
-        $query = BesaranUPSKPDModel::whereNull('deleted_at');
+        $query = BesaranUPSKPDModel::whereNull('pagu_up.deleted_at')
+                ->join('ref_opd', function ($join) {
+                    $join->on('pagu_up.kd_opd1', '=', 'ref_opd.kd_opd1')
+                        ->on('pagu_up.kd_opd2', '=', 'ref_opd.kd_opd2')
+                        ->on('pagu_up.kd_opd3', '=', 'ref_opd.kd_opd3')
+                        ->on('pagu_up.kd_opd4', '=', 'ref_opd.kd_opd4')
+                        ->on('pagu_up.kd_opd5', '=', 'ref_opd.kd_opd5');
+                });
 
         // 🔍 Filter pencarian jika ada parameter "search"
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('tahun', 'like', "%{$search}%");
+                $q->where('pagu_up.tahun', 'like', "%{$search}%");
+                $q->orWhereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"]);
             });
         }
 

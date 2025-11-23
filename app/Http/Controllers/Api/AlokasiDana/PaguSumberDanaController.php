@@ -15,17 +15,23 @@ class PaguSumberDanaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PaguSumberDanaModel::query()->whereNull('deleted_at');
+        $query = PaguSumberDanaModel::query()->whereNull('pagu_sumber_dana.deleted_at')
+                ->join('ref_sumber_dana', function ($join) {
+                    $join->on('pagu_sumber_dana.kd_ref1', '=', 'ref_sumber_dana.kd_ref1')
+                        ->on('pagu_sumber_dana.kd_ref2', '=', 'ref_sumber_dana.kd_ref2')
+                        ->on('pagu_sumber_dana.kd_ref3', '=', 'ref_sumber_dana.kd_ref3')
+                        ->on('pagu_sumber_dana.kd_ref4', '=', 'ref_sumber_dana.kd_ref4')
+                        ->on('pagu_sumber_dana.kd_ref5', '=', 'ref_sumber_dana.kd_ref5')
+                        ->on('pagu_sumber_dana.kd_ref6', '=', 'ref_sumber_dana.kd_ref6');
+                });
 
         // 🔍 Filter pencarian
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                for ($i = 1; $i <= 6; $i++) {
-                    $q->orWhere("kd_ref{$i}", 'like', "%{$search}%");
-                }
-                $q->orWhere('tahun', 'like', "%{$search}%");
+                $q->orWhere('pagu_sumber_dana.tahun', 'like', "%{$search}%");
                 $q->orWhere('pagu', 'like', "%{$search}%");
                 $q->orWhere('jumlah_silpa', 'like', "%{$search}%");
+                $q->orWhereRaw("LOWER(nm_ref) LIKE ?", ["%$search%"]);
             });
         }
     
