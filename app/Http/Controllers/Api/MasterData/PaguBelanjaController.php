@@ -15,45 +15,94 @@ class PaguBelanjaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PaguBelanjaModel::query();
-
-        // Filter pencarian
-        if ($search = $request->get('search')) {
-            $searchColumns = [
-                'kd_prog1',
-                'kd_prog2',
-                'kd_prog3',
-                'kd_keg1',
-                'kd_subkeg1',
-                'kd_rekening1',
-            ];
+        $search = $request->input('search');
+      
+        // Mulai query pagubelanaja
+        $query = PaguBelanjaModel::with('urusan');
         
-            $query->where(function ($query) use ($search, $searchColumns) {
-                foreach ($searchColumns as $column) {
-                    $query->orWhere($column, 'like', "%{$search}%");
-                }
+        // Join tabel untuk pencarian
+        $query->leftJoin('ref_urusan', 'pagu_belanja.kd_urusan', '=', 'ref_urusan.kd_urusan')
+            ->leftJoin('ref_bidang_urusan', function($join) {
+                $join->on('pagu_belanja.kd_bu1', '=', 'ref_bidang_urusan.kd_bu1')
+                     ->on('pagu_belanja.kd_bu2', '=', 'ref_bidang_urusan.kd_bu2');
+            })
+            ->leftJoin('ref_program', function($join) {
+                $join->on('pagu_belanja.kd_prog1', '=', 'ref_program.kd_prog1')
+                     ->on('pagu_belanja.kd_prog2', '=', 'ref_program.kd_prog2')
+                     ->on('pagu_belanja.kd_prog3', '=', 'ref_program.kd_prog3');
+            })
+            ->leftJoin('ref_kegiatan', function($join) {
+                $join->on('pagu_belanja.kd_keg1', '=', 'ref_kegiatan.kd_keg1')
+                     ->on('pagu_belanja.kd_keg2', '=', 'ref_kegiatan.kd_keg2')
+                     ->on('pagu_belanja.kd_keg3', '=', 'ref_kegiatan.kd_keg3')
+                     ->on('pagu_belanja.kd_keg4', '=', 'ref_kegiatan.kd_keg4')
+                     ->on('pagu_belanja.kd_keg5', '=', 'ref_kegiatan.kd_keg5');
+            })
+            ->leftJoin('ref_subkegiatan', function($join) {
+                $join->on('pagu_belanja.kd_subkeg1', '=', 'ref_subkegiatan.kd_subkeg1')
+                     ->on('pagu_belanja.kd_subkeg2', '=', 'ref_subkegiatan.kd_subkeg2')
+                     ->on('pagu_belanja.kd_subkeg3', '=', 'ref_subkegiatan.kd_subkeg3')
+                     ->on('pagu_belanja.kd_subkeg4', '=', 'ref_subkegiatan.kd_subkeg4')
+                     ->on('pagu_belanja.kd_subkeg5', '=', 'ref_subkegiatan.kd_subkeg5')
+                     ->on('pagu_belanja.kd_subkeg6', '=', 'ref_subkegiatan.kd_subkeg6');
+            })
+            ->leftJoin('ref_rekening', function($join) {
+                $join->on('pagu_belanja.kd_rekening1', '=', 'ref_rekening.kd_rekening1')
+                     ->on('pagu_belanja.kd_rekening2', '=', 'ref_rekening.kd_rekening2')
+                     ->on('pagu_belanja.kd_rekening3', '=', 'ref_rekening.kd_rekening3')
+                     ->on('pagu_belanja.kd_rekening4', '=', 'ref_rekening.kd_rekening4')
+                     ->on('pagu_belanja.kd_rekening5', '=', 'ref_rekening.kd_rekening5')
+                     ->on('pagu_belanja.kd_rekening6', '=', 'ref_rekening.kd_rekening6');
+            })
+            ->leftJoin('ref_opd as skpd', function($join) {
+                $join->on(DB::raw("TRIM(REPLACE(pagu_belanja.kd_opd1 || '.' || 
+                                                     pagu_belanja.kd_opd2 || '.' || 
+                                                     pagu_belanja.kd_opd3 || '.' || 
+                                                     pagu_belanja.kd_opd4 || '.' || 
+                                                     pagu_belanja.kd_opd5 || '.' || 
+                                                     pagu_belanja.kd_opd6 || '.' || 
+                                                     pagu_belanja.kd_opd7 || '.' || 
+                                                     pagu_belanja.kd_opd8, ' ', ''))"), 
+                            '=', DB::raw('skpd.kode_opd'));
+            });
+    
+        // Filter search jika ada
+        if ($search) {
+            $searchLower = strtolower($search);
+    
+            $query->where(function($q) use ($searchLower) {
+                $q->whereRaw('LOWER(ref_urusan.nm_urusan) like ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(ref_bidang_urusan.nm_bu) like ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(ref_program.nm_program) like ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(ref_kegiatan.nm_kegiatan) like ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(ref_subkegiatan.nm_subkegiatan) like ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(ref_rekening.nm_rekening) like ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(skpd.nm_opd) like ?', ["%{$searchLower}%"]);
             });
         }
-        
-        // Eager loading Urusan
-        $data = PaguBelanjaModel::with('urusan')->orderBy('tahun_rek', 'desc')->paginate(10);
-
-        // Lazy eager loading untuk semua relasi composite key
+    
+        // Pilih field dari PaguBelanja
+        $data = $query->select('pagu_belanja.*')
+                      ->orderBy('pagu_belanja.tahun_rek', 'desc')
+                      ->paginate(10);
+    
+        // Transform relasi Eloquent jika perlu
         $data->getCollection()->transform(function ($item) {
-            $item->program      = $item->program;      // accessor Program
-            $item->kegiatan     = $item->kegiatan;     // accessor Kegiatan
-            $item->subkegiatan  = $item->subkegiatan;  // accessor SubKegiatan
-            $item->rekening     = $item->rekening;     // accessor Rekening
-            $item->bu           = $item->bu;           // accessor Bidang Urusan
-            $item->skpd           = $item->skpd;           // accessor SKPD
+            $item->program      = $item->program;
+            $item->kegiatan     = $item->kegiatan;
+            $item->subkegiatan  = $item->subkegiatan;
+            $item->rekening     = $item->rekening;
+            $item->bu           = $item->bu;
+            $item->skpd         = $item->skpd;
             return $item;
         });
-        
-        // Mengembalikan collection
+    
         return PaguBelanjaResource::collection($data);
-        
     }
-
+    
+    
+    
+    
     /**
      * Simpan data Pagu Belanja baru.
      */
