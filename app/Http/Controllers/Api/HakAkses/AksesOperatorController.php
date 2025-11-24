@@ -36,42 +36,39 @@ class AksesOperatorController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'id_operator' => 'required|string|max:50|unique:AKSES_OPERATOR,id_operator',
-            'kd_opd1' => 'required|string|max:2',
-            'kd_opd2' => 'required|string|max:2',
-            'kd_opd3' => 'nullable|string|max:2',
-            'kd_opd4' => 'nullable|string|max:2',
-            'kd_opd5' => 'nullable|string|max:2',
+            'id_operator' => 'required|string|max:50',
+            'kd_opd1'     => 'required|string|max:2',
+            'kd_opd2'     => 'required|string|max:2',
+            'kd_opd3'     => 'nullable|string|max:2',
+            'kd_opd4'     => 'nullable|string|max:2',
+            'kd_opd5'     => 'nullable|string|max:2',
         ]);
-
+    
         try {
-            // Ambil ID dari sequence Oracle
-            $id = DB::connection('oracle')->selectOne('SELECT NO_OPERATOR.NEXTVAL AS id FROM dual')->id;
-
-            DB::connection('oracle')->table('AKSES_OPERATOR')->insert([
-                'id' => $id,
-                'id_operator' => $validated['id_operator'],
-                'kd_opd1' => $validated['kd_opd1'],
-                'kd_opd2' => $validated['kd_opd2'],
-                'kd_opd3' => $validated['kd_opd3'] ?? null,
-                'kd_opd4' => $validated['kd_opd4'] ?? null,
-                'kd_opd5' => $validated['kd_opd5'] ?? null,
-                'date_created' => now(),
-                'created_at' => now(),
-            ]);
-
-            $operator = DB::connection('oracle')->table('AKSES_OPERATOR')->where('id', $id)->first();
-
-            return new AksesOperatorResource($operator);
-
+            // Buat instance model baru
+            $aksesOperator = new AksesOperatorModel();
+            $aksesOperator->id_operator = $validated['id_operator'];
+            $aksesOperator->kd_opd1     = $validated['kd_opd1'];
+            $aksesOperator->kd_opd2     = $validated['kd_opd2'];
+            $aksesOperator->kd_opd3     = $validated['kd_opd3'] ?? null;
+            $aksesOperator->kd_opd4     = $validated['kd_opd4'] ?? null;
+            $aksesOperator->kd_opd5     = $validated['kd_opd5'] ?? null;
+            $aksesOperator->date_created = now();
+    
+            // Simpan ke database
+            $aksesOperator->save();
+    
+            return new AksesOperatorResource($aksesOperator);
+    
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'Terjadi kesalahan pada database',
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
+    
 
     /**
      * Detail akses operator

@@ -9,6 +9,7 @@ use App\Http\Resources\SP2DResource;
 use App\Models\AksesOperatorModel;
 use App\Models\SP2DRekeningModel;
 use App\Models\SP2DSumberDanaModel;
+use App\Models\User;
 use App\Models\UsersPermissionModel;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -487,7 +488,7 @@ class SP2DController extends Controller
                     ->get();
 
                 $noSpm = $request->no_spm;
-                $namaFile = $request->namafile;
+                $namaFile = $request->nama_file;
 
                 foreach ($supervisors as $supervisor) {
                     $chatId = $supervisor->user->chat_id ?? null;
@@ -646,7 +647,7 @@ class SP2DController extends Controller
     /**
      * Update SP2D
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, TelegramService $telegram)
     {
         $sp2d = SP2DModel::where('id_sp2d', $id)
                          ->whereNull('deleted_at')
@@ -658,7 +659,11 @@ class SP2DController extends Controller
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-    
+
+        $old_supervisor_proses = $sp2d->supervisor_proses;
+        $old_diterima = $sp2d->diterima;
+        $old_ditolak  = $sp2d->ditolak;
+
         $validated = $request->validate([
             'tahun' => 'nullable|string|max:4',
             'id_user' => 'nullable|integer',
@@ -731,6 +736,58 @@ class SP2DController extends Controller
         try {
 
             $sp2d->update($validated);
+            $sp2d->refresh(); 
+
+            $noSpm = $sp2d->no_spm;
+
+            /*
+            |--------------------------------------------------------------------------
+            |  CEK Notifikasi Dari Supervisor ke OPERATOR
+            |--------------------------------------------------------------------------
+            */
+            if (is_null($old_supervisor_proses) && !is_null($sp2d->supervisor_proses)) {
+                // Ambil operator yang punya akses ke OPD SP2D
+                $operator = AksesOperatorModel::where('kd_opd1', $sp2d->kd_opd1)
+                ->where('kd_opd2', $sp2d->kd_opd2)
+                ->where('kd_opd3', $sp2d->kd_opd3)
+                ->where('kd_opd4', $sp2d->kd_opd4)
+                ->where('kd_opd5', $sp2d->kd_opd5)
+                ->first();
+
+                $chatId = $operator->user->chat_id ?? null;
+                if ($chatId) {
+                    $telegram->sendSp2dToOperator($chatId, $noSpm);
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            |  CEK PERUBAHAN STATUS "DITERIMA" / "DITOLAK"
+            |--------------------------------------------------------------------------
+            */
+
+
+           // TRIGGER TERIMA
+            if (is_null($old_diterima) && !is_null($sp2d->diterima)) {
+                $id_user = $sp2d->id_user;
+                $user = User::where('id', $id_user)->first();
+                $chatId = $user->chat_id ?? null;
+                if ($chatId) {
+                    $telegram->sendSp2dTerima($chatId, $noSpm);
+                }
+            }
+
+            // TRIGGER TOLAK
+            if (is_null($old_ditolak) && !is_null($sp2d->ditolak)) {
+                $id_user = $sp2d->id_user;
+                $user = User::where('id', $id_user)->first();
+                $chatId = $user->chat_id ?? null;
+                $ket = $request->alasan_tolak ?? '-';
+                if ($chatId) {
+                    $telegram->sendSp2dTolak($chatId, $noSpm, $ket);
+                }
+            }
+            
 
             return response()->json([
                 'status' => true,
@@ -781,9 +838,9 @@ class SP2DController extends Controller
     
 
  /**
-     * Menolak banyak SP2D sekaligus
+     * Menerima banyak SP2D sekaligus
      */
-    public function terimaMulti(Request $request)
+    public function terimaMulti(Request $request, TelegramService $telegram)
     {
         $validated = $request->validate([
             'ids' => 'required|array',
@@ -794,25 +851,53 @@ class SP2DController extends Controller
         $ids = $validated['ids'];
         $supervisor = $validated['supervisor_proses'];
     
-        // Update semua berkas yang dipilih
-        $updated = Sp2dModel::whereIn('id_sp2d', $ids)->update([
-            'proses' => 1,                     // status diterima
-            'supervisor_proses' => $supervisor,
-            'ditolak' => null,                 // pastikan ditolak kosong
-            'alasan_tolak' => null,            // hapus alasan tolak
-        ]);
+        $sp2ds = Sp2dModel::whereIn('id_sp2d', $ids)->get();
+        $updatedCount = 0;
+    
+        foreach ($sp2ds as $sp2d) {
+            $old_supervisor_proses = $sp2d->supervisor_proses;
+    
+            // Update SP2D
+            $sp2d->update([
+                'proses' => 1,
+                'supervisor_proses' => $supervisor,
+                'ditolak' => null,
+                'alasan_tolak' => null,
+            ]);
+            $updatedCount++;
+    
+            // 🔔 Notifikasi ke operator yang sesuai OPD SP2D
+            if (is_null($old_supervisor_proses) && !is_null($sp2d->supervisor_proses)) {
+    
+                // Ambil operator yang punya akses ke OPD SP2D
+                $operators = AksesOperatorModel::where('kd_opd1', $sp2d->kd_opd1)
+                                ->where('kd_opd2', $sp2d->kd_opd2)
+                                ->where('kd_opd3', $sp2d->kd_opd3)
+                                ->where('kd_opd4', $sp2d->kd_opd4)
+                                ->where('kd_opd5', $sp2d->kd_opd5)
+                                ->get();
+    
+                foreach ($operators as $akses) {
+                    $user = $akses->user; // relasi ke User
+                    $chatId = $user->chat_id ?? null;
+                    if ($chatId) {
+                        $telegram->sendSp2dToOperator($chatId, $sp2d->no_spm);
+                    }
+                }
+            }
+        }
     
         return response()->json([
             'success' => true,
-            'message' => "Berhasil menerima $updated berkas SP2D.",
-            'updated' => $updated
+            'message' => "Berhasil menerima $updatedCount berkas SP2D.",
+            'updated' => $updatedCount
         ]);
     }
     
      /**
      * Menolak banyak SP2D sekaligus
      */
-    public function tolakMulti(Request $request)
+    public function tolakMulti(Request $request, TelegramService $telegram)
     {
         $validated = $request->validate([
             'ids' => 'required|array',
@@ -820,25 +905,37 @@ class SP2DController extends Controller
             'alasan' => 'required|string|max:500',
             'supervisor_proses' => 'required|string'
         ]);
-
+    
         $ids = $validated['ids'];
         $alasan = $validated['alasan'];
         $supervisor = $validated['supervisor_proses'];
-
-        // Update semua berkas yang dipilih
-        $updated = Sp2dModel::whereIn('id_sp2d', $ids)->update([
-            'ditolak' => now(),
-            'alasan_tolak' => $alasan,
-            'proses' => 1,              // status proses kalau ditolak
-            'supervisor_proses' => $supervisor,   // sesuaikan jika butuh
-        ]);
-
+    
+        // Ambil semua SP2D yang akan diupdate
+        $sp2ds = Sp2dModel::whereIn('id_sp2d', $ids)->get();
+    
+        foreach ($sp2ds as $sp2d) {
+            $sp2d->update([
+                'ditolak' => now(),
+                'alasan_tolak' => $alasan,
+                'proses' => 1, // status proses jika ditolak
+                'supervisor_proses' => $supervisor,
+            ]);
+    
+            // Kirim notifikasi per SP2D
+            $user = User::where('id', $sp2d->id_user)->first();
+            $chatId = $user->chat_id ?? null;
+            if ($chatId) {
+                $telegram->sendSp2dTolak($chatId, $sp2d->no_spm, $alasan);
+            }
+        }
+    
         return response()->json([
             'success' => true,
-            'message' => "Berhasil menolak $updated berkas SP2D.",
-            'updated' => $updated
+            'message' => "Berhasil menolak {$sp2ds->count()} berkas SP2D.",
+            'updated' => $sp2ds->count()
         ]);
     }
+    
 
          /**
      * Hapus banyak SP2D sekaligus

@@ -68,8 +68,6 @@ class Sp2dModel extends Model
         'jenis_belanja',
         'nilai_belanja',
         'status_laporan',
-        'created_at',
-        'updated_at',
         'deleted_at',
     ];
 
