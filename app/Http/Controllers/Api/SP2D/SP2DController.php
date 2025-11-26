@@ -119,6 +119,8 @@ class SP2DController extends Controller
                 //  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('diterima');
+                 $orderColumn = 'diterima';
+                 $orderDir    = 'desc';
             }
 
             if($menu == 'permohonan_sp2d_tolak_operator'){
@@ -145,6 +147,8 @@ class SP2DController extends Controller
                 //  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('ditolak');
+                 $orderColumn = 'ditolak';
+                 $orderDir    = 'desc';
             }
 
             if($menu == 'permohonan_sp2d_kirim_bank_operator'){
@@ -205,7 +209,7 @@ class SP2DController extends Controller
                 $query->whereNull('diterima')->whereNull('ditolak');
             }
 
-            // ✅ SPD Diterima
+            // ✅ SP2D Diterima
             if ($menu === 'sp2d_diterima') {
                 if ($userId = $request->get('user_id')) {
                     $query->where('id_user', $userId);
@@ -222,6 +226,8 @@ class SP2DController extends Controller
                     $query->where('id_user', $userId);
                 }
                 $query->whereNotNull('ditolak'); // hanya yang ditolak
+                $orderColumn = 'ditolak';
+                $orderDir    = 'desc';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
@@ -233,6 +239,8 @@ class SP2DController extends Controller
                     $q->whereNotNull('publish')
                       ->where('publish', '1');
                 });
+                $orderColumn = 'diterima';
+                $orderDir    = 'desc';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
@@ -244,6 +252,8 @@ class SP2DController extends Controller
                 $query->whereHas('sp2dkirim', function ($q) {
                     $q->whereNotNull('tgl_kirim_kebank');
                 });
+                $orderColumn = 'diterima';
+                $orderDir    = 'desc';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
@@ -255,6 +265,8 @@ class SP2DController extends Controller
                 $query->whereHas('sp2dkirim', function ($q) {
                     $q->whereNull('tgl_tte');
                 });
+                $orderColumn = 'diterima';
+                $orderDir    = 'desc';
             }
         }
     

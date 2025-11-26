@@ -82,9 +82,9 @@ class PaguBelanjaController extends Controller
         }
     
         // Pilih field dari PaguBelanja
-        $data = $query->select('pagu_belanja.*')
-                      ->orderBy('pagu_belanja.tahun_rek', 'desc')
-                      ->paginate(10);
+        $data = $query->selectRaw('DISTINCT pagu_belanja.*')
+                    ->orderBy('pagu_belanja.tahun_rek', 'desc')
+                    ->paginate(10);
     
         // Transform relasi Eloquent jika perlu
         $data->getCollection()->transform(function ($item) {

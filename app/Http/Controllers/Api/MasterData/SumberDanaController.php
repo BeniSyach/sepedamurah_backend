@@ -27,6 +27,11 @@ class SumberDanaController extends Controller
                   ->orWhere('kd_ref6', 'like', "%{$search}%");
         }
 
+        // Filter status jika dikirim di request
+        if ($request->filled('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
         $data = $query->orderBy('kd_ref1')
                       ->orderBy('kd_ref2')
                       ->orderBy('kd_ref3')

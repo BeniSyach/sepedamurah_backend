@@ -162,12 +162,12 @@ class SP2DSumberDanaController extends Controller
                     COALESCE(a.kd_ref3, b.kd_ref3, c.kd_ref3) AS kd_ref3, 
                     COALESCE(a.kd_ref4, b.kd_ref4, c.kd_ref4) AS kd_ref4, 
                     COALESCE(a.kd_ref5, b.kd_ref5, c.kd_ref5) AS kd_ref5, 
-                    COALESCE(a.kd_ref6, b.kd_ref6, c.kd_ref6) AS kd_ref6, 
-                    d.nm_ref AS nm_sumber, 
-                    NVL(a.pagu, 0) AS pagu, 
-                    NVL(a.jumlah_silpa, 0) AS jumlah_silpa, 
-                    NVL(b.jum_sumber_dana, 0) AS sumber_dana, 
-                    NVL(c.jum_belanja, 0) AS belanja, 
+                    COALESCE(a.kd_ref6, b.kd_ref6, c.kd_ref6) AS kd_ref6,
+                    d.nm_ref AS nm_sumber,
+                    NVL(a.pagu, 0) AS pagu,
+                    NVL(a.jumlah_silpa, 0) AS jumlah_silpa,
+                    NVL(b.jum_sumber_dana, 0) AS sumber_dana,
+                    NVL(c.jum_belanja, 0) AS belanja,
                     NVL(a.jumlah_silpa, 0) + NVL(b.jum_sumber_dana, 0) - NVL(c.jum_belanja, 0) AS sisa
                 FROM 
                     pagu_sumber_dana a
@@ -200,11 +200,11 @@ class SP2DSumberDanaController extends Controller
                     AND COALESCE(a.kd_ref4, b.kd_ref4, c.kd_ref4) = d.kd_ref4
                     AND COALESCE(a.kd_ref5, b.kd_ref5, c.kd_ref5) = d.kd_ref5
                     AND COALESCE(a.kd_ref6, b.kd_ref6, c.kd_ref6) = d.kd_ref6
-                WHERE  
+                WHERE
                     COALESCE(a.tahun, b.tahun, c.tahun) = :tahun
                     AND (NVL(a.jumlah_silpa, 0) + NVL(b.jum_sumber_dana, 0) - NVL(c.jum_belanja, 0)) > 0
                 ORDER BY 
-                    a.kd_ref1, a.kd_ref2, a.kd_ref3, a.kd_ref4, a.kd_ref5, a.kd_ref6
+                    sisa DESC
             ";
     
             $data = DB::connection('oracle')->select($sql, ['tahun' => $tahun]);
@@ -222,6 +222,7 @@ class SP2DSumberDanaController extends Controller
             ], 500);
         }
     }
+    
     
     
 }
