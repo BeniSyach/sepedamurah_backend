@@ -245,33 +245,33 @@ class RealisasiTransferSumberDanaController extends Controller
     public function destroy($id)
     {
         try {
-            $affected = DB::connection('oracle')
-                ->table('SUMBER_DANA')
-                ->where('ID', $id)
-                ->update([
-                    'DELETED_AT' => now(),
-                ]);
-
-            if ($affected === 0) {
+            // Cari data, termasuk yang sudah soft delete
+            $record = RealisasiSumberDanaModel::withTrashed()->find($id);
+    
+            if (!$record) {
                 return response()->json([
-                    'status' => false,
+                    'status'  => false,
                     'message' => 'Data tidak ditemukan',
                 ], 404);
             }
-
+    
+            // Hapus permanen
+            $record->forceDelete();
+    
             return response()->json([
-                'status' => true,
-                'message' => 'Data berhasil dihapus (soft delete)',
+                'status'  => true,
+                'message' => 'Data berhasil dihapus permanen (force delete)',
             ]);
-
+    
         } catch (\Exception $e) {
             return response()->json([
-                'status' => false,
+                'status'  => false,
                 'message' => 'Terjadi kesalahan saat menghapus data',
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
+    
 
     public function sumberDanaPajak()
     {
