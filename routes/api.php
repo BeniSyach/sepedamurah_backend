@@ -229,8 +229,9 @@ Route::middleware('auth:api')->group(function () {
 
         // SPD Terkirim
         Route::get('/spd-terkirim/download/{id}', [SPDTerkirimController::class, 'downloadBerkas'])->name('spd-terkirim.download');
-        Route::get('/spd-terkirim-downloadSPDTTE/{id}', [SPDTerkirimController::class, 'downloadBerkasTTE'])->name('spd-terkirim.downloadspdTTE');
+        Route::get('/spd-terkirim/downloadSPDTTE/{id}', [SPDTerkirimController::class, 'downloadBerkasTTE'])->name('spd-terkirim.downloadspdTTE');
         Route::apiResource('/spd-terkirim', SPDTerkirimController::class);
+
 
     });
 
