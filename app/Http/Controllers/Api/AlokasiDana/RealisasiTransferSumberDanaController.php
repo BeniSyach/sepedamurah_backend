@@ -34,6 +34,7 @@ class RealisasiTransferSumberDanaController extends Controller
             DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 12 THEN jumlah_sumber ELSE 0 END) AS total_dec"),
         ])
         ->where('tahun', $tahun)
+        ->whereNull('deleted_at')
         ->groupBy(
             'kd_ref1', 'kd_ref2', 'kd_ref3', 'kd_ref4', 'kd_ref5', 'kd_ref6'
         )
@@ -117,7 +118,7 @@ class RealisasiTransferSumberDanaController extends Controller
             'kd_ref4' => 'nullable|string|max:2',
             'kd_ref5' => 'nullable|string|max:2',
             'kd_ref6' => 'nullable|string|max:4',
-            'nm_sumber' => 'required|string|max:300',
+            'nm_sumber' => 'required|string|max:500',
             'tgl_diterima' => 'required|date',
             'tahun' => 'required|string|max:4',
             'jumlah_sumber' => 'nullable|numeric',
