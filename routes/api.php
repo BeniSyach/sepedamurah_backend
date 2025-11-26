@@ -223,14 +223,15 @@ Route::middleware('auth:api')->group(function () {
 
     Route::prefix('spd')->group(function () {
 
+        Route::get('/permohonan-spd/download/{id}', [PermohonanSpdController::class, 'downloadBerkas'])->name('permohonan-spd.download');
         // Permohonan SPD
         Route::apiResource('/permohonan-spd', PermohonanSPDController::class);
-        Route::get('/permohonan-spd/download/{id}', [PermohonanSpdController::class, 'downloadBerkas'])->name('permohonan-spd.download');
 
         // SPD Terkirim
-        Route::apiResource('/spd-terkirim', SPDTerkirimController::class);
         Route::get('/spd-terkirim/download/{id}', [SPDTerkirimController::class, 'downloadBerkas'])->name('spd-terkirim.download');
         Route::get('/spd-terkirim/downloadSPDTTE/{id}', [SPDTerkirimController::class, 'downloadBerkasTTE'])->name('spd-terkirim.downloadspdTTE');
+        Route::apiResource('/spd-terkirim', SPDTerkirimController::class);
+
     });
 
     Route::prefix('sp2d')->group(function () {
