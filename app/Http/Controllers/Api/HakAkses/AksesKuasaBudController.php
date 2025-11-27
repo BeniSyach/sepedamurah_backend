@@ -19,12 +19,11 @@ class AksesKuasaBudController extends Controller
         $data = AksesKuasaBUDModel::with('user')
         ->whereNull('deleted_at')
         ->orderByDesc('date_created')
-        ->paginate($request->get('per_page', 10));
+        ->get();
 
-        // Attach skpd secara manual (karena tidak bisa eager load)
-        $data->getCollection()->transform(function ($item) {
-            $skpd = $item->skpd(); // panggil accessor manual
-            $item->setRelation('skpd', $skpd); // daftarkan ke relasi Eloquent
+        // Tambahkan skpd secara manual
+        $data->transform(function ($item) {
+            $item->setRelation('skpd', $item->skpd()); // panggil accessor skpd()
             return $item;
         });
 

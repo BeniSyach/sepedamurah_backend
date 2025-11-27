@@ -18,16 +18,26 @@ class UsersController extends Controller
     public function index(Request $request)
     {
         $query = User::with(['rules.menus'])
-            ->where('deleted', 0); // skip user yang sudah dihapus soft delete custom
+        ->join('ref_opd', function ($join) {
+            $join->on('users.kd_opd1', '=', 'ref_opd.kd_opd1')
+                 ->on('users.kd_opd2', '=', 'ref_opd.kd_opd2')
+                 ->on('users.kd_opd3', '=', 'ref_opd.kd_opd3')
+                 ->on('users.kd_opd4', '=', 'ref_opd.kd_opd4')
+                 ->on('users.kd_opd5', '=', 'ref_opd.kd_opd5');
+        })
+        ->where('users.deleted', 0)
+        ->where('users.id', '!=', 54); // exclude user Arfan (id 54)
     
-        if ($search = $request->get('search')) {
+    
+        if ($search = strtolower($request->get('search'))) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('nik', 'like', "%{$search}%")
-                  ->orWhere('nip', 'like', "%{$search}%");
+                $q->whereRaw('LOWER(users.name) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(users.email) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(users.nik) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(users.nip) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%{$search}%"]); // ← search OPD
             });
-        }
+        }        
     
         $data = $query->orderBy('name', 'asc')
                       ->paginate($request->get('per_page', 10));

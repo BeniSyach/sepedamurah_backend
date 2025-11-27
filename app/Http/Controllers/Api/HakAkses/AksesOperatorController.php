@@ -15,20 +15,21 @@ class AksesOperatorController extends Controller
      */
     public function index(Request $request)
     {
+        // Ambil semua record tanpa pagination
         $data = AksesOperatorModel::with('user')
-        ->whereNull('deleted_at')
-        ->orderByDesc('date_created')
-        ->paginate($request->get('per_page', 10));
-
-        // Attach skpd secara manual (karena tidak bisa eager load)
-        $data->getCollection()->transform(function ($item) {
-            $skpd = $item->skpd(); // panggil accessor manual
-            $item->setRelation('skpd', $skpd); // daftarkan ke relasi Eloquent
+            ->whereNull('deleted_at')
+            ->orderByDesc('date_created')
+            ->get();
+    
+        // Tambahkan skpd secara manual
+        $data->transform(function ($item) {
+            $item->setRelation('skpd', $item->skpd()); // panggil accessor skpd()
             return $item;
         });
-
+    
         return AksesOperatorResource::collection($data);
     }
+    
 
     /**
      * Simpan akses operator baru

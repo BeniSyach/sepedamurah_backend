@@ -10,7 +10,7 @@ class AksesKuasaBUDModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'KUASA_BUD';
+    protected $table = 'kuasa_bud';
     protected $primaryKey = 'id';
     public $incrementing = false; // ID diisi dari trigger Oracle
     protected $keyType = 'int';
