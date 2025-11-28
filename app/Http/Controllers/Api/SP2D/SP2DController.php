@@ -914,12 +914,12 @@ class SP2DController extends Controller
         $validated = $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'integer',
-            'alasan' => 'required|string|max:500',
+            'alasan_tolak' => 'required|string|max:500',
             'supervisor_proses' => 'required|string'
         ]);
     
         $ids = $validated['ids'];
-        $alasan = $validated['alasan'];
+        $alasan = $validated['alasan_tolak'];
         $supervisor = $validated['supervisor_proses'];
     
         // Ambil semua SP2D yang akan diupdate

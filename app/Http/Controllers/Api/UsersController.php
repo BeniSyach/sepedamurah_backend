@@ -137,8 +137,8 @@ class UsersController extends Controller
         }
     
         try {
-            $pathImage = $request->hasFile('image') ? $request->file('image')->store('users/images', 'public') : null;
-            $pathTte = $request->hasFile('visualisasi_tte') ? $request->file('visualisasi_tte')->store('users/tte', 'public') : null;
+            $pathImage = $request->hasFile('image') ? $request->file('image')->store('users/images', 'public') : ' ';
+            $pathTte = $request->hasFile('visualisasi_tte') ? $request->file('visualisasi_tte')->store('users/tte', 'public') : ' ';
     
             $user = User::create([
                 'nik' => $validated['nik'] ?? null,
@@ -159,13 +159,13 @@ class UsersController extends Controller
                 'deleted' => 0,
             ]);
 
-                    // ✅ Insert ke users_permissions
-                foreach ($validated['role'] as $roleId) {
-                    UsersPermissionModel::create([
-                        'users_id' => $user->id,
-                        'users_rule_id' => $roleId,
-                    ]);
-                }
+            // ✅ Insert ke users_permissions
+            foreach ($validated['role'] as $roleId) {
+                UsersPermissionModel::create([
+                    'users_id' => $user->id,
+                    'users_rule_id' => $roleId,
+                ]);
+            }
     
             return response()->json([
                 'status' => true,
@@ -245,8 +245,8 @@ class UsersController extends Controller
             'password' => 'nullable|string|min:8',
             'confirmPassword' => 'nullable|string|min:8',
             'chat_id' => 'nullable|string|max:225',
-            'role' => 'nullable|array',
-            'role.*' => 'nullable|string',
+            'role' => 'required|array|min:1', // pastikan array role dikirim
+            'role.*' => 'required|string',
         ]);
     
         // Password validation jika diisi
