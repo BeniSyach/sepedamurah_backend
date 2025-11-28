@@ -212,12 +212,12 @@ class RekeningController extends Controller
             ->distinct()
             ->select('REF_REKENING.*')
             ->join('PAGU_BELANJA', function ($join) {
-                $join->on('REF_REKENING.KD_REKENING1', '=', 'PAGU_BELANJA.KD_REKENING1')
-                     ->on('REF_REKENING.KD_REKENING2', '=', 'PAGU_BELANJA.KD_REKENING2')
-                     ->on('REF_REKENING.KD_REKENING3', '=', 'PAGU_BELANJA.KD_REKENING3')
-                     ->on('REF_REKENING.KD_REKENING4', '=', 'PAGU_BELANJA.KD_REKENING4')
-                     ->on('REF_REKENING.KD_REKENING5', '=', 'PAGU_BELANJA.KD_REKENING5')
-                     ->on('REF_REKENING.KD_REKENING6', '=', 'PAGU_BELANJA.KD_REKENING6');
+                $join->on(DB::raw("TRIM(REF_REKENING.KD_REKENING1)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING1)"))
+                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING2)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING2)"))
+                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING3)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING3)"))
+                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING4)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING4)"))
+                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING5)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING5)"))
+                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING6)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING6)"));           
             })
             ->join('REF_OPD', function ($join) {
                 // Jika pakai PostgreSQL
@@ -248,7 +248,7 @@ class RekeningController extends Controller
             ->where('PAGU_BELANJA.KD_SUBKEG4', $kd_subkeg4)
             ->where('PAGU_BELANJA.KD_SUBKEG5', $kd_subkeg5)
             ->where('PAGU_BELANJA.KD_SUBKEG6', $kd_subkeg6)
-            ->where('PAGU_BELANJA.IS_DELETED', 0)
+            // ->where('PAGU_BELANJA.IS_DELETED', 0)
             ->get();
     
         // 🔄 Kembalikan hasil JSON
