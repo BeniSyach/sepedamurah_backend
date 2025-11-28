@@ -166,7 +166,7 @@ class BatasWaktuController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Berhasil Menambah Batas Waktu SKPD',
-            ], 500);
+            ], 201);
     
         } catch (\Exception $e) {
             return response()->json([
