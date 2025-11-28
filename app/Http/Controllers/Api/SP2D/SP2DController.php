@@ -24,11 +24,11 @@ class SP2DController extends Controller
     {
         $perPage = $request->get('per_page', 10);
         $search  = $request->get('search');
-        $orderColumn = 'tanggal_upload';
         $dateFrom = $request->get('date_from'); // ex: '2025-11-14'
         $dateTo   = $request->get('date_to');   // ex: '2025-11-14'
-
-        $orderDir    = 'asc';
+        $orderColumn = $request->get('sort_by', 'tanggal_upload');
+        $orderDir    = $request->get('sort_dir', 'desc');
+        $FilterTanggal = 'tanggal_upload';
         // 🔍 Query dasar SP2D + relasi yang bisa di-eager-load
         $query = Sp2dModel::query()
             ->with(['rekening', 'sumberDana', 'sp2dkirim']) // relasi Eloquent valid
@@ -66,6 +66,7 @@ class SP2DController extends Controller
                 $query->where('id_operator', '0');
             
                 $query->whereNull('diterima')->whereNull('ditolak');
+                
             }
 
             // Operator
@@ -119,8 +120,7 @@ class SP2DController extends Controller
                 //  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('diterima');
-                 $orderColumn = 'diterima';
-                 $orderDir    = 'desc';
+                 $FilterTanggal = 'diterima';
             }
 
             if($menu == 'permohonan_sp2d_tolak_operator'){
@@ -147,8 +147,7 @@ class SP2DController extends Controller
                 //  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('ditolak');
-                 $orderColumn = 'ditolak';
-                 $orderDir    = 'desc';
+                 $FilterTanggal = 'ditolak';
             }
 
             if($menu == 'permohonan_sp2d_kirim_bank_operator'){
@@ -216,8 +215,7 @@ class SP2DController extends Controller
                 }
                 $query->where('proses', '2');
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
-                $orderColumn = 'diterima';
-                $orderDir    = 'desc';
+                $FilterTanggal = 'diterima';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_ditolak'
@@ -226,8 +224,7 @@ class SP2DController extends Controller
                     $query->where('id_user', $userId);
                 }
                 $query->whereNotNull('ditolak'); // hanya yang ditolak
-                $orderColumn = 'ditolak';
-                $orderDir    = 'desc';
+                $FilterTanggal = 'ditolak';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
@@ -239,8 +236,7 @@ class SP2DController extends Controller
                     $q->whereNotNull('publish')
                       ->where('publish', '1');
                 });
-                $orderColumn = 'diterima';
-                $orderDir    = 'desc';
+                $FilterTanggal = 'diterima';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
@@ -252,8 +248,7 @@ class SP2DController extends Controller
                 $query->whereHas('sp2dkirim', function ($q) {
                     $q->whereNotNull('tgl_kirim_kebank');
                 });
-                $orderColumn = 'diterima';
-                $orderDir    = 'desc';
+                $FilterTanggal = 'diterima';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
@@ -265,8 +260,7 @@ class SP2DController extends Controller
                 $query->whereHas('sp2dkirim', function ($q) {
                     $q->whereNull('tgl_tte');
                 });
-                $orderColumn = 'diterima';
-                $orderDir    = 'desc';
+                $FilterTanggal = 'diterima';
             }
         }
     
@@ -308,11 +302,11 @@ class SP2DController extends Controller
         }
         
         if ($dateFrom) {
-            $query->whereDate($orderColumn, '>=', $dateFrom);
+            $query->whereDate($FilterTanggal, '>=', $dateFrom);
         }
         
         if ($dateTo) {
-            $query->whereDate($orderColumn, '<=', $dateTo);
+            $query->whereDate($FilterTanggal, '<=', $dateTo);
         }
     
         // 🔽 Urutan dan pagination
