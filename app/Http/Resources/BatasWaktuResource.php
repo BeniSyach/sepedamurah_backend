@@ -9,6 +9,7 @@ class BatasWaktuResource extends JsonResource
     public function toArray($request)
     {
         return [
+            'id' => $this->id,
             'hari' => $this->hari,
             'kd_opd1' => $this->kd_opd1,
             'kd_opd2' => $this->kd_opd2,
