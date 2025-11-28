@@ -17,7 +17,7 @@ class BatasWaktuController extends Controller
     public function index(Request $request)
     {
         $query = BatasWaktuModel::whereNull('deleted_at');
-
+    
         // Filter pencarian
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
@@ -25,22 +25,23 @@ class BatasWaktuController extends Controller
                   ->orWhere('keterangan', 'like', "%{$search}%");
             });
         }
-
+    
+        // Filter OPD (kd_opd1..5)
         for ($i = 1; $i <= 5; $i++) {
             $param = $request->get("kd_opd{$i}");
             if ($param !== null) {
                 $query->where("kd_opd{$i}", $param);
             }
         }
-
+    
         $collection = $query->get();
-
+    
         // Semua OPD unik
         $allOPD = $collection->map(function($item){
             return $item->kd_opd1.'-'.$item->kd_opd2.'-'.$item->kd_opd3.'-'.$item->kd_opd4.'-'.$item->kd_opd5;
         })->unique();
-
-        // Mapping hari ke Indonesia dan urutan minggu
+    
+        // Mapping hari
         $hariIndonesia = [
             'Monday'    => ['nama'=>'Senin', 'urutan'=>1],
             'Tuesday'   => ['nama'=>'Selasa', 'urutan'=>2],
@@ -50,71 +51,73 @@ class BatasWaktuController extends Controller
             'Saturday'  => ['nama'=>'Sabtu', 'urutan'=>6],
             'Sunday'    => ['nama'=>'Minggu', 'urutan'=>7],
         ];
-
-        // Grouping berdasarkan waktu + istirahat
+    
+        // Group berdasarkan waktu
         $groups = $collection->groupBy(function ($item) {
             return $item->waktu_awal
                 .'|'.$item->waktu_akhir
                 .'|'.$item->istirahat_awal
                 .'|'.$item->istirahat_akhir;
         });
-
+    
         $result = collect();
-
-        foreach ($groups as $group) {
-            // Ambil semua OPD unik dalam group
-            $groupOPD = $group->map(function($g){
+    
+        foreach ($groups as $key => $group) {
+    
+            // daftar OPD yang masuk dalam group waktu ini
+            $opdDalamGroup = $group->map(function($g){
                 return $g->kd_opd1.'-'.$g->kd_opd2.'-'.$g->kd_opd3.'-'.$g->kd_opd4.'-'.$g->kd_opd5;
-            })->unique();
-
-            if ($groupOPD->count() === $allOPD->count()) {
-                // Semua OPD sama → gabungkan hari
-                $hariGabung = $group->pluck('hari')
-                    ->map(function($h) use ($hariIndonesia){
-                        return $hariIndonesia[$h]['nama'] ?? $h;
-                    })
-                    ->sortBy(function($h) use ($hariIndonesia){
-                        // urutkan berdasarkan minggu
-                        $mapping = array_column($hariIndonesia,'urutan','nama');
-                        return $mapping[$h] ?? 99;
-                    })
+            });
+    
+            // OPD yang tidak memiliki waktu ini
+            $missingOPD = $allOPD->diff($opdDalamGroup);
+    
+            if ($missingOPD->isEmpty()) {
+                // Semua OPD memiliki waktu ini → gabungkan hari
+    
+                $gabungHari = $group->pluck('hari')
+                    ->map(fn($h) => $hariIndonesia[$h]['nama'] ?? $h)
+                    ->sortBy(fn($h) => array_column($hariIndonesia, 'urutan', 'nama')[$h] ?? 99)
                     ->unique()
                     ->implode(', ');
-
+    
                 $item = $group->first();
-                $item->hari = $hariGabung;
+                $item->hari = $gabungHari;
                 $item->all_opd = true;
-
+    
                 $result->push($item);
-
+    
             } else {
-                // Ada OPD berbeda → tampil per OPD
+                // Tidak semua OPD menggunakan waktu ini → tampilkan per OPD
+    
                 foreach ($group as $item) {
                     $item->all_opd = false;
-                    // panggil relasi skpd() agar nama OPD muncul
-                    $item->setRelation('skpd', $item->skpd());
-
-                    // ubah hari ke bahasa Indonesia
+    
+                    // hari dalam bahasa Indonesia
                     $item->hari = $hariIndonesia[$item->hari]['nama'] ?? $item->hari;
-
+    
+                    // relasi nama OPD
+                    $item->setRelation('skpd', $item->skpd());
+    
                     $result->push($item);
                 }
             }
         }
-
+    
         // Pagination manual
         $perPage = $request->get('per_page', 10);
         $page = $request->get('page', 1);
-
+    
         $paged = new LengthAwarePaginator(
             $result->forPage($page, $perPage)->values(),
             $result->count(),
             $perPage,
             $page
         );
-
+    
         return BatasWaktuResource::collection($paged);
     }
+    
 
     /**
      * Simpan data baru

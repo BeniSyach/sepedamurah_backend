@@ -20,13 +20,17 @@ class BatasWaktuResource extends JsonResource
             'istirahat_awal' => $this->istirahat_awal,
             'istirahat_akhir' => $this->istirahat_akhir,
             'keterangan' => $this->keterangan,
-            'skpd' => $this->all_opd 
+
+            'skpd' => $this->all_opd
                 ? ['nm_opd' => 'Seluruh SKPD']
-                : new SKPDResource($this->whenLoaded('skpd')),
+                : $this->when(
+                    $this->relationLoaded('skpd'),
+                    new SKPDResource($this->skpd)
+                ),
+
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'deleted_at' => $this->deleted_at,
         ];
     }
-    
 }

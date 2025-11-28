@@ -73,8 +73,6 @@ class SP2DController extends Controller
             if($menu == 'permohonan_sp2d_operator'){
                // Ambil data SKPD dari operator yang login
                $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
-
-    
                if ($operatorSkpd) {
                 $query->where(function ($q) use ($operatorSkpd) {
                     foreach ($operatorSkpd as $op) {
