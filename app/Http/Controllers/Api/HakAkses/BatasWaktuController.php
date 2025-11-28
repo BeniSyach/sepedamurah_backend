@@ -36,7 +36,7 @@ class BatasWaktuController extends Controller
     
         $collection = $query->get();
     
-        // Semua OPD unik
+        // Daftar OPD lengkap (semua yang ada di database)
         $allOPD = $collection->map(function($item){
             return $item->kd_opd1.'-'.$item->kd_opd2.'-'.$item->kd_opd3.'-'.$item->kd_opd4.'-'.$item->kd_opd5;
         })->unique();
@@ -52,7 +52,7 @@ class BatasWaktuController extends Controller
             'Sunday'    => ['nama'=>'Minggu', 'urutan'=>7],
         ];
     
-        // Group berdasarkan waktu
+        // Group berdasarkan set waktu
         $groups = $collection->groupBy(function ($item) {
             return $item->waktu_awal
                 .'|'.$item->waktu_akhir
@@ -62,19 +62,19 @@ class BatasWaktuController extends Controller
     
         $result = collect();
     
-        foreach ($groups as $key => $group) {
+        foreach ($groups as $group) {
     
-            // daftar OPD yang masuk dalam group waktu ini
+            // OPD yang memiliki waktu ini
             $opdDalamGroup = $group->map(function($g){
                 return $g->kd_opd1.'-'.$g->kd_opd2.'-'.$g->kd_opd3.'-'.$g->kd_opd4.'-'.$g->kd_opd5;
-            });
+            })->unique();
     
-            // OPD yang tidak memiliki waktu ini
-            $missingOPD = $allOPD->diff($opdDalamGroup);
+            // OPD yang tidak punya waktu ini → beda waktu
+            $opdBedaWaktu = $allOPD->diff($opdDalamGroup);
     
-            if ($missingOPD->isEmpty()) {
+            if ($opdBedaWaktu->isEmpty()) {
+    
                 // Semua OPD memiliki waktu ini → gabungkan hari
-    
                 $gabungHari = $group->pluck('hari')
                     ->map(fn($h) => $hariIndonesia[$h]['nama'] ?? $h)
                     ->sortBy(fn($h) => array_column($hariIndonesia, 'urutan', 'nama')[$h] ?? 99)
@@ -88,8 +88,8 @@ class BatasWaktuController extends Controller
                 $result->push($item);
     
             } else {
-                // Tidak semua OPD menggunakan waktu ini → tampilkan per OPD
     
+                // Tampilkan per OPD hanya untuk yang ada di group (yang punya waktu ini)
                 foreach ($group as $item) {
                     $item->all_opd = false;
     
@@ -101,6 +101,8 @@ class BatasWaktuController extends Controller
     
                     $result->push($item);
                 }
+    
+                // OPD yang tidak punya waktu ini → tidak ditampilkan (memang tidak ada jadwal di waktu ini)
             }
         }
     
@@ -117,6 +119,7 @@ class BatasWaktuController extends Controller
     
         return BatasWaktuResource::collection($paged);
     }
+    
     
 
     /**
