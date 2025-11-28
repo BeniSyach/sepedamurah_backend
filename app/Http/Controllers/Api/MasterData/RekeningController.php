@@ -242,12 +242,13 @@ class RekeningController extends Controller
             ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
             ->where('REF_OPD.KD_OPD5', $user->kd_opd5)
             ->where('REF_OPD.HIDDEN', 0)
-            ->where('PAGU_BELANJA.KD_SUBKEG1', $kd_subkeg1)
-            ->where('PAGU_BELANJA.KD_SUBKEG2', $kd_subkeg2)
-            ->where('PAGU_BELANJA.KD_SUBKEG3', $kd_subkeg3)
-            ->where('PAGU_BELANJA.KD_SUBKEG4', $kd_subkeg4)
-            ->where('PAGU_BELANJA.KD_SUBKEG5', $kd_subkeg5)
-            ->where('PAGU_BELANJA.KD_SUBKEG6', $kd_subkeg6)
+            ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG1)"), trim($kd_subkeg1))
+            ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG2)"), trim($kd_subkeg2))
+            ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG3)"), trim($kd_subkeg3))
+            ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG4)"), trim($kd_subkeg4))
+            ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG5)"), trim($kd_subkeg5))
+            ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG6)"), trim($kd_subkeg6))
+            
             // ->where('PAGU_BELANJA.IS_DELETED', 0)
             ->get();
     
