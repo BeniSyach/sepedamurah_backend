@@ -36,12 +36,12 @@ class BatasWaktuController extends Controller
     
         $collection = $query->get();
     
-        // Semua OPD yang ada di seluruh sistem
+        // Daftar OPD lengkap (semua yang ada di database)
         $allOPD = $collection->map(function($item){
             return $item->kd_opd1.'-'.$item->kd_opd2.'-'.$item->kd_opd3.'-'.$item->kd_opd4.'-'.$item->kd_opd5;
         })->unique();
     
-        // Map hari ke Indonesia
+        // Mapping hari
         $hariIndonesia = [
             'Monday'    => ['nama'=>'Senin', 'urutan'=>1],
             'Tuesday'   => ['nama'=>'Selasa', 'urutan'=>2],
@@ -52,40 +52,61 @@ class BatasWaktuController extends Controller
             'Sunday'    => ['nama'=>'Minggu', 'urutan'=>7],
         ];
     
-        // 1️⃣ Group berdasarkan hari dulu
-        $groupByDay = $collection->groupBy('hari');
+        // Group berdasarkan set waktu
+        $groups = $collection->groupBy(function ($item) {
+            return $item->waktu_awal
+                .'|'.$item->waktu_akhir
+                .'|'.$item->istirahat_awal
+                .'|'.$item->istirahat_akhir;
+        });
     
         $result = collect();
     
-        foreach ($groupByDay as $hariKey => $itemsHari) {
+        foreach ($groups as $group) {
     
-            // Set waktu unik dalam hari ini
-            $waktuUnik = $itemsHari->map(function($i){
-                return $i->waktu_awal.'|'.$i->waktu_akhir.'|'.$i->istirahat_awal.'|'.$i->istirahat_akhir;
+            // OPD yang memiliki waktu ini
+            $opdDalamGroup = $group->map(function($g){
+                return $g->kd_opd1.'-'.$g->kd_opd2.'-'.$g->kd_opd3.'-'.$g->kd_opd4.'-'.$g->kd_opd5;
             })->unique();
     
-            // 🔥 Jika hanya ADA 1 waktu dalam 1 hari → berarti semua OPD pakai waktu sama
-            if ($waktuUnik->count() === 1) {
+            // OPD yang tidak punya waktu ini → beda waktu
+            $opdBedaWaktu = $allOPD->diff($opdDalamGroup);
     
-                $item = $itemsHari->first();
-                $item->hari = $hariIndonesia[$hariKey]['nama'] ?? $hariKey;
+            if ($opdBedaWaktu->isEmpty()) {
+    
+                // Semua OPD memiliki waktu ini → gabungkan hari
+                $gabungHari = $group->pluck('hari')
+                    ->map(fn($h) => $hariIndonesia[$h]['nama'] ?? $h)
+                    ->sortBy(fn($h) => array_column($hariIndonesia, 'urutan', 'nama')[$h] ?? 99)
+                    ->unique()
+                    ->implode(', ');
+    
+                $item = $group->first();
+                $item->hari = $gabungHari;
                 $item->all_opd = true;
     
                 $result->push($item);
     
             } else {
     
-                // 🔥 Ada waktu berbeda → tampil per OPD (per baris)
-                foreach ($itemsHari as $item) {
-                    $item->hari = $hariIndonesia[$hariKey]['nama'] ?? $hariKey;
+                // Tampilkan per OPD hanya untuk yang ada di group (yang punya waktu ini)
+                foreach ($group as $item) {
                     $item->all_opd = false;
+    
+                    // hari dalam bahasa Indonesia
+                    $item->hari = $hariIndonesia[$item->hari]['nama'] ?? $item->hari;
+    
+                    // relasi nama OPD
                     $item->setRelation('skpd', $item->skpd());
+    
                     $result->push($item);
                 }
+    
+                // OPD yang tidak punya waktu ini → tidak ditampilkan (memang tidak ada jadwal di waktu ini)
             }
         }
     
-        // Pagination
+        // Pagination manual
         $perPage = $request->get('per_page', 10);
         $page = $request->get('page', 1);
     
@@ -98,7 +119,6 @@ class BatasWaktuController extends Controller
     
         return BatasWaktuResource::collection($paged);
     }
-    
     
     
 
