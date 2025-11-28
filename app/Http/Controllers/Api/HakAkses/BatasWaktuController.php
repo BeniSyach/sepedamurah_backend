@@ -163,7 +163,10 @@ class BatasWaktuController extends Controller
                 $batas = BatasWaktuModel::create($validated);
             }
     
-            return new BatasWaktuResource($batas);
+            return response()->json([
+                'status' => true,
+                'message' => 'Berhasil Menambah Batas Waktu SKPD',
+            ], 500);
     
         } catch (\Exception $e) {
             return response()->json([
