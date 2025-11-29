@@ -68,7 +68,7 @@ Route::get('/master-data/master-skpd', [SKPDController::class, 'index']);
 Route::get('/pengembalian', [PengembalianController::class, 'index']);
 Route::get('/pengembalian/download', [PengembalianController::class, 'tabelPrint'])->name('pengembalian.print');
 Route::post('/pengembalian', [PengembalianController::class, 'store']);
-Route::post('/telegram/webhook', [TelegramBotController::class, 'webhook']);
+Route::get('/telegram/webhook', [TelegramBotController::class, 'webhook']);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
