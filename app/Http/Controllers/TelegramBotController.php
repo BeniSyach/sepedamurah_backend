@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 
 class TelegramBotController extends Controller
 {
@@ -14,6 +15,34 @@ class TelegramBotController extends Controller
     {
         $this->botToken = config('services.telegram.bot_token');
         $this->apiUrl = "https://api.telegram.org/bot{$this->botToken}/";
+    }
+
+    public function setWebhook()
+    {
+        // Generate URL webhook Laravel
+        $webhookUrl = route('telegram.webhook'); // pastikan route diberi name 'telegram.webhook'
+
+        // Panggil Telegram API
+        $response = Http::get($this->apiUrl . 'setWebhook', [
+            'url' => $webhookUrl
+        ]);
+
+        $data = $response->json();
+
+        if (isset($data['ok']) && $data['ok'] === true) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Webhook berhasil diatur',
+                'result' => $data['result'],
+                'webhook_url' => $webhookUrl
+            ]);
+        } else {
+            return response()->json([
+                'status' => 'failed',
+                'message' => $data['description'] ?? 'Gagal mengatur webhook',
+                'webhook_url' => $webhookUrl
+            ]);
+        }
     }
 
     public function webhook(Request $request)
