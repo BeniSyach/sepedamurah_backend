@@ -20,9 +20,9 @@ class TelegramBotController extends Controller
     {
         $update = $request->all();
     
-        // if (!isset($update["message"])) {
-        //     return response()->json(['status' => 'no message']);
-        // }
+        if (!isset($update["message"])) {
+            return response()->json(['status' => 'no message']);
+        }
     
         $message = $update["message"];
         $chatId  = $message["chat"]["id"];
