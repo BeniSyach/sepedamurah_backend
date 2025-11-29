@@ -22,12 +22,12 @@ class BatasWaktuResource extends JsonResource
             'istirahat_akhir' => $this->istirahat_akhir,
             'keterangan' => $this->keterangan,
 
+            // FIX: tidak pakai whenLoaded — aman dari error
             'skpd' => $this->all_opd
                 ? ['nm_opd' => 'Seluruh SKPD']
-                : $this->when(
-                    $this->relationLoaded('skpd'),
-                    new SKPDResource($this->skpd)
-                ),
+                : ($this->nm_opd
+                    ? ['nm_opd' => $this->nm_opd]
+                    : null),
 
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

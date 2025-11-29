@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SPDTerkirimModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\SPDTerkirimResource;
+use App\Models\AksesKuasaBUDModel;
 use Illuminate\Support\Facades\Storage;
 
 class SPDTerkirimController extends Controller
@@ -18,20 +19,64 @@ class SPDTerkirimController extends Controller
         $query = SPDTerkirimModel::with('permohonan')
             ->whereNull('deleted_at');
     
-        // Filter berdasarkan user
-        if ($userId = $request->get('user_id')) {
-            $query->where('id_penerima', $userId);
-        }
-    
         // Filter menu
         if ($menu = $request->get('menu')) {
-            if ($menu === 'spd_tte') {
+
+            if ($menu == 'spd_belum_paraf') {
+                $operatorSkpd = AksesKuasaBUDModel::where('id_kbud', $request->get('user_id'))->get();
+                if ($operatorSkpd) {
+                 $query->where(function ($q) use ($operatorSkpd) {
+                     foreach ($operatorSkpd as $op) {
+                         $q->orWhere(function ($q2) use ($op) {
+                             $q2->where('permohonan_spd.kd_opd1', $op->kd_opd1)
+                                ->where('permohonan_spd.kd_opd2', $op->kd_opd2)
+                                ->where('permohonan_spd.kd_opd3', $op->kd_opd3)
+                                ->where('permohonan_spd.kd_opd4', $op->kd_opd4)
+                                ->where('permohonan_spd.kd_opd5', $op->kd_opd5);
+                         });
+                     }
+                 });
+                 
+                }
+                 // ambil data yg belum diperiksa operator
+                 $query->whereNull('paraf_kbud');
+            }
+
+            if ($menu == 'spd_sudah_paraf') {
+                $operatorSkpd = AksesKuasaBUDModel::where('id_kbud', $request->get('user_id'))->get();
+                if ($operatorSkpd) {
+                 $query->where(function ($q) use ($operatorSkpd) {
+                     foreach ($operatorSkpd as $op) {
+                         $q->orWhere(function ($q2) use ($op) {
+                             $q2->where('permohonan_spd.kd_opd1', $op->kd_opd1)
+                                ->where('permohonan_spd.kd_opd2', $op->kd_opd2)
+                                ->where('permohonan_spd.kd_opd3', $op->kd_opd3)
+                                ->where('permohonan_spd.kd_opd4', $op->kd_opd4)
+                                ->where('permohonan_spd.kd_opd5', $op->kd_opd5);
+                         });
+                     }
+                 });
+                 
+                }
+                 // ambil data yg belum diperiksa operator
+                 $query->whereNotNull('paraf_kbud');
+            }
+
+            if ($menu == 'spd_tte') {
                 $query->where(function ($q) {
                     $q->where('tte', '!=', 'Yes')
                       ->orWhereNull('tte')
                       ->orWhere('tte', '=', '0')
-                      ->orWhere('tte', '=', '');
+                      ->orWhere('tte', '=', '')
+                      ->whereNotNull('paraf_kbud');
                 });
+            }
+
+            if($menu == 'spd_ditandatangani_bud'){
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_penerima', $userId)
+                            ->where('publish', '1');
+                }  
             }
         }
     

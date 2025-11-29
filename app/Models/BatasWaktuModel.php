@@ -41,6 +41,11 @@ class BatasWaktuModel extends Model
         'deleted_at',
     ];
 
+    public function getKodeOPD()
+    {
+        return "{$this->kd_opd1}-{$this->kd_opd2}-{$this->kd_opd3}-{$this->kd_opd4}-{$this->kd_opd5}";
+    }
+
     public function skpd()
     {
         return SKPDModel::where('kd_opd1', $this->kd_opd1)

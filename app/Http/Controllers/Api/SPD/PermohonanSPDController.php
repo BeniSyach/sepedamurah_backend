@@ -7,6 +7,9 @@ use App\Models\PermohonanSPDModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\PermohonanSPDResource;
 use App\Models\AksesOperatorModel;
+use App\Models\User;
+use App\Models\UsersPermissionModel;
+use App\Services\TelegramService;
 use Illuminate\Support\Facades\Storage;
 
 class PermohonanSPDController extends Controller
@@ -24,7 +27,7 @@ class PermohonanSPDController extends Controller
 
         $query = PermohonanSPDModel::query()
         ->with(['pengirim', 'operator']) // eager load relasi
-        ->whereNull('deleted_at')
+        ->whereNull('permohonan_spd.deleted_at')
         ->join('ref_opd', function ($join) {
             $join->on('permohonan_spd.kd_opd1', '=', 'ref_opd.kd_opd1')
                  ->on('permohonan_spd.kd_opd2', '=', 'ref_opd.kd_opd2')
@@ -188,8 +191,16 @@ class PermohonanSPDController extends Controller
             });
         }
 
+        if ($dateFrom) {
+            $query->whereDate($FilterTanggal, '>=', $dateFrom);
+        }
+        
+        if ($dateTo) {
+            $query->whereDate($FilterTanggal, '<=', $dateTo);
+        }
+
         // 🔢 Pagination & urutan terbaru
-        $data = $query->orderBy('date_created', 'desc')
+        $data = $query->orderBy($orderColumn, $orderDir)
                     ->paginate($request->get('per_page', 10));
 
                     
@@ -207,7 +218,7 @@ class PermohonanSPDController extends Controller
     /**
      * Store permohonan baru
      */
-    public function store(Request $request)
+    public function store(Request $request, TelegramService $telegram)
     {
         $validated = $request->validate([
             'id_pengirim' => 'required|integer',
@@ -253,6 +264,18 @@ class PermohonanSPDController extends Controller
                 'date_created' => now(),
             ]);
 
+            $supervisors = UsersPermissionModel::with('user')
+            ->where('users_rule_id', 4)
+            ->get();
+
+            foreach ($supervisors as $supervisor) {
+                $chatId = $supervisor->user->chat_id ?? null;
+
+                if ($chatId) {
+                    $telegram->sendSpdFromSupervisor($chatId);
+                }
+            }
+
             return new PermohonanSPDResource($permohonan);
         } catch (\Exception $e) {
             return response()->json([
@@ -286,7 +309,7 @@ class PermohonanSPDController extends Controller
     /**
      * Update permohonan
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, TelegramService $telegram)
     {
         $permohonan = PermohonanSPDModel::where('id', $id)
                                         ->whereNull('deleted_at')
@@ -298,6 +321,9 @@ class PermohonanSPDController extends Controller
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
+
+        $old_diterima = $permohonan->diterima;
+        $old_ditolak  = $permohonan->ditolak;
     
         // Validasi request
         $validated = $request->validate([
@@ -343,6 +369,33 @@ class PermohonanSPDController extends Controller
     
         try {
             $permohonan->update($validated);
+            /*
+            |--------------------------------------------------------------------------
+            |  CEK PERUBAHAN STATUS "DITERIMA" / "DITOLAK"
+            |--------------------------------------------------------------------------
+            */
+
+
+           // TRIGGER TERIMA
+            if (is_null($old_diterima) && !is_null($permohonan->diterima)) {
+                $id_pengirim = $permohonan->id_pengirim;
+                $user = User::where('id', $id_pengirim)->first();
+                $chatId = $user->chat_id ?? null;
+                if ($chatId) {
+                    $telegram->sendSpdDiverifikasi($chatId);
+                }
+            }
+
+            // TRIGGER TOLAK
+            if (is_null($old_ditolak) && !is_null($permohonan->ditolak)) {
+                $id_pengirim = $permohonan->id_pengirim;
+                $user = User::where('id', $id_pengirim)->first();
+                $chatId = $user->chat_id ?? null;
+                $ket = $request->alasan_tolak ?? '-';
+                if ($chatId) {
+                    $telegram->sendSpdDitolak($chatId, $ket);
+                }
+            }
     
             return response()->json([
                 'status' => true,

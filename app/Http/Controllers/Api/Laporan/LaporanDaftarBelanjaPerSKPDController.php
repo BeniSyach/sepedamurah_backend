@@ -30,6 +30,7 @@ class LaporanDaftarBelanjaPerSKPDController extends Controller
                 AND a.kd_opd5 = b.kd_opd5
                 AND b.tahun = :tahun
                 AND b.diterima IS NOT NULL
+            WHERE a.hidden = '0'
             GROUP BY 
                 a.kd_opd1, a.kd_opd2, a.kd_opd3, a.kd_opd4, a.kd_opd5, a.nm_opd
             ORDER BY 

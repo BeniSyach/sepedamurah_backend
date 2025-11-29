@@ -16,112 +16,178 @@ class BatasWaktuController extends Controller
      */
     public function index(Request $request)
     {
-        $query = BatasWaktuModel::whereNull('deleted_at');
+        $query = BatasWaktuModel::query()
+            ->whereNull('batas_waktu.deleted_at')
+            ->leftJoin('ref_opd AS opd', function ($join) {
+                $join->on('opd.kd_opd1', '=', 'batas_waktu.kd_opd1')
+                    ->on('opd.kd_opd2', '=', 'batas_waktu.kd_opd2')
+                    ->on('opd.kd_opd3', '=', 'batas_waktu.kd_opd3')
+                    ->on('opd.kd_opd4', '=', 'batas_waktu.kd_opd4')
+                    ->on('opd.kd_opd5', '=', 'batas_waktu.kd_opd5');
+            })
+            ->select('batas_waktu.*', 'opd.nm_opd');
     
-        // Filter pencarian
+        // --- SEARCH ---
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('hari', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%");
+                $q->where('batas_waktu.hari', 'like', "%{$search}%")
+                  ->orWhere('batas_waktu.keterangan', 'like', "%{$search}%")
+                  ->orWhere('opd.nm_opd', 'like', "%{$search}%");
             });
         }
     
-        // Filter OPD (kd_opd1..5)
+        // --- FILTER OPD ---
         for ($i = 1; $i <= 5; $i++) {
-            $param = $request->get("kd_opd{$i}");
-            if ($param !== null) {
-                $query->where("kd_opd{$i}", $param);
+            if ($v = $request->get("kd_opd{$i}")) {
+                $query->where("batas_waktu.kd_opd{$i}", $v);
             }
         }
     
         $collection = $query->get();
     
-        // Daftar OPD lengkap (semua yang ada di database)
-        $allOPD = $collection->map(function($item){
+        // Mapping hari
+        $hariIndonesia = [
+            'Monday'    => 'Senin',
+            'Tuesday'   => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday'  => 'Kamis',
+            'Friday'    => 'Jumat',
+        ];
+    
+        // Urutan hari
+        $urutanHari = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    
+        // Dapatkan semua OPD unik
+        $allOPD = $collection->map(function ($item) {
             return $item->kd_opd1.'-'.$item->kd_opd2.'-'.$item->kd_opd3.'-'.$item->kd_opd4.'-'.$item->kd_opd5;
         })->unique();
     
-        // Mapping hari
-        $hariIndonesia = [
-            'Monday'    => ['nama'=>'Senin', 'urutan'=>1],
-            'Tuesday'   => ['nama'=>'Selasa', 'urutan'=>2],
-            'Wednesday' => ['nama'=>'Rabu', 'urutan'=>3],
-            'Thursday'  => ['nama'=>'Kamis', 'urutan'=>4],
-            'Friday'    => ['nama'=>'Jumat', 'urutan'=>5],
-            'Saturday'  => ['nama'=>'Sabtu', 'urutan'=>6],
-            'Sunday'    => ['nama'=>'Minggu', 'urutan'=>7],
-        ];
+        $totalOPD = $allOPD->count();
     
-        // Group berdasarkan set waktu
+        // GROUP BY: hari|waktu_awal|waktu_akhir|istirahat_awal|istirahat_akhir
         $groups = $collection->groupBy(function ($item) {
-            return $item->waktu_awal
-                .'|'.$item->waktu_akhir
-                .'|'.$item->istirahat_awal
-                .'|'.$item->istirahat_akhir;
+            return $item->hari.'|'.
+                   $item->waktu_awal.'|'.
+                   $item->waktu_akhir.'|'.
+                   $item->istirahat_awal.'|'.
+                   $item->istirahat_akhir;
         });
     
-        $result = collect();
+        // STEP 1: Cari waktu mayoritas per hari (yang digunakan paling banyak OPD)
+        $majortasPerHari = [];
+        
+        foreach ($urutanHari as $hari) {
+            $groupsForDay = $groups->filter(function ($group, $key) use ($hari) {
+                return strpos($key, $hari.'|') === 0;
+            });
     
-        foreach ($groups as $group) {
+            if ($groupsForDay->isEmpty()) {
+                continue;
+            }
     
-            // OPD yang memiliki waktu ini
-            $opdDalamGroup = $group->map(function($g){
-                return $g->kd_opd1.'-'.$g->kd_opd2.'-'.$g->kd_opd3.'-'.$g->kd_opd4.'-'.$g->kd_opd5;
-            })->unique();
+            // Cari grup dengan OPD terbanyak di hari ini
+            $maxCount = 0;
+            $majorKey = null;
     
-            // OPD yang tidak punya waktu ini → beda waktu
-            $opdBedaWaktu = $allOPD->diff($opdDalamGroup);
+            foreach ($groupsForDay as $key => $group) {
+                $opdCount = $group->map(function ($item) {
+                    return $item->kd_opd1.'-'.$item->kd_opd2.'-'.$item->kd_opd3.'-'.$item->kd_opd4.'-'.$item->kd_opd5;
+                })->unique()->count();
     
-            if ($opdBedaWaktu->isEmpty()) {
-    
-                // Semua OPD memiliki waktu ini → gabungkan hari
-                $gabungHari = $group->pluck('hari')
-                    ->map(fn($h) => $hariIndonesia[$h]['nama'] ?? $h)
-                    ->sortBy(fn($h) => array_column($hariIndonesia, 'urutan', 'nama')[$h] ?? 99)
-                    ->unique()
-                    ->implode(', ');
-    
-                $item = $group->first();
-                $item->hari = $gabungHari;
-                $item->all_opd = true;
-    
-                $result->push($item);
-    
-            } else {
-    
-                // Tampilkan per OPD hanya untuk yang ada di group (yang punya waktu ini)
-                foreach ($group as $item) {
-                    $item->all_opd = false;
-    
-                    // hari dalam bahasa Indonesia
-                    $item->hari = $hariIndonesia[$item->hari]['nama'] ?? $item->hari;
-    
-                    // relasi nama OPD
-                    $item->setRelation('skpd', $item->skpd());
-    
-                    $result->push($item);
+                if ($opdCount > $maxCount) {
+                    $maxCount = $opdCount;
+                    $majorKey = $key;
                 }
+            }
     
-                // OPD yang tidak punya waktu ini → tidak ditampilkan (memang tidak ada jadwal di waktu ini)
+            $majortasPerHari[$hari] = $majorKey;
+        }
+    
+        // STEP 2: Pisahkan data mayoritas dan yang berubah
+        $waktu_all = collect();
+        $waktu_changed = collect();
+    
+        foreach ($groups as $key => $group) {
+            $parts = explode('|', $key);
+            $hari = $parts[0];
+    
+            // Cek apakah grup ini adalah mayoritas di harinya
+            $isMajoritas = isset($majortasPerHari[$hari]) && $majortasPerHari[$hari] === $key;
+    
+            if ($isMajoritas) {
+                // Ini grup mayoritas (Seluruh SKPD)
+                $first = $group->first();
+                $first->hari_key = $hari;
+                $waktu_all->push($first);
+            } else {
+                // Ini grup minoritas (OPD yang berubah)
+                foreach ($group as $item) {
+                    $item->hari_key = $hari;
+                    $waktu_changed->push($item);
+                }
             }
         }
     
-        // Pagination manual
-        $perPage = $request->get('per_page', 10);
-        $page = $request->get('page', 1);
+        // STEP 3: Sort waktu_all berdasarkan urutan hari
+        $waktu_all = $waktu_all->sortBy(function ($item) use ($urutanHari) {
+            return array_search($item->hari_key, $urutanHari);
+        })->values();
     
-        $paged = new LengthAwarePaginator(
-            $result->forPage($page, $perPage)->values(),
-            $result->count(),
-            $perPage,
-            $page
-        );
+        // STEP 4: GROUP waktu_all berdasarkan waktu yang sama (untuk gabungkan hari)
+        $groupedByTime = [];
+        
+        foreach ($waktu_all as $item) {
+            $timeKey = $item->waktu_awal.'|'.$item->waktu_akhir.'|'.$item->istirahat_awal.'|'.$item->istirahat_akhir;
+            
+            if (!isset($groupedByTime[$timeKey])) {
+                $groupedByTime[$timeKey] = [
+                    'days' => [],
+                    'item' => $item
+                ];
+            }
+            
+            $groupedByTime[$timeKey]['days'][] = $item->hari_key;
+        }
     
-        return BatasWaktuResource::collection($paged);
+        // STEP 5: Buat hasil akhir
+        $result = collect();
+    
+        // Tambahkan data yang telah dikelompokkan (Seluruh SKPD)
+        foreach ($groupedByTime as $data) {
+            $days = $data['days'];
+            $item = $data['item'];
+    
+            // Sort hari sesuai urutan
+            usort($days, function($a, $b) use ($urutanHari) {
+                return array_search($a, $urutanHari) - array_search($b, $urutanHari);
+            });
+    
+            // Convert ke Indonesia
+            $hariIndo = array_map(fn($h) => $hariIndonesia[$h] ?? $h, $days);
+    
+            $row = $item->replicate();
+            $row->hari = implode(', ', $hariIndo);
+            $row->all_opd = true;
+            $row->nm_opd = 'Seluruh SKPD';
+            
+            $result->push($row);
+        }
+    
+        // Tambahkan data yang berubah (OPD tertentu)
+        $waktu_changed = $waktu_changed->sortBy(function ($item) use ($urutanHari) {
+            return array_search($item->hari_key, $urutanHari);
+        })->values();
+    
+        foreach ($waktu_changed as $item) {
+            $row = $item->replicate();
+            $row->hari = $hariIndonesia[$item->hari_key] ?? $item->hari_key;
+            $row->all_opd = false;
+            
+            $result->push($row);
+        }
+    
+        return BatasWaktuResource::collection($result);
     }
-    
-    
-
     /**
      * Simpan data baru
      */

@@ -44,6 +44,7 @@ use App\Http\Controllers\Api\SP2D\SP2DSumberDanaController;
 use App\Http\Controllers\Api\SPD\PermohonanSPDController;
 use App\Http\Controllers\Api\SPD\SPDTerkirimController;
 use App\Http\Controllers\Api\UsersController;
+use App\Http\Controllers\TelegramBotController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -67,6 +68,7 @@ Route::get('/master-data/master-skpd', [SKPDController::class, 'index']);
 Route::get('/pengembalian', [PengembalianController::class, 'index']);
 Route::get('/pengembalian/download', [PengembalianController::class, 'tabelPrint'])->name('pengembalian.print');
 Route::post('/pengembalian', [PengembalianController::class, 'store']);
+Route::post('/telegram/webhook', [TelegramBotController::class, 'webhook']);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);

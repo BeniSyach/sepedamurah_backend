@@ -26,6 +26,10 @@ class SKPDController extends Controller
                   ->orWhere('kd_opd5', 'like', "%{$search}%");
         }
 
+        if (!is_null($request->get('hidden'))) {
+            $query->where('hidden', $request->get('hidden'));
+        }
+
         $data = $query->orderBy('kd_opd1')
                       ->orderBy('kd_opd2')
                       ->orderBy('kd_opd3')
