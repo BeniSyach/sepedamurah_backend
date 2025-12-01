@@ -138,8 +138,8 @@ class UsersController extends Controller
         }
     
         try {
-            $pathImage = $request->hasFile('image') ? $request->file('image')->store('users/images', 'public') : ' ';
-            $pathTte = $request->hasFile('visualisasi_tte') ? $request->file('visualisasi_tte')->store('users/tte', 'public') : ' ';
+            $pathImage = $request->hasFile('image') ? $request->file('image')->store('profile', 'public') : ' ';
+            $pathTte = $request->hasFile('visualisasi_tte') ? $request->file('visualisasi_tte')->store('visualisasi_tte', 'public') : ' ';
     
             $user = User::create([
                 'nik' => $validated['nik'] ?? null,
@@ -261,20 +261,26 @@ class UsersController extends Controller
             $user->password = bcrypt($validated['password']);
         }
     
-        // Hapus file lama & upload baru jika ada
+        // Upload foto profil
         if ($request->hasFile('image')) {
-            if ($user->image && Storage::disk('public')->exists($user->image)) {
-                Storage::disk('public')->delete($user->image);
+            if ($user->image && Storage::disk('public')->exists('profile/' . $user->image)) {
+                Storage::disk('public')->delete('profile/' . $user->image);
             }
-            $user->image = $request->file('image')->store('users/images', 'public');
+
+            $path = $request->file('image')->store('profile', 'public');
+            $user->image = basename($path); // hanya nama file
         }
-    
+
+        // Upload visualisasi TTE
         if ($request->hasFile('visualisasi_tte')) {
-            if ($user->visualisasi_tte && Storage::disk('public')->exists($user->visualisasi_tte)) {
-                Storage::disk('public')->delete($user->visualisasi_tte);
+            if ($user->visualisasi_tte && Storage::disk('public')->exists('visualisasi_tte/' . $user->visualisasi_tte)) {
+                Storage::disk('public')->delete('visualisasi_tte/' . $user->visualisasi_tte);
             }
-            $user->visualisasi_tte = $request->file('visualisasi_tte')->store('users/tte', 'public');
+
+            $path = $request->file('visualisasi_tte')->store('visualisasi_tte', 'public');
+            $user->visualisasi_tte = basename($path); // hanya nama file
         }
+
     
         // Update field lain
         $user->nik = $validated['nik'] ?? $user->nik;

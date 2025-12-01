@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\SP2DKirimModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\SP2DKirimResource;
-use Illuminate\Support\Facades\DB;
+use App\Models\LogTTEModel;
+use App\Services\TTE_BSRE;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class SP2DKirimController extends Controller
@@ -285,4 +287,142 @@ class SP2DKirimController extends Controller
         // Download file dengan nama asli
         return response()->download($disk->path($filePath), basename($filePath));
     }
+
+    public function sign(Request $request)
+    {
+        $request->validate([
+            'file'       => 'required|mimes:pdf|max:2048',
+            'passphrase' => 'required',
+            'tampilan'   => 'required',
+            'nama_file'  => 'required',
+            'id_sp2d'    => 'required|integer'
+        ]);
+
+        $user = Auth::user();
+
+        // Upload PDF sebelum sign
+        $uploaded = $request->file('file');
+        $saveName = $request->nama_file . ".pdf";
+        $originalFilePath = $uploaded->storeAs("sp2d_original", $saveName, "public");
+        $fullPath = storage_path("app/public/" . $originalFilePath);
+
+        // Kirim ke BSRE
+        $service = new TTE_BSRE();
+        $result = $service->signPdf(
+            $fullPath,
+            $user->nik,
+            $request->passphrase,
+            $request->tampilan,
+            $request->nama_file,
+            $request->id_sp2d
+        );
+
+        $errorCode = null;
+        if (isset($result['detail']) && is_array($result['detail']) && isset($result['detail']['status_code'])) {
+            $errorCode = $result['detail']['status_code'];
+        }
+
+        // ================================
+        // LOG JIKA TTE GAGAL
+        // ================================
+        if ($result['status'] != 'success') {
+            $detailRaw = $result['detail'] ?? null;
+
+            if (is_string($detailRaw)) {
+                // Jika berupa JSON string → decode
+                $detail = json_decode($detailRaw, true);
+            } elseif (is_array($detailRaw)) {
+                // Jika sudah array → langsung pakai
+                $detail = $detailRaw;
+            } else {
+                $detail = [];
+            }
+            
+            $errorMsg = $detail['error'] ?? ($result['message'] ?? 'Unknown error');
+            LogTTEModel::create([
+                'id_berkas'         => $request->id_sp2d,
+                'kategori'          => 'SP2D',
+                'tte'               => 'Error',
+                'status'            => 0,
+                'tgl_tte'           => now(),
+                'keterangan'        => "Gagal tandatangan dokumen SP2D - $errorMsg",
+                'message'           => $errorMsg,
+                'id_penandatangan'  => $user->id,
+                'nama_penandatangan'=> $user->name,
+                'date_created'      => now(),
+            ]);
+
+            return response()->json([
+                'status'     => 'error',
+                'message'    => $result['message'] ?? 'Gagal terhubung ke server BSRE',
+                'error_code' => $errorCode,
+                'detail'     => $result['detail'] ?? null
+            ], 400);
+        }
+
+        // ================================
+        // UPDATE DATA SP2D JIKA SUKSES
+        // ================================
+        $sp2d = SP2DKirimModel::find($request->id_sp2d);
+        $sp2d->update([
+            'tte'               => "Yes",
+            'tgl_tte'           => now(),
+            'status'            => 1,
+            'id_penandatangan'  => $user->id,
+            'nama_penandatangan'=> $user->name,
+            'file_tte'          => $result['file_path'],
+        ]);
+
+        // ================================
+        // LOG JIKA TTE SUKSES
+        // ================================
+        LogTTEModel::create([
+            'id_berkas'         => $request->id_sp2d,
+            'kategori'          => 'SP2D',
+            'tte'               => 'Yes',
+            'status'            => 1,
+            'tgl_tte'           => now(),
+            'keterangan'        => 'Berhasil tandatangan dokumen SP2D',
+            'message'           => 'Tanda Tangan Berhasil Dan PDF berhasil disimpan.',
+            'id_penandatangan'  => $user->id,
+            'nama_penandatangan'=> $user->name,
+            'date_created'      => now(),
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Berhasil TTE',
+            'file'    => $result['file_path']
+        ]);
+    }
+
+    public function verify_tte($id)
+    {
+        // Ambil data SP2D KIRIM
+        $data = SP2DKirimModel::with(['sp2dPemohon', 'penandatangan'])
+            ->where('id', $id)
+            ->first();
+
+        if (!$data) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Data tidak ditemukan',
+            ], 404);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Data verifikasi ditemukan',
+            'data' => [
+                'nama'           => $data->nama_penerima,
+                'no_sp2d'        => $data->namafile ?? '-',
+                'penandatangan'  => $data->nama_penandatangan ?? ($data->penandatangan->name ?? '-'),
+                'status_tte'     => $data->tte ? 'TTE Selesai' : 'Belum TTE',
+                'tanggal_tte'    => $data->tgl_tte,
+                'status'         => $data->status,
+                'raw'            => $data,
+            ]
+        ]);
+    }
+
 }

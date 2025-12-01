@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\SPD\SPDTerkirimController;
 use App\Http\Controllers\Api\UsersController;
 use App\Http\Controllers\TelegramBotController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Response;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +71,7 @@ Route::get('/pengembalian/download', [PengembalianController::class, 'tabelPrint
 Route::post('/pengembalian', [PengembalianController::class, 'store']);
 Route::get('/telegram/set-webhook', [TelegramBotController::class, 'setWebhook']);
 Route::post('/telegram/webhook', [TelegramBotController::class, 'webhook'])->name('telegram.webhook');
+Route::get('/verify-tte/{id}', [SP2DKirimController::class, 'verify_tte']);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
@@ -254,6 +256,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('/sp2d-kirim', SP2DKirimController::class);
         Route::get('/sp2d-kirim/download/{id}', [SP2DKirimController::class, 'downloadBerkas'])->name('sp2d-kirim.download');
         Route::get('/sp2d-kirim/downloadTTE/{id}', [SP2DKirimController::class, 'downloadBerkasTTE'])->name('sp2d-kirim.downloadtte');
+        Route::post('/sign', [SP2DKirimController::class, 'sign'])->name('sp2d-kirim.sign');
 
         // SP2D Sumber Dana
         Route::get('/sp2d-sumber-dana/check_sd', [SP2DSumberDanaController::class, 'check_sd'])->name('sp2d-sumber-dana.check_sd');

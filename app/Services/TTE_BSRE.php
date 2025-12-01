@@ -34,10 +34,15 @@ class TTE_BSRE
 
             // Jika error koneksi
             if ($response->failed()) {
+                $raw = $response->body();
+
+                // Coba decode
+                $decoded = json_decode($raw, true);
                 return [
                     'status' => 'error',
                     'message' => 'Gagal terhubung ke server BSRE',
-                    'detail' => $response->body(),
+                    'detail'      => $decoded ?? $raw,   // Jika gagal decode → pakai raw
+                    'http_status' => $response->status(),
                 ];
             }
 
@@ -61,7 +66,7 @@ class TTE_BSRE
 
             return [
                 'status' => 'success',
-                'message' => 'Berhasil TTE dan file tersimpan',
+                'message' => 'Berhasil TTE SP2D dan file tersimpan',
                 'file_path' => 'storage/' . $savePath,
             ];
 
