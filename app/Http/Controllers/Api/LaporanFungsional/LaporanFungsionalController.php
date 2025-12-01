@@ -603,4 +603,141 @@ class LaporanFungsionalController extends Controller
         // Download file dengan nama asli
         return response()->download($disk->path($filePath), basename($filePath));
     }
+
+    public function cekSudahUploadFungsional(
+        $tahun,
+        $bulan,
+        $kd_opd1,
+        $kd_opd2,
+        $kd_opd3,
+        $kd_opd4,
+        $kd_opd5,
+        $status // 0 atau 1
+    ) {
+        // Cek melewati tanggal 10
+        $today = now()->day;
+    
+        if ($today <= 10) {
+            return [
+                "wajib" => false,
+                "pengeluaran" => false,
+                "penerimaan" => false,
+                "bulan_kurang" => [],
+                "message" => "Belum melewati tanggal 10, tidak wajib upload."
+            ];
+        }
+    
+        // ================
+        // FUNCTION CEK BULAN
+        // ================
+        $cekUploadBulan = function ($tahun, $bulan) use (
+            $kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5, $status
+        ) {
+    
+            // Pengeluaran wajib
+            $pengeluaran = LaporanFungsionalModel::whereYear('tanggal_upload', $tahun)
+                ->whereMonth('tanggal_upload', $bulan)
+                ->where('jenis_berkas', 'Pengeluaran')
+                ->where('kd_opd1', $kd_opd1)
+                ->where('kd_opd2', $kd_opd2)
+                ->where('kd_opd3', $kd_opd3)
+                ->where('kd_opd4', $kd_opd4)
+                ->where('kd_opd5', $kd_opd5)
+                ->whereNotNull('diterima')
+                ->whereNull('deleted_at')
+                ->exists();
+    
+            // Penerimaan
+            $penerimaan = true;
+            if ($status == 1) {
+                $penerimaan = LaporanFungsionalModel::whereYear('tanggal_upload', $tahun)
+                    ->whereMonth('tanggal_upload', $bulan)
+                    ->where('jenis_berkas', 'Penerimaan')
+                    ->where('kd_opd1', $kd_opd1)
+                    ->where('kd_opd2', $kd_opd2)
+                    ->where('kd_opd3', $kd_opd3)
+                    ->where('kd_opd4', $kd_opd4)
+                    ->where('kd_opd5', $kd_opd5)
+                    ->whereNotNull('diterima')
+                    ->whereNull('deleted_at')
+                    ->exists();
+            }
+    
+            return [
+                "pengeluaran" => $pengeluaran,
+                "penerimaan" => $penerimaan,
+                "lengkap" => $pengeluaran && $penerimaan,
+            ];
+        };
+    
+        // ========================================
+        // CEK BULAN SEBELUMNYA
+        // ========================================
+        $bulanKurang = [];
+    
+        for ($i = 1; $i < $bulan; $i++) {
+            $cek = $cekUploadBulan($tahun, $i);
+    
+            if (!$cek["lengkap"]) {
+                $bulanKurang[] = $i;
+            }
+        }
+    
+        if (count($bulanKurang) > 0) {
+            return [
+                "wajib" => true,
+                "pengeluaran" => false,
+                "penerimaan" => false,
+                "bulan_kurang" => $bulanKurang,
+                "message" => "Masih ada laporan yang belum lengkap pada bulan: " . implode(', ', $bulanKurang)
+            ];
+        }
+    
+        // ===============================
+        // CEK BULAN SAAT INI
+        // ===============================
+        $cekSekarang = $cekUploadBulan($tahun, $bulan);
+    
+        return [
+            "wajib" => true,
+            "pengeluaran" => $cekSekarang["pengeluaran"],
+            "penerimaan" => $cekSekarang["penerimaan"],
+            "bulan_kurang" => [],
+            "message" => $cekSekarang["lengkap"]
+                ? "Semua laporan sudah upload."
+                : "Belum upload laporan fungsional bulan ini."
+        ];
+    }
+    
+    
+    
+    public function apiCekSudahUploadFungsional(Request $request)
+    {
+        $validated = $request->validate([
+            "tahun" => "required|integer",
+            "bulan" => "required|integer",
+            "kd_opd1" => "required",
+            "kd_opd2" => "required",
+            "kd_opd3" => "required",
+            "kd_opd4" => "required",
+            "kd_opd5" => "required",
+            "status" => "required|in:0,1",
+        ]);
+    
+        return response()->json(
+            $this->cekSudahUploadFungsional(
+                $request->tahun,
+                $request->bulan,
+                $request->kd_opd1,
+                $request->kd_opd2,
+                $request->kd_opd3,
+                $request->kd_opd4,
+                $request->kd_opd5,
+                $request->status
+            )
+        );
+    }
+    
+
+    
 }

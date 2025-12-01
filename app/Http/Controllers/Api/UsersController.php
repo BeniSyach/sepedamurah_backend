@@ -245,8 +245,8 @@ class UsersController extends Controller
             'password' => 'nullable|string|min:8',
             'confirmPassword' => 'nullable|string|min:8',
             'chat_id' => 'nullable|string|max:225',
-            'role' => 'required|array|min:1', // pastikan array role dikirim
-            'role.*' => 'required|string',
+            'role' => 'nullable|array|min:1', // pastikan array role dikirim
+            'role.*' => 'nullable|string',
         ]);
     
         // Password validation jika diisi
