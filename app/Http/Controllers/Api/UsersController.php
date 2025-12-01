@@ -26,7 +26,8 @@ class UsersController extends Controller
                  ->on('users.kd_opd5', '=', 'ref_opd.kd_opd5');
         })
         ->where('users.deleted', 0)
-        ->where('users.id', '!=', 54); // exclude user Arfan (id 54)
+        ->where('users.id', '!=', 54)
+        ->where('users.id', '!=', 61);
     
     
         if ($search = strtolower($request->get('search'))) {
