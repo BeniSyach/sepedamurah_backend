@@ -61,7 +61,7 @@ class SP2DKirimModel extends Model
     
     public function sp2dPemohon()
     {
-        return $this->belongsTo(Sp2dModel::class, 'id_berkas', 'id_sp2d');
+        return $this->belongsTo(SP2DModel::class, 'id_berkas', 'id_sp2d');
     }
 
     public function penerima()

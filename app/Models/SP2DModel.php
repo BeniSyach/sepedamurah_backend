@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Sp2dModel extends Model
+class SP2DModel extends Model
 {
     use SoftDeletes;
 
