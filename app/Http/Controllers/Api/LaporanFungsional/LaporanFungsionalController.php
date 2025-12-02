@@ -12,6 +12,9 @@ use App\Services\TelegramService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use App\Services\TTE_BSRE;
+use App\Models\LogTTEModel;
 
 class LaporanFungsionalController extends Controller
 {
@@ -736,6 +739,109 @@ class LaporanFungsionalController extends Controller
                 $request->status
             )
         );
+    }
+
+    public function sign(Request $request)
+    {
+        $request->validate([
+            'file'       => 'required|mimes:pdf|max:2048',
+            'passphrase' => 'required',
+            'tampilan'   => 'required',
+            'nama_file'  => 'required',
+            'id'    => 'required|integer'
+        ]);
+
+        $user = Auth::user();
+
+        // Upload PDF sebelum sign
+        $uploaded = $request->file('file');
+        $saveName = $request->nama_file . ".pdf";
+        $originalFilePath = $uploaded->storeAs("fungsional_original", $saveName, "public");
+        $fullPath = storage_path("app/public/" . $originalFilePath);
+
+        // Kirim ke BSRE
+        $service = new TTE_BSRE();
+        $result = $service->signPdf(
+            $fullPath,
+            $user->nik,
+            $request->passphrase,
+            $request->tampilan,
+            $request->nama_file,
+            $request->id
+        );
+
+        $errorCode = null;
+        if (isset($result['detail']) && is_array($result['detail']) && isset($result['detail']['status_code'])) {
+            $errorCode = $result['detail']['status_code'];
+        }
+
+        // ================================
+        // LOG JIKA TTE GAGAL
+        // ================================
+        if ($result['status'] != 'success') {
+            $detailRaw = $result['detail'] ?? null;
+
+            if (is_string($detailRaw)) {
+                // Jika berupa JSON string → decode
+                $detail = json_decode($detailRaw, true);
+            } elseif (is_array($detailRaw)) {
+                // Jika sudah array → langsung pakai
+                $detail = $detailRaw;
+            } else {
+                $detail = [];
+            }
+            
+            $errorMsg = $detail['error'] ?? ($result['message'] ?? 'Unknown error');
+            LogTTEModel::create([
+                'id_berkas'         => $request->id,
+                'kategori'          => 'fungsional',
+                'tte'               => 'Error',
+                'status'            => 0,
+                'tgl_tte'           => now(),
+                'keterangan'        => "Gagal tandatangan dokumen fungsional - $errorMsg",
+                'message'           => $errorMsg,
+                'id_penandatangan'  => $user->id,
+                'nama_penandatangan'=> $user->name,
+                'date_created'      => now(),
+            ]);
+
+            return response()->json([
+                'status'     => 'error',
+                'message'    => $result['message'] ?? 'Gagal terhubung ke server BSRE',
+                'error_code' => $errorCode,
+                'detail'     => $result['detail'] ?? null
+            ], 400);
+        }
+
+        // ================================
+        // UPDATE DATA berkas_lain JIKA SUKSES
+        // ================================
+        $berkas_lain = LaporanFungsionalModel::find($request->id);
+        $berkas_lain->update([
+            'berkas_tte'          => $result['file_path'],
+        ]);
+
+        // ================================
+        // LOG JIKA TTE SUKSES
+        // ================================
+        LogTTEModel::create([
+            'id_berkas'         => $request->id,
+            'kategori'          => 'fungsional',
+            'tte'               => 'Yes',
+            'status'            => 1,
+            'tgl_tte'           => now(),
+            'keterangan'        => 'Berhasil tandatangan dokumen fungsional',
+            'message'           => 'Tanda Tangan Berhasil Dan PDF berhasil disimpan.',
+            'id_penandatangan'  => $user->id,
+            'nama_penandatangan'=> $user->name,
+            'date_created'      => now(),
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Berhasil TTE',
+            'file'    => $result['file_path']
+        ]);
     }
     
     public function verify_tte($id)

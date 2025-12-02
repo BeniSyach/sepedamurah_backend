@@ -26,7 +26,7 @@ class SP2DKirimController extends Controller
                   ->orWhere('namafile', 'like', "%{$search}%");
         }
 
-        $data = $query->orderBy('tanggal_upload', 'desc')
+        $data = $query->orderBy('tanggal_upload', 'asc')
                       ->paginate($request->get('per_page', 10));
 
         return SP2DKirimResource::collection($data);
