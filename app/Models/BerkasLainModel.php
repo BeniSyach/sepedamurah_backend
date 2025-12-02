@@ -10,7 +10,7 @@ class BerkasLainModel extends Model
     use SoftDeletes;
 
     protected $connection = 'oracle';
-    protected $table = 'SURAT_SURAT_LAIN';
+    protected $table = 'surat_surat_lain';
     protected $primaryKey = 'id';
     public $incrementing = false; // karena pakai trigger & sequence
     protected $keyType = 'int';

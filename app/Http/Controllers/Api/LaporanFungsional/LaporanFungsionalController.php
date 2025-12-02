@@ -738,6 +738,54 @@ class LaporanFungsionalController extends Controller
         );
     }
     
-
+    public function verify_tte($id)
+    {
+        // Ambil data + relasi pengirim & operator
+        $data = LaporanFungsionalModel::with(['pengirim', 'operator'])
+            ->where('id', $id)
+            ->first();
+    
+        if (!$data) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Data tidak ditemukan',
+            ], 404);
+        }
+    
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Data verifikasi ditemukan',
+            'data' => [
+    
+                // Nama penandatangan berdasarkan operator (atau pengirim jika berbeda)
+                'penandatangan' => $data->operator->name 
+                                    ?? $data->pengirim->name 
+                                    ?? '-',
+    
+                // Nama file/dokumen
+                'nama_dokumen'  => $data->nama_file ?? '-',
+                'file_asli'     => $data->nama_file_asli ?? '-',
+    
+                // Status TTE berdasarkan berkas_tte null / tidak
+                'status_tte'    => $data->berkas_tte 
+                                    ? 'TTE Selesai' 
+                                    : 'Belum TTE',
+    
+                // File hasil TTE
+                'file_sdh_tte'  => $data->berkas_tte ?? '-', 
+    
+                // Tanggal TTE dianggap dari field diterima
+                'tanggal_tte'   => $data->diterima ?? $data->tanggal_upload ?? '-',
+    
+                // Status proses dari operator & supervisor
+                'status_proses' => $data->proses ?? '-',
+                'supervisor'    => $data->supervisor_proses ?? '-',
+    
+                // Raw data utuh
+                'raw'           => $data,
+            ]
+        ]);
+    }
+    
     
 }

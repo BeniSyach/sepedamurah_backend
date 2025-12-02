@@ -46,7 +46,6 @@ use App\Http\Controllers\Api\SPD\SPDTerkirimController;
 use App\Http\Controllers\Api\UsersController;
 use App\Http\Controllers\TelegramBotController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Response;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,7 +70,9 @@ Route::get('/pengembalian/download', [PengembalianController::class, 'tabelPrint
 Route::post('/pengembalian', [PengembalianController::class, 'store']);
 Route::get('/telegram/set-webhook', [TelegramBotController::class, 'setWebhook']);
 Route::post('/telegram/webhook', [TelegramBotController::class, 'webhook'])->name('telegram.webhook');
-Route::get('/verify-tte/{id}', [SP2DKirimController::class, 'verify_tte']);
+Route::get('/verify-tte-sp2d/{id}', [SP2DKirimController::class, 'verify_tte']);
+Route::get('/verify-tte-berkaslain/{id}', [BerkasLainController::class, 'verify_tte']);
+Route::get('/verify-tte-fungsional/{id}', [LaporanFungsionalController::class, 'verify_tte']);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
@@ -269,6 +270,7 @@ Route::middleware('auth:api')->group(function () {
     Route::prefix('laporan')->group(function () {
 
         // Laporan Fungsional
+        Route::post('/sign-fungsional', [LaporanFungsionalController::class, 'sign'])->name('fungsional.sign');
         Route::post('/terima-multi', [LaporanFungsionalController::class, 'terimaMulti']);
         Route::post('/tolak-multi', [LaporanFungsionalController::class, 'tolakMulti']);
         Route::get('/cek-upload-fungsional', [LaporanFungsionalController::class, 'apiCekSudahUploadFungsional']);
@@ -291,6 +293,7 @@ Route::middleware('auth:api')->group(function () {
     });
 
     // Berkas Berkas Lain
+    Route::post('/sign-berkas-lain', [BerkasLainController::class, 'sign'])->name('berkas-lain.sign');
     Route::apiResource('/berkas-lain', BerkasLainController::class);
     Route::get('/berkas-lain/download/{id}', [BerkasLainController::class, 'downloadBerkas'])->name('berkas-lain.download');
     Route::get('/berkas-lain/downloadTTE/{id}', [BerkasLainController::class, 'downloadBerkasTTE'])->name('berkas-lain.downloadtte');

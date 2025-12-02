@@ -66,7 +66,7 @@ class TTE_BSRE
 
             return [
                 'status' => 'success',
-                'message' => 'Berhasil TTE SP2D dan file tersimpan',
+                'message' => 'Berhasil TTE dan file tersimpan',
                 'file_path' => 'storage/' . $savePath,
             ];
 
