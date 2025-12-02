@@ -67,7 +67,7 @@ class TTE_BSRE
             return [
                 'status' => 'success',
                 'message' => 'Berhasil TTE dan file tersimpan',
-                'file_path' => 'storage/' . $savePath,
+                'file_path' => $savePath,
             ];
 
         } catch (\Exception $e) {

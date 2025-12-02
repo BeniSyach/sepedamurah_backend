@@ -237,7 +237,7 @@ class BerkasLainController extends Controller
         // Ambil data permohonan SPD berdasarkan id
         $permohonan = BerkasLainModel::findOrFail($id);
 
-        $filePath = $permohonan->file_tte;
+        $filePath = $permohonan->file_sdh_tte;
 
         // Cek apakah file ada di disk public
         $disk = Storage::disk('public');
