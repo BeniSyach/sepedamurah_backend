@@ -17,6 +17,16 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/public-file/{filename}', function ($filename) {
+    $path = storage_path("app/public/$filename");
+
+    if (!file_exists($path)) {
+        return response()->json(['error' => 'File not found', 'path' => $path], 404);
+    }
+
+    return response()->file($path);
+})->where('filename', '.*');
+
 Route::get('/public-file/{folder?}/{filename}', function ($folder = null, $filename) {
     // Tentukan path dasar
     $base = storage_path('app/public');
