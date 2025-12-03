@@ -270,8 +270,10 @@ class SP2DController extends Controller
                         }
                     });
                 } else {
-                    // Jika tidak ada SKPD yang diampu, gunakan filter berdasarkan id_user
-                    $query->where('id_user', $userId);
+                    // Jika tidak ada SKPD yang diampu, filter berdasarkan sp2dkirim.id_operator
+                    $query->whereHas('sp2dkirim', function ($q) use ($userId) {
+                        $q->where('id_operator', $userId);
+                    });
                 }
             
                 // Filter tambahan
