@@ -17,11 +17,21 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/public-file/{folder}/{filename}', function ($folder, $filename) {
-    $path = storage_path("app/public/$folder/$filename");
+Route::get('/public-file/{folder?}/{filename}', function ($folder = null, $filename) {
+    // Tentukan path dasar
+    $base = storage_path('app/public');
+
+    // Jika folder ada → storage/app/public/folder/filename
+    // Jika tidak ada → storage/app/public/filename
+    $path = $folder
+        ? "$base/$folder/$filename"
+        : "$base/$filename";
 
     if (!file_exists($path)) {
-        return response()->json(['error' => "File not found: $path"], 404);
+        return response()->json([
+            'error' => "File not found",
+            'path' => $path
+        ], 404);
     }
 
     return response()->file($path, [
@@ -30,6 +40,7 @@ Route::get('/public-file/{folder}/{filename}', function ($folder, $filename) {
         'Access-Control-Allow-Headers' => 'Content-Type',
     ]);
 })->where('filename', '.*');
+
 
 Route::get('/public-file/visualisasi_tte/{filename}', function ($filename) {
     $path = storage_path("app/public/visualisasi_tte/$filename");
