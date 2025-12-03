@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SP2DModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\SP2DResource;
+use App\Models\AksesKuasaBUDModel;
 use App\Models\AksesOperatorModel;
 use App\Models\SP2DRekeningModel;
 use App\Models\SP2DSumberDanaModel;
@@ -251,15 +252,38 @@ class SP2DController extends Controller
 
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
             if ($menu === 'sp2d_tte') {
-                if ($userId = $request->get('user_id')) {
+                $userId = $request->get('user_id');
+            
+                // Ambil data SKPD dari operator yang login
+                $aksesKuasaBUD = AksesKuasaBUDModel::where('id_kbud', $userId)->get();
+            
+                if ($aksesKuasaBUD->isNotEmpty()) {
+                    $query->where(function ($q) use ($aksesKuasaBUD) {
+                        foreach ($aksesKuasaBUD as $op) {
+                            $q->orWhere(function ($q2) use ($op) {
+                                $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                                   ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                   ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                   ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                   ->where('sp2d.kd_opd5', $op->kd_opd5);
+                            });
+                        }
+                    });
+                } else {
+                    // Jika tidak ada SKPD yang diampu, gunakan filter berdasarkan id_user
                     $query->where('id_user', $userId);
                 }
-                $query->whereNotNull('diterima');
-                $query->whereHas('sp2dkirim', function ($q) {
-                    $q->whereNull('tgl_tte');
-                });
+            
+                // Filter tambahan
+                $query->whereNotNull('supervisor_proses')
+                      ->whereNotNull('diterima')
+                      ->whereHas('sp2dkirim', function ($q) {
+                          $q->whereNull('tgl_tte');
+                      });
+            
                 $FilterTanggal = 'diterima';
             }
+            
         }
     
         // 🔎 Pencarian fleksibel
