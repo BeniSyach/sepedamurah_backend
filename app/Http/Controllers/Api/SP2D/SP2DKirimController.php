@@ -291,11 +291,11 @@ class SP2DKirimController extends Controller
     public function sign(Request $request)
     {
         $request->validate([
-            'file'       => 'required|mimes:pdf|max:2048',
+            'file'       => 'required|mimes:pdf',
             'passphrase' => 'required',
             'tampilan'   => 'required',
             'nama_file'  => 'required',
-            'id_sp2d'    => 'required|integer'
+            'id_sp2d'    => 'required'
         ]);
 
         $user = Auth::user();
@@ -363,7 +363,7 @@ class SP2DKirimController extends Controller
         // ================================
         // UPDATE DATA SP2D JIKA SUKSES
         // ================================
-        $sp2d = SP2DKirimModel::find($request->id_sp2d);
+        $sp2d = SP2DKirimModel::where('id_berkas',$request->id_sp2d)->first();
         $sp2d->update([
             'tte'               => "Yes",
             'tgl_tte'           => now(),

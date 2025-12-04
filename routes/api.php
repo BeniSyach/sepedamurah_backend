@@ -290,6 +290,10 @@ Route::middleware('auth:api')->group(function () {
 
         // Laporan Daftar Belanja Per SKPD
         Route::get('/daftar-belanja-skpd', [LaporanDaftarBelanjaPerSKPDController::class, 'index']);
+        Route::get('/detail/daftar-belanja-skpd', 
+        [LaporanDaftarBelanjaPerSKPDController::class, 'detail_daftar_belanja_SKPD']);
+        Route::get('/daftar-belanja-skpd/download/pdf', [LaporanDaftarBelanjaPerSKPDController::class, 'export_pdf'])->name('daftar-belanja-skpd.download_pdf');
+        Route::get('/daftar-belanja-skpd/download/excel', [LaporanDaftarBelanjaPerSKPDController::class, 'export_excel'])->name('daftar-belanja-skpd.download_excel');
     });
 
     // Berkas Berkas Lain

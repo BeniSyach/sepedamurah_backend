@@ -24,7 +24,11 @@ Route::get('/public-file/{filename}', function ($filename) {
         return response()->json(['error' => 'File not found', 'path' => $path], 404);
     }
 
-    return response()->file($path);
+    return response()->file($path, [
+        'Access-Control-Allow-Origin' => '*',
+        'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+        'Access-Control-Allow-Headers' => 'Content-Type',
+    ]);
 })->where('filename', '.*');
 
 Route::get('/public-file/{folder?}/{filename}', function ($folder = null, $filename) {

@@ -20,26 +20,82 @@ class PengembalianController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PengembalianModel::query();
+        $query = PengembalianModel::query()
+                ->join('ref_opd', function ($join) {
+                    $join->on('data_pengembalian.kd_opd1', '=', 'ref_opd.kd_opd1')
+                        ->on('data_pengembalian.kd_opd2', '=', 'ref_opd.kd_opd2')
+                        ->on('data_pengembalian.kd_opd3', '=', 'ref_opd.kd_opd3')
+                        ->on('data_pengembalian.kd_opd4', '=', 'ref_opd.kd_opd4')
+                        ->on('data_pengembalian.kd_opd5', '=', 'ref_opd.kd_opd5');
+                });
 
         if ($search = $request->get('search')) {
-            $query->where('nama', 'like', "%{$search}%")
-                  ->orWhere('nik', 'like', "%{$search}%")
-                  ->orWhere('no_sts', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $search = strtolower($search);
+        
+                $q->whereRaw('LOWER(no_sts) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(nik) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(nama) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(alamat) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(nm_rekening) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(keterangan) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(jml_pengembalian) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(jml_yg_disetor) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"]);
+            });
         }
 
-        $data = $query->orderBy('tgl_rekam', 'desc')
-                      ->paginate($request->get('per_page', 10));
-        
-          // Attach skpd secara manual (karena tidak bisa eager load)
-        $data->getCollection()->transform(function ($item) {
-            $skpd = $item->skpd(); // panggil accessor manual
-            $item->setRelation('skpd', $skpd); // daftarkan ke relasi Eloquent
-            return $item;
-        });
-
-        return PengembalianResource::collection($data);
+         /*
+    |--------------------------------------------------------------------------
+    | 📅 FILTER TANGGAL
+    |--------------------------------------------------------------------------
+    */
+    if ($from = $request->get('date_from')) {
+        $query->whereDate('tgl_rekam', '>=', $from);
     }
+
+    if ($to = $request->get('date_to')) {
+        $query->whereDate('tgl_rekam', '<=', $to);
+    }
+        
+    if ($status = $request->get('status')) {
+
+        if ($status) {
+            $query->whereRaw("
+                CASE
+                    WHEN (jml_pengembalian - jml_yg_disetor) <= 0 THEN 'SDH BAYAR'
+                    WHEN (jml_pengembalian - jml_yg_disetor) = jml_pengembalian THEN 'BLM BAYAR'
+                    ELSE 'KRG BAYAR'
+                END = ?
+            ", [$status]);
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🔽 SORTING
+    |--------------------------------------------------------------------------
+    */
+    $sortBy = $request->get('sort_by', 'tgl_rekam');
+    $sortDir = $request->get('sort_dir', 'desc');
+
+    $query->orderBy($sortBy, $sortDir);
+
+    /*
+    |--------------------------------------------------------------------------
+    | 📄 PAGINATION & RELASI SKPD
+    |--------------------------------------------------------------------------
+    */
+    $data = $query->paginate($request->get('per_page', 10));
+
+    // attach SKPD secara manual
+    $data->getCollection()->transform(function ($item) {
+        $item->setRelation('skpd', $item->skpd());
+        return $item;
+    });
+
+    return PengembalianResource::collection($data);
+}
 
     /**
      * Simpan data baru.
