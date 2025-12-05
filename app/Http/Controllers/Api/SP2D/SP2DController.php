@@ -217,6 +217,44 @@ class SP2DController extends Controller
                 $FilterTanggal = 'diterima';
             }
 
+            // ✅ SP2D Diterima Kuasa BUD
+            if ($menu === 'sp2d_diterima_kuasa_bud') {
+                $userId = $request->get('user_id');
+            
+                // // Ambil data SKPD dari operator yang login
+                // $aksesKuasaBUD = AksesKuasaBUDModel::where('id_kbud', $userId)->get();
+            
+                // if ($aksesKuasaBUD->isNotEmpty()) {
+                //     $query->where(function ($q) use ($aksesKuasaBUD) {
+                //         foreach ($aksesKuasaBUD as $op) {
+                //             $q->orWhere(function ($q2) use ($op) {
+                //                 $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                //                    ->where('sp2d.kd_opd2', $op->kd_opd2)
+                //                    ->where('sp2d.kd_opd3', $op->kd_opd3)
+                //                    ->where('sp2d.kd_opd4', $op->kd_opd4)
+                //                    ->where('sp2d.kd_opd5', $op->kd_opd5);
+                //             });
+                //         }
+                //     });
+                // } else {
+                //     // Jika tidak ada SKPD yang diampu, filter berdasarkan sp2dkirim.id_operator
+                //     $query->whereHas('sp2dkirim', function ($q) use ($userId) {
+                //         $q->where('id_operator', $userId);
+                //     });
+                // }
+            
+                // Filter tambahan
+                $query->whereNotNull('supervisor_proses')
+                      ->whereNotNull('diterima')
+                      ->whereHas('sp2dkirim', function ($q) {
+                          $q->whereNotNull('tgl_tte')
+                            ->whereNull('tgl_kirim_kebank')
+                            ->whereNull('publish');
+                      });
+            
+                $FilterTanggal = 'tanggal_upload';
+            }
+
             // (opsional) kalau kamu juga punya 'sp2d_ditolak'
             if ($menu === 'sp2d_ditolak') {
                 if ($userId = $request->get('user_id')) {

@@ -167,7 +167,7 @@ class SP2DKirimController extends Controller
             'status' => 'nullable|string|max:50',
             'tgl_tte' => 'nullable|date',
             'alasan_tolak' => 'nullable|string|max:500',
-            'tgl_kirim_kebank' => 'nullable|date',
+            'tgl_kirim_kebank' => 'nullable',
             'id_penandatangan' => 'nullable|integer',
             'nama_penandatangan' => 'nullable|string|max:255',
             'file_tte' => 'nullable|file|mimes:pdf|max:5120', // opsional
@@ -205,6 +205,15 @@ class SP2DKirimController extends Controller
     
             // 🕒 Update timestamp
             $validated['updated_at'] = now();
+
+            
+            // Konversi NULL string menjadi null
+            if (isset($validated['tgl_kirim_kebank'])) {
+                if ($validated['tgl_kirim_kebank'] === 'NULL' || $validated['tgl_kirim_kebank'] === '') {
+                    $validated['tgl_kirim_kebank'] = null;
+                }
+            }
+
     
             // Jika kolom date_created wajib isi (di Oracle kadang NOT NULL)
             if (empty($sp2d->date_created)) {
