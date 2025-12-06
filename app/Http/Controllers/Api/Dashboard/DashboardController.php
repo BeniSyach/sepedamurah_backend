@@ -8,7 +8,7 @@ use App\Models\PermohonanSPDModel;
 use App\Models\SKPDModel;
 use App\Models\SP2DKirimModel;
 use App\Models\SP2DModel;
-use App\Models\SpdTerkirimModel;
+use App\Models\SPDTerkirimModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -56,7 +56,7 @@ class DashboardController extends Controller
         $totalSPDDitolak = $spdDitolak->count();
     
         // TTE (pakai tgl_tte)
-        $spdTTE = SpdTerkirimModel::whereNotNull('tgl_tte');
+        $spdTTE = SPDTerkirimModel::whereNotNull('tgl_tte');
         if ($from && $to) {
             $spdTTE->whereBetween('tgl_tte', [$from, $to]);
         }
