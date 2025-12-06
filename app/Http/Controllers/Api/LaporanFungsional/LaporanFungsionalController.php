@@ -623,10 +623,9 @@ class LaporanFungsionalController extends Controller
         $cekUploadBulan = function ($th, $bln) use (
             $kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5, $status
         ) {
-            $bulan = str_pad($bln, 2, '0', STR_PAD_LEFT);
             // Cek Pengeluaran
             $pengeluaran = LaporanFungsionalModel::whereRaw("EXTRACT(YEAR FROM tanggal_upload) = ?", [$th])
-            ->whereRaw("TO_CHAR(tanggal_upload, 'MM') = ?", [$bulan])
+                ->whereRaw("EXTRACT(MONTH FROM tanggal_upload) = ?", [(int)$bln])
                 ->where('jenis_berkas', 'Pengeluaran')
                 ->where('kd_opd1', $kd_opd1)
                 ->where('kd_opd2', $kd_opd2)
@@ -648,7 +647,7 @@ class LaporanFungsionalController extends Controller
         
             // Jika status = 1, cek juga penerimaan
             $penerimaan = LaporanFungsionalModel::whereRaw("EXTRACT(YEAR FROM tanggal_upload) = ?", [$th])
-            ->whereRaw("TO_CHAR(tanggal_upload, 'MM') = ?", [$bulan])
+                ->whereRaw("EXTRACT(MONTH FROM tanggal_upload) = ?", [(int)$bln])
                 ->where('jenis_berkas', 'Penerimaan')
                 ->where('kd_opd1', $kd_opd1)
                 ->where('kd_opd2', $kd_opd2)
@@ -665,15 +664,15 @@ class LaporanFungsionalController extends Controller
                 "lengkap" => $pengeluaran && $penerimaan // salah satu kurang → tidak lengkap
             ];
         };
+        
         // =========================================================
         // CARI TUNGGAKAN BULAN SEBELUMNYA (TERMUKA LINTAS TAHUN)
         // =========================================================
-
+    
         $bulanKurang = [];
-
+    
         // --- CEK BULAN DALAM TAHUN YANG SAMA ---
         for ($i = 1; $i < $bulan; $i++) {
-
             // Skip bulan N-1 bila belum lewat tanggal 10
             if ($today <= 10 && $i == ($bulan - 1)) {
                 continue;
@@ -685,7 +684,7 @@ class LaporanFungsionalController extends Controller
                 $bulanKurang[] = [$tahun, $i];
             }
         }
-
+    
         // --- CEK TAHUN SEBELUMNYA (DESEMBER) ---
         if ($bulan == 1) {
             $cekLastYear = $cekUploadBulan($tahun - 1, 12);
@@ -693,7 +692,7 @@ class LaporanFungsionalController extends Controller
                 $bulanKurang[] = [$tahun - 1, 12];
             }
         }
-
+    
         // =========================================================
         // LOGIKA KETIKA ADA TUNGGAKAN
         // =========================================================
@@ -706,11 +705,11 @@ class LaporanFungsionalController extends Controller
                 "message" => "Masih ada laporan lama yang belum lengkap."
             ];
         }
-
+    
         // =========================================================
         // JIKA TIDAK ADA TUNGGAKAN
         // =========================================================
-
+    
         // Tanggal 1–10 → BULAN INI TIDAK WAJIB UPLOAD
         if ($today <= 10) {
             return [
@@ -721,10 +720,10 @@ class LaporanFungsionalController extends Controller
                 "message" => "Belum lewat tanggal 10, belum wajib upload bulan ini."
             ];
         }
-
+    
         // Lewat tanggal 10 → cek bulan berjalan
         $cekSekarang = $cekUploadBulan($tahun, $bulan);
-
+    
         return [
             "wajib" => true,
             "pengeluaran" => $cekSekarang["pengeluaran"],
