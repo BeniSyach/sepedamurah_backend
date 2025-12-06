@@ -624,9 +624,8 @@ class LaporanFungsionalController extends Controller
             $kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5, $status
         ) {
             // Cek Pengeluaran
-            $pengeluaran = LaporanFungsionalModel::whereYear('tanggal_upload', $th)
+            $pengeluaran = LaporanFungsionalModel::where('jenis_berkas', 'Pengeluaran')
                 ->orWhereRaw("TO_CHAR(tanggal_upload, 'MM') = ?", ["$bln"])
-                ->where('jenis_berkas', 'Pengeluaran')
                 ->where('kd_opd1', $kd_opd1)
                 ->where('kd_opd2', $kd_opd2)
                 ->where('kd_opd3', $kd_opd3)
@@ -646,9 +645,8 @@ class LaporanFungsionalController extends Controller
             }
         
             // Jika status = 1, cek juga penerimaan
-            $penerimaan = LaporanFungsionalModel::whereYear('tanggal_upload', $th)
+            $penerimaan = LaporanFungsionalModel::where('jenis_berkas', 'Penerimaan')
                 ->whereMonth('tanggal_upload', $bln)
-                ->where('jenis_berkas', 'Penerimaan')
                 ->where('kd_opd1', $kd_opd1)
                 ->where('kd_opd2', $kd_opd2)
                 ->where('kd_opd3', $kd_opd3)
