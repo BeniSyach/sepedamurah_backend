@@ -617,29 +617,14 @@ class LaporanFungsionalController extends Controller
         $kd_opd5,
         $status // 0 atau 1
     ) {
-        // Cek melewati tanggal 10
         $today = now()->day;
     
-        if ($today <= 10) {
-            return [
-                "wajib" => false,
-                "pengeluaran" => false,
-                "penerimaan" => false,
-                "bulan_kurang" => [],
-                "message" => "Belum melewati tanggal 10, tidak wajib upload."
-            ];
-        }
-    
-        // ================
-        // FUNCTION CEK BULAN
-        // ================
-        $cekUploadBulan = function ($tahun, $bulan) use (
+        // ================ FUNCTION CEK BULAN ====================
+        $cekUploadBulan = function ($th, $bln) use (
             $kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5, $status
         ) {
-    
-            // Pengeluaran wajib
-            $pengeluaran = LaporanFungsionalModel::whereYear('tanggal_upload', $tahun)
-                ->whereMonth('tanggal_upload', $bulan)
+            $pengeluaran = LaporanFungsionalModel::whereYear('tanggal_upload', $th)
+                ->whereMonth('tanggal_upload', $bln)
                 ->where('jenis_berkas', 'Pengeluaran')
                 ->where('kd_opd1', $kd_opd1)
                 ->where('kd_opd2', $kd_opd2)
@@ -650,11 +635,10 @@ class LaporanFungsionalController extends Controller
                 ->whereNull('deleted_at')
                 ->exists();
     
-            // Penerimaan
             $penerimaan = true;
             if ($status == 1) {
-                $penerimaan = LaporanFungsionalModel::whereYear('tanggal_upload', $tahun)
-                    ->whereMonth('tanggal_upload', $bulan)
+                $penerimaan = LaporanFungsionalModel::whereYear('tanggal_upload', $th)
+                    ->whereMonth('tanggal_upload', $bln)
                     ->where('jenis_berkas', 'Penerimaan')
                     ->where('kd_opd1', $kd_opd1)
                     ->where('kd_opd2', $kd_opd2)
@@ -669,36 +653,58 @@ class LaporanFungsionalController extends Controller
             return [
                 "pengeluaran" => $pengeluaran,
                 "penerimaan" => $penerimaan,
-                "lengkap" => $pengeluaran && $penerimaan,
+                "lengkap" => $pengeluaran && $penerimaan
             ];
         };
     
-        // ========================================
-        // CEK BULAN SEBELUMNYA
-        // ========================================
+        // =====================================================
+        // CEK BULAN SEBELUMNYA (MENCARI N-2, N-3, dst)
+        // =====================================================
         $bulanKurang = [];
     
-        for ($i = 1; $i < $bulan; $i++) {
-            $cek = $cekUploadBulan($tahun, $i);
-    
+        $thCheck = $tahun;
+        for ($i = $bulan - 1; $i >= 1; $i--) {
+            $cek = $cekUploadBulan($thCheck, $i);
             if (!$cek["lengkap"]) {
-                $bulanKurang[] = $i;
+                $bulanKurang[] = [$thCheck, $i];
             }
         }
     
+        // Jika bulan = Januari, cek Desember tahun lalu
+        if ($bulan == 1) {
+            $cek = $cekUploadBulan($tahun - 1, 12);
+            if (!$cek["lengkap"]) {
+                $bulanKurang[] = [$tahun - 1, 12];
+            }
+        }
+    
+        // Jika ada bulan-bulan lama yang belum upload → langsung kenak
         if (count($bulanKurang) > 0) {
             return [
                 "wajib" => true,
                 "pengeluaran" => false,
                 "penerimaan" => false,
                 "bulan_kurang" => $bulanKurang,
-                "message" => "Masih ada laporan yang belum lengkap pada bulan: " . implode(', ', $bulanKurang)
+                "message" => "Masih ada laporan lama yang belum lengkap."
             ];
         }
     
-        // ===============================
-        // CEK BULAN SAAT INI
-        // ===============================
+        // =====================================================
+        // CEK BULAN BERJALAN
+        // =====================================================
+    
+        if ($today <= 10) {
+            // bulan sebelumnya lengkap → bulan ini belum wajib
+            return [
+                "wajib" => false,
+                "pengeluaran" => false,
+                "penerimaan" => false,
+                "bulan_kurang" => [],
+                "message" => "Belum lewat tanggal 10, belum wajib upload bulan ini."
+            ];
+        }
+    
+        // Sudah lewat tanggal 10 → bulan ini wajib lengkap
         $cekSekarang = $cekUploadBulan($tahun, $bulan);
     
         return [
@@ -707,12 +713,10 @@ class LaporanFungsionalController extends Controller
             "penerimaan" => $cekSekarang["penerimaan"],
             "bulan_kurang" => [],
             "message" => $cekSekarang["lengkap"]
-                ? "Semua laporan sudah upload."
-                : "Belum upload laporan fungsional bulan ini."
+                ? "Semua laporan sudah lengkap."
+                : "Belum upload laporan bulan ini."
         ];
     }
-    
-    
     
     public function apiCekSudahUploadFungsional(Request $request)
     {
@@ -740,6 +744,7 @@ class LaporanFungsionalController extends Controller
             )
         );
     }
+    
 
     public function sign(Request $request)
     {
