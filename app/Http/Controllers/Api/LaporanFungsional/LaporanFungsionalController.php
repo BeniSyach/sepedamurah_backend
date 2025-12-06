@@ -665,32 +665,51 @@ class LaporanFungsionalController extends Controller
                 "lengkap" => $pengeluaran && $penerimaan // salah satu kurang → tidak lengkap
             ];
         };
-        // =========================================================
-        // CARI TUNGGAKAN BULAN SEBELUMNYA (TERMUKA LINTAS TAHUN)
-        // =========================================================
-
+        // ========================================
+        // CEK BULAN SEBELUMNYA DENGAN LOGIKA N-1
+        // ========================================
         $bulanKurang = [];
 
-        // --- CEK BULAN DALAM TAHUN YANG SAMA ---
-        for ($i = 1; $i < $bulan; $i++) {
-            $cek = $cekUploadBulan($tahun, $i);
+        $thCheck = $tahun;
 
+        // Jika belum lewat tanggal 10 → SKIP bulan N-1
+        $skipBulan = $today <= 10 ? $bulan - 1 : null;
+
+        // Jika bulan = Januari, maka skip bulan Desember tahun lalu
+        $skipTahun = null;
+        if ($today <= 10 && $bulan == 1) {
+            $skipBulan = 12;
+            $skipTahun = $tahun - 1;
+        }
+
+        for ($i = $bulan - 1; $i >= 1; $i--) {
+
+            // Skip bulan N-1 saat belum lewat tgl 10
+            if ($skipBulan === $i && ($skipTahun === null || $skipTahun === $thCheck)) {
+                continue;
+            }
+
+            $cek = $cekUploadBulan($thCheck, $i);
             if (!$cek["lengkap"]) {
-                $bulanKurang[] = [$tahun, $i];
+                $bulanKurang[] = [$thCheck, $i];
             }
         }
 
-        // --- CEK TAHUN SEBELUMNYA (DESEMBER) ---
+        // Jika bulan = Januari → cek Desember tahun lalu
         if ($bulan == 1) {
-            $cekLastYear = $cekUploadBulan($tahun - 1, 12);
-            if (!$cekLastYear["lengkap"]) {
-                $bulanKurang[] = [$tahun - 1, 12];
+            $thDec = $tahun - 1;
+            $blnDec = 12;
+
+            // Skip Desember tahun lalu jika belum lewat tgl 10
+            if (!($today <= 10 && $skipBulan == 12)) {
+                $cek = $cekUploadBulan($thDec, $blnDec);
+                if (!$cek["lengkap"]) {
+                    $bulanKurang[] = [$thDec, $blnDec];
+                }
             }
         }
 
-        // =========================================================
-        // LOGIKA KETIKA ADA TUNGGAKAN
-        // =========================================================
+        // Jika ada bulan lama yg kurang → langsung kenak
         if (count($bulanKurang) > 0) {
             return [
                 "wajib" => true,
@@ -700,35 +719,8 @@ class LaporanFungsionalController extends Controller
                 "message" => "Masih ada laporan lama yang belum lengkap."
             ];
         }
-
-        // =========================================================
-        // JIKA TIDAK ADA TUNGGAKAN
-        // =========================================================
-
-        // Tanggal 1–10 → BULAN INI TIDAK WAJIB UPLOAD
-        if ($today <= 10) {
-            return [
-                "wajib" => false,
-                "pengeluaran" => false,
-                "penerimaan" => false,
-                "bulan_kurang" => [],
-                "message" => "Belum lewat tanggal 10, belum wajib upload bulan ini."
-            ];
-        }
-
-        // Lewat tanggal 10 → cek bulan berjalan
-        $cekSekarang = $cekUploadBulan($tahun, $bulan);
-
-        return [
-            "wajib" => true,
-            "pengeluaran" => $cekSekarang["pengeluaran"],
-            "penerimaan" => $cekSekarang["penerimaan"],
-            "bulan_kurang" => [],
-            "message" => $cekSekarang["lengkap"]
-                ? "Semua laporan bulan ini sudah lengkap."
-                : "Belum upload laporan bulan ini."
-        ];
     }
+
     
     public function apiCekSudahUploadFungsional(Request $request)
     {
