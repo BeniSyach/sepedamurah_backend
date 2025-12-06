@@ -657,28 +657,51 @@ class LaporanFungsionalController extends Controller
             ];
         };
     
-        // =====================================================
-        // CEK BULAN SEBELUMNYA (MENCARI N-2, N-3, dst)
-        // =====================================================
+        // ========================================
+        // CEK BULAN SEBELUMNYA DENGAN LOGIKA N-1
+        // ========================================
         $bulanKurang = [];
-    
+
         $thCheck = $tahun;
+
+        // Jika belum lewat tanggal 10 → SKIP bulan N-1
+        $skipBulan = $today <= 10 ? $bulan - 1 : null;
+
+        // Jika bulan = Januari, maka skip bulan Desember tahun lalu
+        $skipTahun = null;
+        if ($today <= 10 && $bulan == 1) {
+            $skipBulan = 12;
+            $skipTahun = $tahun - 1;
+        }
+
         for ($i = $bulan - 1; $i >= 1; $i--) {
+
+            // Skip bulan N-1 saat belum lewat tgl 10
+            if ($skipBulan === $i && ($skipTahun === null || $skipTahun === $thCheck)) {
+                continue;
+            }
+
             $cek = $cekUploadBulan($thCheck, $i);
             if (!$cek["lengkap"]) {
                 $bulanKurang[] = [$thCheck, $i];
             }
         }
-    
-        // Jika bulan = Januari, cek Desember tahun lalu
+
+        // Jika bulan = Januari → cek Desember tahun lalu
         if ($bulan == 1) {
-            $cek = $cekUploadBulan($tahun - 1, 12);
-            if (!$cek["lengkap"]) {
-                $bulanKurang[] = [$tahun - 1, 12];
+            $thDec = $tahun - 1;
+            $blnDec = 12;
+
+            // Skip Desember tahun lalu jika belum lewat tgl 10
+            if (!($today <= 10 && $skipBulan == 12)) {
+                $cek = $cekUploadBulan($thDec, $blnDec);
+                if (!$cek["lengkap"]) {
+                    $bulanKurang[] = [$thDec, $blnDec];
+                }
             }
         }
-    
-        // Jika ada bulan-bulan lama yang belum upload → langsung kenak
+
+        // Jika ada bulan lama yg kurang → langsung kenak
         if (count($bulanKurang) > 0) {
             return [
                 "wajib" => true,
