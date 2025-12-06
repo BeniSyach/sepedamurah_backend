@@ -16,11 +16,46 @@ class LaporanRealisasiBelanjaController extends Controller
         $tahun = $request->get('tahun', date('Y'));
 
         $data = DB::connection('oracle')->select("
+           SELECT 
+            x.KD_REF1,
+            x.KD_REF2,
+            x.KD_REF3,
+            x.NM_BELANJA AS JENIS_BELANJA,
+
+            x.BELANJA_JAN,
+            x.BELANJA_FEB,
+            x.BELANJA_MAR,
+            x.BELANJA_APR,
+            x.BELANJA_MAY,
+            x.BELANJA_JUN,
+            x.BELANJA_JUL,
+            x.BELANJA_AUG,
+            x.BELANJA_SEP,
+            x.BELANJA_OCT,
+            x.BELANJA_NOV,
+            x.BELANJA_DEC,
+
+            -- Total realisasi
+            (
+                NVL(x.BELANJA_JAN,0) +
+                NVL(x.BELANJA_FEB,0) +
+                NVL(x.BELANJA_MAR,0) +
+                NVL(x.BELANJA_APR,0) +
+                NVL(x.BELANJA_MAY,0) +
+                NVL(x.BELANJA_JUN,0) +
+                NVL(x.BELANJA_JUL,0) +
+                NVL(x.BELANJA_AUG,0) +
+                NVL(x.BELANJA_SEP,0) +
+                NVL(x.BELANJA_OCT,0) +
+                NVL(x.BELANJA_NOV,0) +
+                NVL(x.BELANJA_DEC,0)
+            ) AS TOTAL_REALISASI,
+
+            -- Pagu dari view
+            NVL(p.TOTAL_PAGU, 0) AS TOTAL_PAGU
+        FROM (
             SELECT 
-                KD_REF1, 
-                KD_REF2, 
-                KD_REF3, 
-                NM_BELANJA AS JENIS_BELANJA,
+                KD_REF1, KD_REF2, KD_REF3, NM_BELANJA,
                 SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 1, TOTAL_NILAI, 0)) AS BELANJA_JAN,
                 SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 2, TOTAL_NILAI, 0)) AS BELANJA_FEB,
                 SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 3, TOTAL_NILAI, 0)) AS BELANJA_MAR,
@@ -36,9 +71,9 @@ class LaporanRealisasiBelanjaController extends Controller
             FROM (
                 -- SQL 1
                 SELECT 
-                    s.KD_BELANJA1 AS KD_REF1, 
-                    s.KD_BELANJA2 AS KD_REF2, 
-                    s.KD_BELANJA3 AS KD_REF3, 
+                    s.KD_BELANJA1 AS KD_REF1,
+                    s.KD_BELANJA2 AS KD_REF2,
+                    s.KD_BELANJA3 AS KD_REF3,
                     rjb.NM_BELANJA,
                     s.DITERIMA,
                     SUM(s.NILAI_BELANJA) AS TOTAL_NILAI
@@ -47,24 +82,19 @@ class LaporanRealisasiBelanjaController extends Controller
                     ON s.KD_BELANJA1 = rjb.KD_REF1
                     AND s.KD_BELANJA2 = rjb.KD_REF2
                     AND s.KD_BELANJA3 = rjb.KD_REF3
-                WHERE s.DITERIMA IS NOT NULL 
-                    AND s.KD_BELANJA1 IS NOT NULL
-                    AND s.TAHUN = :tahun
-                GROUP BY 
-                    s.KD_BELANJA1, 
-                    s.KD_BELANJA2, 
-                    s.KD_BELANJA3,
-                    rjb.NM_BELANJA,
-                    s.DITERIMA
-            
+                WHERE s.DITERIMA IS NOT NULL
+                  AND s.KD_BELANJA1 IS NOT NULL
+                  AND s.TAHUN = :tahun
+                GROUP BY s.KD_BELANJA1, s.KD_BELANJA2, s.KD_BELANJA3, rjb.NM_BELANJA, s.DITERIMA
+
                 UNION ALL
-            
+
                 -- SQL 2
                 SELECT 
-                    NVL(rjb.KD_REF1, s.KD_BELANJA1) AS KD_REF1,
-                    NVL(rjb.KD_REF2, s.KD_BELANJA2) AS KD_REF2,
-                    NVL(rjb.KD_REF3, s.KD_BELANJA3) AS KD_REF3,
-                    NVL(rjb.NM_BELANJA, rjb2.NM_BELANJA) AS NM_BELANJA,
+                    NVL(rjb.KD_REF1, s.KD_BELANJA1),
+                    NVL(rjb.KD_REF2, s.KD_BELANJA2),
+                    NVL(rjb.KD_REF3, s.KD_BELANJA3),
+                    NVL(rjb.NM_BELANJA, rjb2.NM_BELANJA),
                     s.DITERIMA,
                     NVL(SUM(sr.NILAI), 0) AS TOTAL_NILAI
                 FROM SP2D s
@@ -78,25 +108,25 @@ class LaporanRealisasiBelanjaController extends Controller
                     ON s.KD_BELANJA1 = rjb2.KD_REF1
                     AND s.KD_BELANJA2 = rjb2.KD_REF2
                     AND s.KD_BELANJA3 = rjb2.KD_REF3
-                WHERE s.DITERIMA IS NOT NULL  
-                    AND NVL(rjb.KD_REF1, s.KD_BELANJA1) IS NOT NULL 
-                    AND s.TAHUN = :tahun
+                WHERE s.DITERIMA IS NOT NULL
+                  AND NVL(rjb.KD_REF1, s.KD_BELANJA1) IS NOT NULL
+                  AND s.TAHUN = :tahun
                 GROUP BY 
-                    NVL(rjb.KD_REF1, s.KD_BELANJA1), 
-                    NVL(rjb.KD_REF2, s.KD_BELANJA2), 
-                    NVL(rjb.KD_REF3, s.KD_BELANJA3), 
+                    NVL(rjb.KD_REF1, s.KD_BELANJA1),
+                    NVL(rjb.KD_REF2, s.KD_BELANJA2),
+                    NVL(rjb.KD_REF3, s.KD_BELANJA3),
                     NVL(rjb.NM_BELANJA, rjb2.NM_BELANJA),
                     s.DITERIMA
-            ) combined
-            GROUP BY 
-                KD_REF1, 
-                KD_REF2, 
-                KD_REF3, 
-                NM_BELANJA
-            ORDER BY 
-                KD_REF1, 
-                KD_REF2, 
-                KD_REF3
+            )
+            GROUP BY KD_REF1, KD_REF2, KD_REF3, NM_BELANJA
+        ) x
+
+        LEFT JOIN PENGEMBALIAN.VW_PAGU_REKENING_3LEVEL p
+            ON p.KD_REKENING1 = x.KD_REF1
+            AND p.KD_REKENING2 = x.KD_REF2
+            AND p.KD_REKENING3 = x.KD_REF3
+
+        ORDER BY x.KD_REF1, x.KD_REF2, x.KD_REF3
         ", ['tahun' => $tahun]);
 
         return response()->json([
