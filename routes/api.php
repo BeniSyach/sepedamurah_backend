@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AlokasiDana\PaguSumberDanaController;
 use App\Http\Controllers\Api\AlokasiDana\RealisasiTransferSumberDanaController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BerkasLainController;
+use App\Http\Controllers\Api\Dashboard\DashboardController;
 use App\Http\Controllers\Api\DatRekeningController;
 use App\Http\Controllers\Api\HakAkses\AksesKuasaBudController;
 use App\Http\Controllers\Api\HakAkses\AksesOperatorController;
@@ -77,6 +78,15 @@ Route::get('/verify-tte-fungsional/{id}', [LaporanFungsionalController::class, '
 Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Dashboard
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/count-data',[ DashboardController::class, 'index']);
+        Route::get('/data-berkas-masuk-sp2d',[ DashboardController::class, 'berkas_masuk_sp2d']);
+        Route::get('/chart-sp2d-per-bulan',[ DashboardController::class, 'chartSp2dPerBulan']);
+        Route::get('/check-fungsional',[ DashboardController::class, 'tableCheckFungsional']);
+        Route::get('/count-fungsional',[ DashboardController::class, 'summary']);
+    });
 
     // Master Data
     Route::prefix('master-data')->group(function () {
@@ -188,12 +198,10 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('/up-skpd', BesaranUPSKPDController::class)->only(['index', 'store']);
 
         // Realisasi Transfer Sumber Dana
-        Route::post('/sinkron-sumber-dana-pajak', 
-        [RealisasiTransferSumberDanaController::class, 'sumberDanaPajak']
-    );
-        Route::get('/detail-realisasi-transfer-sumber-dana', 
-    [RealisasiTransferSumberDanaController::class, 'detailTFSD']
-);
+        Route::post('/sinkron-sumber-dana-pajak', [RealisasiTransferSumberDanaController::class, 'sumberDanaPajak']);
+
+        Route::get('/detail-realisasi-transfer-sumber-dana', [RealisasiTransferSumberDanaController::class, 'detailTFSD']);
+
         Route::apiResource('/realisasi-transfer-sumber-dana', RealisasiTransferSumberDanaController::class);
 
     });
