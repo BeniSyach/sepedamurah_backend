@@ -623,9 +623,10 @@ class LaporanFungsionalController extends Controller
         $cekUploadBulan = function ($th, $bln) use (
             $kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5, $status
         ) {
+            $bulan = str_pad($bln, 2, '0', STR_PAD_LEFT);
             // Cek Pengeluaran
             $pengeluaran = LaporanFungsionalModel::whereRaw("EXTRACT(YEAR FROM tanggal_upload) = ?", [$th])
-            ->whereRaw("TO_CHAR(tanggal_upload, 'MM') = ?", [$bln])
+            ->whereRaw("TO_CHAR(tanggal_upload, 'MM') = ?", [$bulan])
                 ->where('jenis_berkas', 'Pengeluaran')
                 ->where('kd_opd1', $kd_opd1)
                 ->where('kd_opd2', $kd_opd2)
@@ -647,7 +648,7 @@ class LaporanFungsionalController extends Controller
         
             // Jika status = 1, cek juga penerimaan
             $penerimaan = LaporanFungsionalModel::whereRaw("EXTRACT(YEAR FROM tanggal_upload) = ?", [$th])
-            ->whereRaw("TO_CHAR(tanggal_upload, 'MM') = ?", [$bln])
+            ->whereRaw("TO_CHAR(tanggal_upload, 'MM') = ?", [$bulan])
                 ->where('jenis_berkas', 'Penerimaan')
                 ->where('kd_opd1', $kd_opd1)
                 ->where('kd_opd2', $kd_opd2)
