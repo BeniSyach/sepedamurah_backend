@@ -623,6 +623,7 @@ class LaporanFungsionalController extends Controller
         $cekUploadBulan = function ($th, $bln) use (
             $kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5, $status
         ) {
+            // Cek Pengeluaran
             $pengeluaran = LaporanFungsionalModel::whereYear('tanggal_upload', $th)
                 ->whereMonth('tanggal_upload', $bln)
                 ->where('jenis_berkas', 'Pengeluaran')
@@ -634,28 +635,36 @@ class LaporanFungsionalController extends Controller
                 ->whereNotNull('diterima')
                 ->whereNull('deleted_at')
                 ->exists();
-    
-            $penerimaan = true;
-            if ($status == 1) {
-                $penerimaan = LaporanFungsionalModel::whereYear('tanggal_upload', $th)
-                    ->whereMonth('tanggal_upload', $bln)
-                    ->where('jenis_berkas', 'Penerimaan')
-                    ->where('kd_opd1', $kd_opd1)
-                    ->where('kd_opd2', $kd_opd2)
-                    ->where('kd_opd3', $kd_opd3)
-                    ->where('kd_opd4', $kd_opd4)
-                    ->where('kd_opd5', $kd_opd5)
-                    ->whereNotNull('diterima')
-                    ->whereNull('deleted_at')
-                    ->exists();
+        
+            // Jika status 0 → hanya pengeluaran yang dicek
+            if ($status == 0) {
+                return [
+                    "pengeluaran" => $pengeluaran,
+                    "penerimaan" => true, // dianggap lengkap karena tidak wajib
+                    "lengkap" => $pengeluaran // hanya pengeluaran yg menentukan
+                ];
             }
-    
+        
+            // Jika status = 1, cek juga penerimaan
+            $penerimaan = LaporanFungsionalModel::whereYear('tanggal_upload', $th)
+                ->whereMonth('tanggal_upload', $bln)
+                ->where('jenis_berkas', 'Penerimaan')
+                ->where('kd_opd1', $kd_opd1)
+                ->where('kd_opd2', $kd_opd2)
+                ->where('kd_opd3', $kd_opd3)
+                ->where('kd_opd4', $kd_opd4)
+                ->where('kd_opd5', $kd_opd5)
+                ->whereNotNull('diterima')
+                ->whereNull('deleted_at')
+                ->exists();
+        
             return [
                 "pengeluaran" => $pengeluaran,
                 "penerimaan" => $penerimaan,
-                "lengkap" => $pengeluaran && $penerimaan
+                "lengkap" => $pengeluaran && $penerimaan // salah satu kurang → tidak lengkap
             ];
         };
+        
     
         // ========================================
         // CEK BULAN SEBELUMNYA DENGAN LOGIKA N-1
