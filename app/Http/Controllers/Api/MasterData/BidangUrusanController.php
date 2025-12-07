@@ -16,18 +16,53 @@ class BidangUrusanController extends Controller
     public function index(Request $request)
     {
         $query = BidangUrusanModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('nm_bu', 'like', "%{$search}%")
-                  ->orWhere('kd_bu1', 'like', "%{$search}%")
-                  ->orWhere('kd_bu2', 'like', "%{$search}%");
-        }
 
+            $searchLower = strtolower(trim($search));
+        
+            // Jika format ada tanda titik → berarti harus KD_BU1 + KD_BU2
+            if (preg_match('/^[0-9]+\.[0-9]+$/', $searchLower)) {
+        
+                [$bu1, $bu2] = explode('.', $searchLower);
+        
+                // KD_BU1 = 1 digit
+                $bu1 = substr($bu1, 0, 1);
+        
+                // KD_BU2 = 2 digit CHAR
+                $bu2 = str_pad($bu2, 2, '0', STR_PAD_LEFT);
+        
+                // FILTER KHUSUS 1.01
+                $query->whereRaw("RTRIM(KD_BU1) = ?", [$bu1])
+                      ->whereRaw("RTRIM(KD_BU2) = ?", [$bu2]);
+        
+            } 
+            else {
+        
+                // Jika input hanya angka (tanpa titik) → filter KD_BU1 saja
+                if (preg_match('/^[0-9]+$/', $searchLower)) {
+        
+                    // Ambil digit pertama saja (KD_BU1 = CHAR(1))
+                    $bu1 = substr($searchLower, 0, 1);
+        
+                    $query->whereRaw("RTRIM(KD_BU1) = ?", [$bu1]);
+        
+                } else {
+        
+                    // Pencarian normal (nama)
+                    $query->where(function($q) use ($searchLower) {
+                        $q->whereRaw("LOWER(NM_BU) LIKE ?", ["%{$searchLower}%"])
+                          ->orWhereRaw("LOWER(RTRIM(KD_BU1)) LIKE ?", ["%{$searchLower}%"])
+                          ->orWhereRaw("LOWER(RTRIM(KD_BU2)) LIKE ?", ["%{$searchLower}%"]);
+                    });
+                }
+            }
+        }        
+    
         $data = $query->paginate(10);
-
         return BidangUrusanResource::collection($data);
     }
-
+    
     /**
      * Simpan data Bidang Urusan baru.
      */

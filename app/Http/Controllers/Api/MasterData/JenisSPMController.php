@@ -16,17 +16,20 @@ class JenisSPMController extends Controller
     public function index(Request $request)
     {
         $query = JenisSPMModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('kategori', 'like', "%{$search}%")
-                  ->orWhere('nama_berkas', 'like', "%{$search}%");
+            $searchLower = strtolower(trim($search));
+    
+            $query->whereRaw("LOWER(kategori) LIKE ?", ["%{$searchLower}%"])
+                  ->orWhereRaw("LOWER(nama_berkas) LIKE ?", ["%{$searchLower}%"]);
         }
-
+    
         $data = $query->orderBy('id', 'asc')
                       ->paginate($request->get('per_page', 10));
-
+    
         return JenisSPMResource::collection($data);
     }
+    
 
     /**
      * Simpan Jenis SPM baru

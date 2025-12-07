@@ -17,18 +17,23 @@ class LogTTEController extends Controller
     {
         $query = DB::connection('oracle')->table('TTE_HISTORY')
                     ->whereNull('deleted_at');
-
+    
         if ($search = $request->get('search')) {
-            $query->where('kategori', 'like', "%{$search}%")
-                  ->orWhere('tte', 'like', "%{$search}%")
-                  ->orWhere('nama_penandatangan', 'like', "%{$search}%");
+            $searchLower = strtolower(trim($search));
+    
+            $query->where(function ($q) use ($searchLower) {
+                $q->whereRaw("LOWER(kategori) LIKE ?", ["%{$searchLower}%"])
+                  ->orWhereRaw("LOWER(tte) LIKE ?", ["%{$searchLower}%"])
+                  ->orWhereRaw("LOWER(nama_penandatangan) LIKE ?", ["%{$searchLower}%"]);
+            });
         }
-
+    
         $data = $query->orderBy('tgl_tte', 'desc')
                       ->paginate($request->get('per_page', 10));
-
+    
         return LogTTEResource::collection($data);
     }
+    
 
     /**
      * Simpan log baru

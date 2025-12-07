@@ -18,12 +18,13 @@ class UsersRoleController extends Controller
         $query = UsersRoleModel::query()
             ->with('menus')
             ->when($request->get('search'), function ($q, $search) {
-                $q->where('rule', 'like', "%{$search}%");
+                $searchLower = strtolower(trim($search));
+                $q->whereRaw("LOWER(rule) LIKE ?", ["%{$searchLower}%"]);
             })
             ->orderBy('id', 'asc');
-
+    
         $data = $query->paginate($request->get('per_page', 10));
-
+    
         // Bentuk response menyerupai Laravel Resource
         return response()->json([
             'data' => $data->items(),
@@ -44,6 +45,7 @@ class UsersRoleController extends Controller
             ],
         ]);
     }
+    
 
     /**
      * Simpan role baru

@@ -16,21 +16,58 @@ class JenisBelanjaController extends Controller
     public function index(Request $request)
     {
         $query = JenisBelanjaModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('nm_belanja', 'like', "%{$search}%")
-                  ->orWhere('kd_ref1', 'like', "%{$search}%")
-                  ->orWhere('kd_ref2', 'like', "%{$search}%")
-                  ->orWhere('kd_ref3', 'like', "%{$search}%");
+    
+            $searchLower = strtolower(trim($search));
+    
+            $parts = explode('.', $searchLower);
+    
+            // --- KODE FORMAT 1 BAGIAN ---
+            if (count($parts) === 1 && preg_match('/^[0-9]+$/', $parts[0])) {
+                $r1 = substr($parts[0], 0, 1);
+                $query->whereRaw("RTRIM(kd_ref1) = ?", [$r1]);
+            }
+    
+            // --- KODE FORMAT 2 BAGIAN ---
+            elseif (count($parts) === 2) {
+                [$r1, $r2] = $parts;
+                $r1 = substr($r1, 0, 1);
+                $r2 = substr($r2, 0, 1);
+                $query->whereRaw("RTRIM(kd_ref1) = ?", [$r1])
+                      ->whereRaw("RTRIM(kd_ref2) = ?", [$r2]);
+            }
+    
+            // --- KODE FORMAT 3 BAGIAN ---
+            elseif (count($parts) === 3) {
+                [$r1, $r2, $r3] = $parts;
+                $r1 = substr($r1, 0, 1);
+                $r2 = substr($r2, 0, 1);
+                $r3 = str_pad($r3, 2, '0', STR_PAD_LEFT);
+                $query->whereRaw("RTRIM(kd_ref1) = ?", [$r1])
+                      ->whereRaw("RTRIM(kd_ref2) = ?", [$r2])
+                      ->whereRaw("RTRIM(kd_ref3) = ?", [$r3]);
+            }
+    
+            // --- PENCARIAN NORMAL (nama) ---
+            else {
+                $query->where(function($q) use ($searchLower) {
+                    $q->whereRaw("LOWER(nm_belanja) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(RTRIM(kd_ref1)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(RTRIM(kd_ref2)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(RTRIM(kd_ref3)) LIKE ?", ["%{$searchLower}%"]);
+                });
+            }
         }
-
+    
         $data = $query->orderBy('kd_ref1')
                       ->orderBy('kd_ref2')
                       ->orderBy('kd_ref3')
                       ->paginate($request->get('per_page', 10));
-
+    
         return JenisBelanjaResource::collection($data);
     }
+    
 
     /**
      * Simpan Jenis Belanja baru

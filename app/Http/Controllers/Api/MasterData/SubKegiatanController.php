@@ -16,21 +16,49 @@ class SubKegiatanController extends Controller
     public function index(Request $request)
     {
         $query = SubKegiatanModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('nm_subkegiatan', 'like', "%{$search}%")
-                ->orWhere('kd_subkeg1', 'like', "%{$search}%")
-                ->orWhere('kd_subkeg2', 'like', "%{$search}%")
-                ->orWhere('kd_subkeg3', 'like', "%{$search}%")
-                ->orWhere('kd_subkeg4', 'like', "%{$search}%")
-                ->orWhere('kd_subkeg5', 'like', "%{$search}%")
-                ->orWhere('kd_subkeg6', 'like', "%{$search}%");
+    
+            $searchLower = strtolower(trim($search));
+    
+            if (str_contains($searchLower, '.')) {
+    
+                $parts = explode('.', $searchLower);
+    
+                $kd1 = isset($parts[0]) ? substr($parts[0], 0, 1) : null;
+                $kd2 = isset($parts[1]) ? str_pad($parts[1], 2, '0', STR_PAD_LEFT) : null;
+                $kd3 = isset($parts[2]) ? str_pad($parts[2], 2, '0', STR_PAD_LEFT) : null;
+                $kd4 = isset($parts[3]) ? substr($parts[3], 0, 1) : null;
+                $kd5 = isset($parts[4]) ? str_pad($parts[4], 2, '0', STR_PAD_LEFT) : null;
+                $kd6 = isset($parts[5]) ? str_pad($parts[5], 4, '0', STR_PAD_LEFT) : null;
+    
+                $query->where(function ($q) use ($kd1, $kd2, $kd3, $kd4, $kd5, $kd6) {
+                    if ($kd1) $q->whereRaw("TRIM(KD_SUBKEG1) = ?", [$kd1]);
+                    if ($kd2) $q->whereRaw("TRIM(KD_SUBKEG2) = ?", [$kd2]);
+                    if ($kd3) $q->whereRaw("TRIM(KD_SUBKEG3) = ?", [$kd3]);
+                    if ($kd4) $q->whereRaw("TRIM(KD_SUBKEG4) = ?", [$kd4]);
+                    if ($kd5) $q->whereRaw("TRIM(KD_SUBKEG5) = ?", [$kd5]);
+                    if ($kd6) $q->whereRaw("TRIM(KD_SUBKEG6) = ?", [$kd6]);
+                });
+    
+            } else {
+                // Pencarian normal case-insensitive
+                $query->where(function($q) use ($searchLower) {
+                    $q->whereRaw("LOWER(NM_SUBKEGIATAN) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_SUBKEG1)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_SUBKEG2)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_SUBKEG3)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_SUBKEG4)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_SUBKEG5)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_SUBKEG6)) LIKE ?", ["%{$searchLower}%"]);
+                });
+            }
         }
-
-        $data = $query->paginate(10);
-
-        return SubKegiatanResource::collection($data);
-    }
+    
+        return SubKegiatanResource::collection(
+            $query->paginate(10)
+        );
+    }    
 
     /**
      * Simpan data Sub Kegiatan baru.

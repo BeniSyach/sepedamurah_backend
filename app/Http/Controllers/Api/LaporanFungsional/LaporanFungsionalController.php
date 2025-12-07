@@ -24,244 +24,201 @@ class LaporanFungsionalController extends Controller
     public function index(Request $request)
     {
         $query = LaporanFungsionalModel::with(['pengirim', 'operator'])
-        ->whereNull('deleted_at');
-
-        if ($jenis = $request->get('jenis')) {
-            if($jenis == 'Pengeluaran'){
-                $query->where('jenis_berkas', 'Pengeluaran');
-
-                if ($menu = $request->get('menu')) {
-                    if($menu == 'pengeluaran'){
-                        if ($userId = $request->get('user_id')) {
-                            $query->where('id_pengirim', $userId);
-                        }
-                        $query->whereNull('diterima')->whereNull('ditolak');
+            ->whereNull('deleted_at');
+    
+        $search = $request->get('search') ? strtolower(trim($request->get('search'))) : null;
+        $userId = $request->get('user_id');
+        $jenis = $request->get('jenis');
+        $menu = $request->get('menu');
+    
+        // Filter jenis
+        if ($jenis) {
+            $query->whereRaw("LOWER(jenis_berkas) = ?", [strtolower($jenis)]);
+    
+            if ($menu) {
+    
+                // PENGELUARAN
+                if ($jenis === 'Pengeluaran') {
+                    if ($menu === 'pengeluaran' && $userId) {
+                        $query->where('id_pengirim', $userId)
+                              ->whereNull('diterima')
+                              ->whereNull('ditolak');
                     }
-
-                    if($menu == 'berkas_masuk_pengeluaran'){
-                        $query->whereNull('proses');
-                        // hanya tampilkan yang belum diverifikasi
-                        $query->whereNull('diterima')->whereNull('ditolak');
+    
+                    if ($menu === 'berkas_masuk_pengeluaran') {
+                        $query->whereNull('proses')
+                              ->whereNull('diterima')
+                              ->whereNull('ditolak');
                     }
-
-                    if($menu == 'operator_pengeluaran')
-                    {
-                        // Ambil data SKPD dari operator yang login
-                        $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
-                        
+    
+                    if ($menu === 'operator_pengeluaran') {
+                        $operator = AksesOperatorModel::where('id_operator', $userId)->first();
                         if ($operator) {
-                            // tampilkan berkas dari SKPD yang diampunya
                             $query->where(function ($q) use ($operator) {
                                 $q->where('kd_opd1', $operator->kd_opd1)
-                                ->where('kd_opd2', $operator->kd_opd2)
-                                ->where('kd_opd3', $operator->kd_opd3)
-                                ->where('kd_opd4', $operator->kd_opd4)
-                                ->where('kd_opd5', $operator->kd_opd5);
+                                  ->where('kd_opd2', $operator->kd_opd2)
+                                  ->where('kd_opd3', $operator->kd_opd3)
+                                  ->where('kd_opd4', $operator->kd_opd4)
+                                  ->where('kd_opd5', $operator->kd_opd5);
                             });
                         }
-                        $query->where('id_operator', '0');
-                        $query->where('proses', '1');
-                        // $query->whereNotNull('supervisor_proses');
-                        $query->whereNull('diterima')->whereNull('ditolak');
+                        $query->where('id_operator', '0')
+                              ->where('proses', '1')
+                              ->whereNull('diterima')
+                              ->whereNull('ditolak');
                     }
-                    
-                    if($menu == 'operator_pengeluaran_diterima'){
-                        // Ambil data SKPD dari operator yang login
-                        $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
-        
-            
+    
+                    if ($menu === 'operator_pengeluaran_diterima') {
+                        $operatorSkpd = AksesOperatorModel::where('id_operator', $userId)->get();
                         if ($operatorSkpd) {
-                        $query->where(function ($q) use ($operatorSkpd) {
-                            foreach ($operatorSkpd as $op) {
-                                $q->orWhere(function ($q2) use ($op) {
-                                    $q2->where('kd_opd1', $op->kd_opd1)
-                                        ->where('kd_opd2', $op->kd_opd2)
-                                        ->where('kd_opd3', $op->kd_opd3)
-                                        ->where('kd_opd4', $op->kd_opd4)
-                                        ->where('kd_opd5', $op->kd_opd5);
-                                });
-                            }
-                        });
-                        
+                            $query->where(function ($q) use ($operatorSkpd) {
+                                foreach ($operatorSkpd as $op) {
+                                    $q->orWhere(function ($q2) use ($op) {
+                                        $q2->where('kd_opd1', $op->kd_opd1)
+                                            ->where('kd_opd2', $op->kd_opd2)
+                                            ->where('kd_opd3', $op->kd_opd3)
+                                            ->where('kd_opd4', $op->kd_opd4)
+                                            ->where('kd_opd5', $op->kd_opd5);
+                                    });
+                                }
+                            });
                         }
-                        // ambil data yg belum diperiksa operator
-                        //  $query->where('id_operator', '0');
-                        $query->where('proses', '2');
-                        //  $query->whereNotNull('supervisor_proses');
-                        $query->whereNotNull('diterima');
+                        $query->where('proses', '2')
+                              ->whereNotNull('diterima');
                     }
-
-                    if($menu == 'operator_pengeluaran_ditolak'){
-                        // Ambil data SKPD dari operator yang login
-                        $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
-        
-            
+    
+                    if ($menu === 'operator_pengeluaran_ditolak') {
+                        $operatorSkpd = AksesOperatorModel::where('id_operator', $userId)->get();
                         if ($operatorSkpd) {
-                        $query->where(function ($q) use ($operatorSkpd) {
-                            foreach ($operatorSkpd as $op) {
-                                $q->orWhere(function ($q2) use ($op) {
-                                    $q2->where('kd_opd1', $op->kd_opd1)
-                                        ->where('kd_opd2', $op->kd_opd2)
-                                        ->where('kd_opd3', $op->kd_opd3)
-                                        ->where('kd_opd4', $op->kd_opd4)
-                                        ->where('kd_opd5', $op->kd_opd5);
-                                });
-                            }
-                        });
-                        
+                            $query->where(function ($q) use ($operatorSkpd) {
+                                foreach ($operatorSkpd as $op) {
+                                    $q->orWhere(function ($q2) use ($op) {
+                                        $q2->where('kd_opd1', $op->kd_opd1)
+                                            ->where('kd_opd2', $op->kd_opd2)
+                                            ->where('kd_opd3', $op->kd_opd3)
+                                            ->where('kd_opd4', $op->kd_opd4)
+                                            ->where('kd_opd5', $op->kd_opd5);
+                                    });
+                                }
+                            });
                         }
-                        // ambil data yg belum diperiksa operator
-                        //  $query->where('id_operator', '0');
-                        // $query->where('proses', '2');
-                        //  $query->whereNotNull('supervisor_proses');
                         $query->whereNotNull('ditolak');
                     }
-
-                    if($menu == 'fungsional_pengeluaran_diterima'){
-                        if ($userId = $request->get('user_id')) {
-                            $query->where('id_pengirim', $userId);
-                        }
-                        $query->whereNotNull('diterima'); // hanya yang sudah diterima
+    
+                    if ($menu === 'fungsional_pengeluaran_diterima' && $userId) {
+                        $query->where('id_pengirim', $userId)
+                              ->whereNotNull('diterima');
                     }
-
-                    if($menu == 'fungsional_pengeluaran_ditolak'){
-                        if ($userId = $request->get('user_id')) {
-                            $query->where('id_pengirim', $userId);
-                        }
-                        $query->whereNotNull('ditolak'); // hanya yang sudah diterima
+    
+                    if ($menu === 'fungsional_pengeluaran_ditolak' && $userId) {
+                        $query->where('id_pengirim', $userId)
+                              ->whereNotNull('ditolak');
                     }
                 }
-            }
-
-            if($jenis == 'Penerimaan'){
-                $query->where('jenis_berkas', 'Penerimaan');
-
-                if ($menu = $request->get('menu')) {
-                    if($menu == 'penerimaan'){
-                        if ($userId = $request->get('user_id')) {
-                            $query->where('id_pengirim', $userId);
-                        }
-                        $query->whereNull('diterima')->whereNull('ditolak');
+    
+                // PENERIMAAN
+                if ($jenis === 'Penerimaan') {
+                    if ($menu === 'penerimaan' && $userId) {
+                        $query->where('id_pengirim', $userId)
+                              ->whereNull('diterima')
+                              ->whereNull('ditolak');
                     }
-
-                    if($menu == 'berkas_masuk_penerimaan'){
-                        $query->whereNull('proses');
-                        // hanya tampilkan yang belum diverifikasi
-                        $query->whereNull('diterima')->whereNull('ditolak');
+    
+                    if ($menu === 'berkas_masuk_penerimaan') {
+                        $query->whereNull('proses')
+                              ->whereNull('diterima')
+                              ->whereNull('ditolak');
                     }
-
-                    if($menu == 'operator_penerimaan')
-                    {
-                        // Ambil data SKPD dari operator yang login
-                        $operator = AksesOperatorModel::where('id_operator', $request->get('user_id'))->first();
-                        
+    
+                    if ($menu === 'operator_penerimaan') {
+                        $operator = AksesOperatorModel::where('id_operator', $userId)->first();
                         if ($operator) {
-                            // tampilkan berkas dari SKPD yang diampunya
                             $query->where(function ($q) use ($operator) {
                                 $q->where('kd_opd1', $operator->kd_opd1)
-                                ->where('kd_opd2', $operator->kd_opd2)
-                                ->where('kd_opd3', $operator->kd_opd3)
-                                ->where('kd_opd4', $operator->kd_opd4)
-                                ->where('kd_opd5', $operator->kd_opd5);
+                                  ->where('kd_opd2', $operator->kd_opd2)
+                                  ->where('kd_opd3', $operator->kd_opd3)
+                                  ->where('kd_opd4', $operator->kd_opd4)
+                                  ->where('kd_opd5', $operator->kd_opd5);
                             });
                         }
-                        $query->where('id_operator', '0');
-                        $query->where('proses', '1');
-                        // $query->whereNotNull('supervisor_proses');
-                        $query->whereNull('diterima')->whereNull('ditolak');
+                        $query->where('id_operator', '0')
+                              ->where('proses', '1')
+                              ->whereNull('diterima')
+                              ->whereNull('ditolak');
                     }
-                    
-                    if($menu == 'operator_penerimaan_diterima'){
-                        // Ambil data SKPD dari operator yang login
-                        $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
-        
-            
+    
+                    if ($menu === 'operator_penerimaan_diterima') {
+                        $operatorSkpd = AksesOperatorModel::where('id_operator', $userId)->get();
                         if ($operatorSkpd) {
-                        $query->where(function ($q) use ($operatorSkpd) {
-                            foreach ($operatorSkpd as $op) {
-                                $q->orWhere(function ($q2) use ($op) {
-                                    $q2->where('kd_opd1', $op->kd_opd1)
-                                        ->where('kd_opd2', $op->kd_opd2)
-                                        ->where('kd_opd3', $op->kd_opd3)
-                                        ->where('kd_opd4', $op->kd_opd4)
-                                        ->where('kd_opd5', $op->kd_opd5);
-                                });
-                            }
-                        });
-                        
+                            $query->where(function ($q) use ($operatorSkpd) {
+                                foreach ($operatorSkpd as $op) {
+                                    $q->orWhere(function ($q2) use ($op) {
+                                        $q2->where('kd_opd1', $op->kd_opd1)
+                                            ->where('kd_opd2', $op->kd_opd2)
+                                            ->where('kd_opd3', $op->kd_opd3)
+                                            ->where('kd_opd4', $op->kd_opd4)
+                                            ->where('kd_opd5', $op->kd_opd5);
+                                    });
+                                }
+                            });
                         }
-                        // ambil data yg belum diperiksa operator
-                        //  $query->where('id_operator', '0');
-                        $query->where('proses', '2');
-                        //  $query->whereNotNull('supervisor_proses');
-                        $query->whereNotNull('diterima');
+                        $query->where('proses', '2')
+                              ->whereNotNull('diterima');
                     }
-
-                    if($menu == 'operator_penerimaan_ditolak'){
-                        // Ambil data SKPD dari operator yang login
-                        $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
-        
-            
+    
+                    if ($menu === 'operator_penerimaan_ditolak') {
+                        $operatorSkpd = AksesOperatorModel::where('id_operator', $userId)->get();
                         if ($operatorSkpd) {
-                        $query->where(function ($q) use ($operatorSkpd) {
-                            foreach ($operatorSkpd as $op) {
-                                $q->orWhere(function ($q2) use ($op) {
-                                    $q2->where('kd_opd1', $op->kd_opd1)
-                                        ->where('kd_opd2', $op->kd_opd2)
-                                        ->where('kd_opd3', $op->kd_opd3)
-                                        ->where('kd_opd4', $op->kd_opd4)
-                                        ->where('kd_opd5', $op->kd_opd5);
-                                });
-                            }
-                        });
-                        
+                            $query->where(function ($q) use ($operatorSkpd) {
+                                foreach ($operatorSkpd as $op) {
+                                    $q->orWhere(function ($q2) use ($op) {
+                                        $q2->where('kd_opd1', $op->kd_opd1)
+                                            ->where('kd_opd2', $op->kd_opd2)
+                                            ->where('kd_opd3', $op->kd_opd3)
+                                            ->where('kd_opd4', $op->kd_opd4)
+                                            ->where('kd_opd5', $op->kd_opd5);
+                                    });
+                                }
+                            });
                         }
-                        // ambil data yg belum diperiksa operator
-                        //  $query->where('id_operator', '0');
-                        // $query->where('proses', '2');
-                        //  $query->whereNotNull('supervisor_proses');
                         $query->whereNotNull('ditolak');
                     }
-
-                    if($menu == 'fungsional_penerimaan_diterima'){
-                        if ($userId = $request->get('user_id')) {
-                            $query->where('id_pengirim', $userId);
-                        }
-                        $query->whereNotNull('diterima'); // hanya yang sudah diterima
+    
+                    if ($menu === 'fungsional_penerimaan_diterima' && $userId) {
+                        $query->where('id_pengirim', $userId)
+                              ->whereNotNull('diterima');
                     }
-
-                    if($menu == 'fungsional_penerimaan_ditolak'){
-                        if ($userId = $request->get('user_id')) {
-                            $query->where('id_pengirim', $userId);
-                        }
-                        $query->whereNotNull('ditolak'); // hanya yang sudah diterima
-                  }
+    
+                    if ($menu === 'fungsional_penerimaan_ditolak' && $userId) {
+                        $query->where('id_pengirim', $userId)
+                              ->whereNotNull('ditolak');
+                    }
                 }
-                
             }
         }
-
-        // Filter pencarian
-        if ($search = $request->get('search')) {
+    
+        // Filter pencarian teks
+        if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('nama_pengirim', 'like', "%{$search}%")
-                ->orWhere('nama_file', 'like', "%{$search}%")
-                ->orWhere('tahun', 'like', "%{$search}%");
+                $q->whereRaw("LOWER(nama_pengirim) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(tahun) LIKE ?", ["%{$search}%"]);
             });
         }
-
+    
         $perPage = $request->get('per_page', 10);
         $data = $query->orderBy('tanggal_upload', 'desc')
-                    ->paginate($perPage);
-
+                      ->paginate($perPage);
+    
         // Tambahkan skpd dari accessor pada setiap item
         $data->getCollection()->transform(function ($item) {
             $item->skpd = $item->skpd; // memanggil accessor getSkpdAttribute
             return $item;
         });
-
+    
         return LaporanFungsionalResource::collection($data);
     }
+    
 
     /**
      * Store Laporan Fungsional baru

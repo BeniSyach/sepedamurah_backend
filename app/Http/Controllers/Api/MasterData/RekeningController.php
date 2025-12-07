@@ -16,21 +16,50 @@ class RekeningController extends Controller
     public function index(Request $request)
     {
         $query = RekeningModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('nm_rekening', 'like', "%{$search}%")
-                ->orWhere('kd_rekening1', 'like', "%{$search}%")
-                ->orWhere('kd_rekening2', 'like', "%{$search}%")
-                ->orWhere('kd_rekening3', 'like', "%{$search}%")
-                ->orWhere('kd_rekening4', 'like', "%{$search}%")
-                ->orWhere('kd_rekening5', 'like', "%{$search}%")
-                ->orWhere('kd_rekening6', 'like', "%{$search}%");
+    
+            $searchLower = strtolower(trim($search));
+    
+            if (str_contains($searchLower, '.')) {
+    
+                $parts = explode('.', $searchLower);
+    
+                // Normalisasi panjang sesuai tabel
+                $kd1 = isset($parts[0]) ? substr($parts[0], 0, 1) : null;
+                $kd2 = isset($parts[1]) ? substr($parts[1], 0, 1) : null;
+                $kd3 = isset($parts[2]) ? str_pad($parts[2], 2, '0', STR_PAD_LEFT) : null;
+                $kd4 = isset($parts[3]) ? str_pad($parts[3], 2, '0', STR_PAD_LEFT) : null;
+                $kd5 = isset($parts[4]) ? str_pad($parts[4], 2, '0', STR_PAD_LEFT) : null;
+                $kd6 = isset($parts[5]) ? str_pad($parts[5], 4, '0', STR_PAD_LEFT) : null;
+    
+                $query->where(function ($q) use ($kd1, $kd2, $kd3, $kd4, $kd5, $kd6) {
+                    if ($kd1) $q->whereRaw("TRIM(KD_REKENING1) = ?", [$kd1]);
+                    if ($kd2) $q->whereRaw("TRIM(KD_REKENING2) = ?", [$kd2]);
+                    if ($kd3) $q->whereRaw("TRIM(KD_REKENING3) = ?", [$kd3]);
+                    if ($kd4) $q->whereRaw("TRIM(KD_REKENING4) = ?", [$kd4]);
+                    if ($kd5) $q->whereRaw("TRIM(KD_REKENING5) = ?", [$kd5]);
+                    if ($kd6) $q->whereRaw("TRIM(KD_REKENING6) = ?", [$kd6]);
+                });
+    
+            } else {
+                // Jika input tanpa titik → cari nama dan sebagian kode
+                $query->where(function($q) use ($searchLower) {
+                    $q->whereRaw("LOWER(NM_REKENING) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_REKENING1)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_REKENING2)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_REKENING3)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_REKENING4)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_REKENING5)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_REKENING6)) LIKE ?", ["%{$searchLower}%"]);
+                });
+            }
         }
-
-        $data = $query->paginate(10);
-
-        return RekeningResource::collection($data);
-    }
+    
+        return RekeningResource::collection(
+            $query->paginate(10)
+        );
+    }    
 
     /**
      * Simpan data Rekening baru.

@@ -16,20 +16,48 @@ class KegiatanController extends Controller
     public function index(Request $request)
     {
         $query = KegiatanModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('nm_kegiatan', 'like', "%{$search}%")
-                ->orWhere('kd_keg1', 'like', "%{$search}%")
-                ->orWhere('kd_keg2', 'like', "%{$search}%")
-                ->orWhere('kd_keg3', 'like', "%{$search}%")
-                ->orWhere('kd_keg4', 'like', "%{$search}%")
-                ->orWhere('kd_keg5', 'like', "%{$search}%");
+    
+            $searchLower = strtolower(trim($search));
+    
+            // Jika input mengandung titik, berarti kode berjenjang
+            if (str_contains($searchLower, '.')) {
+    
+                $parts = explode('.', $searchLower);
+    
+                // Normalisasi format sesuai panjang kolom
+                $kd1 = isset($parts[0]) ? substr($parts[0], 0, 1) : null;
+                $kd2 = isset($parts[1]) ? str_pad($parts[1], 2, '0', STR_PAD_LEFT) : null;
+                $kd3 = isset($parts[2]) ? str_pad($parts[2], 2, '0', STR_PAD_LEFT) : null;
+                $kd4 = isset($parts[3]) ? substr($parts[3], 0, 1) : null;
+                $kd5 = isset($parts[4]) ? str_pad($parts[4], 2, '0', STR_PAD_LEFT) : null;
+    
+                $query->where(function ($q) use ($kd1, $kd2, $kd3, $kd4, $kd5) {
+                    if ($kd1) $q->whereRaw("TRIM(KD_KEG1) = ?", [$kd1]);
+                    if ($kd2) $q->whereRaw("TRIM(KD_KEG2) = ?", [$kd2]);
+                    if ($kd3) $q->whereRaw("TRIM(KD_KEG3) = ?", [$kd3]);
+                    if ($kd4) $q->whereRaw("TRIM(KD_KEG4) = ?", [$kd4]);
+                    if ($kd5) $q->whereRaw("TRIM(KD_KEG5) = ?", [$kd5]);
+                });
+    
+            } else {
+                // Jika input tanpa titik → cari nama dan sebagian kode
+                $query->where(function($q) use ($searchLower) {
+                    $q->whereRaw("LOWER(nm_kegiatan) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_KEG1)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_KEG2)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_KEG3)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_KEG4)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(TRIM(KD_KEG5)) LIKE ?", ["%{$searchLower}%"]);
+                });
+            }
         }
-
+    
         $data = $query->paginate(10);
-
         return KegiatanResource::collection($data);
     }
+    
 
     /**
      * Simpan data Kegiatan baru.

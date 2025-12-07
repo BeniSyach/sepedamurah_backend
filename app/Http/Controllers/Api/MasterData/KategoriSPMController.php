@@ -16,17 +16,20 @@ class KategoriSPMController extends Controller
     public function index(Request $request)
     {
         $query = KategoriSPMModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('kategori', 'like', "%{$search}%")
-                  ->orWhere('status', 'like', "%{$search}%");
+            $searchLower = strtolower(trim($search));
+    
+            $query->whereRaw("LOWER(kategori) LIKE ?", ["%{$searchLower}%"])
+                  ->orWhereRaw("LOWER(status) LIKE ?", ["%{$searchLower}%"]);
         }
-
+    
         $data = $query->orderBy('id', 'asc')
                       ->paginate($request->get('per_page', 10));
-
+    
         return KategoriSPMResource::collection($data);
     }
+    
 
     /**
      * Simpan Kategori SPM baru

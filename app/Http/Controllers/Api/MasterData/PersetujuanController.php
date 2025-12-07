@@ -16,14 +16,16 @@ class PersetujuanController extends Controller
     public function index(Request $request)
     {
         $query = PersetujuanModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('konten', 'like', "%{$search}%");
+            $searchLower = strtolower(trim($search));
+    
+            $query->whereRaw("LOWER(konten) LIKE ?", ["%{$searchLower}%"]);
         }
-
+    
         $data = $query->orderBy('id', 'asc')
                       ->paginate($request->get('per_page', 10));
-
+    
         return PersetujuanResource::collection($data);
     }
 

@@ -16,29 +16,50 @@ class SKPDController extends Controller
     public function index(Request $request)
     {
         $query = SKPDModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('nm_opd', 'like', "%{$search}%")
-                  ->orWhere('kd_opd1', 'like', "%{$search}%")
-                  ->orWhere('kd_opd2', 'like', "%{$search}%")
-                  ->orWhere('kd_opd3', 'like', "%{$search}%")
-                  ->orWhere('kd_opd4', 'like', "%{$search}%")
-                  ->orWhere('kd_opd5', 'like', "%{$search}%");
+    
+            $searchLower = strtolower(trim($search));
+            $parts = explode('.', $searchLower);
+    
+            // Filter berdasarkan jumlah level kode
+            if (count($parts) > 0 && array_reduce($parts, fn($carry, $item) => $carry && preg_match('/^[0-9]+$/', $item), true)) {
+                $query->where(function($q) use ($parts) {
+                    $levelColumns = ['kd_opd1','kd_opd2','kd_opd3','kd_opd4','kd_opd5'];
+    
+                    foreach ($parts as $i => $part) {
+                        if (!isset($levelColumns[$i])) continue;
+                        $col = $levelColumns[$i];
+                        $part = str_pad($part, 2, '0', STR_PAD_LEFT); // semua KD_OPD = 2 digit
+                        $q->whereRaw("RTRIM({$col}) = ?", [$part]);
+                    }
+                });
+            } else {
+                // Pencarian normal case-insensitive
+                $query->where(function($q) use ($searchLower) {
+                    $q->whereRaw("LOWER(nm_opd) LIKE ?", ["%{$searchLower}%"]);
+                    foreach (['kd_opd1','kd_opd2','kd_opd3','kd_opd4','kd_opd5'] as $col) {
+                        $q->orWhereRaw("LOWER(RTRIM({$col})) LIKE ?", ["%{$searchLower}%"]);
+                    }
+                });
+            }
         }
-
+    
+        // Filter hidden jika ada
         if (!is_null($request->get('hidden'))) {
             $query->where('hidden', $request->get('hidden'));
         }
-
+    
         $data = $query->orderBy('kd_opd1')
                       ->orderBy('kd_opd2')
                       ->orderBy('kd_opd3')
                       ->orderBy('kd_opd4')
                       ->orderBy('kd_opd5')
                       ->paginate($request->get('per_page', 10));
-
+    
         return SKPDResource::collection($data);
     }
+    
 
     /**
      * Simpan SKPD baru

@@ -16,19 +16,66 @@ class ProgramController extends Controller
     public function index(Request $request)
     {
         $query = ProgramModel::query();
-
+    
         if ($search = $request->get('search')) {
-            $query->where('nm_program', 'like', "%{$search}%")
-                ->orWhere('kd_prog1', 'like', "%{$search}%")
-                ->orWhere('kd_prog2', 'like', "%{$search}%")
-                ->orWhere('kd_prog3', 'like', "%{$search}%");
+    
+            $searchLower = strtolower(trim($search));
+    
+            // Jika input mengandung titik, berarti kode yg lebih detail
+            $parts = explode('.', $searchLower);
+    
+            // --- KODE FORMAT 1 BAGIAN (kd_prog1) ---
+            if (count($parts) === 1 && preg_match('/^[0-9]+$/', $parts[0])) {
+    
+                $p1 = substr($parts[0], 0, 1);
+    
+                $query->whereRaw("RTRIM(kd_prog1) = ?", [$p1]);
+            }
+    
+            // --- KODE FORMAT 2 BAGIAN (kd_prog1.kd_prog2) ---
+            elseif (count($parts) === 2) {
+    
+                [$p1, $p2] = $parts;
+    
+                $p1 = substr($p1, 0, 1);
+                $p2 = str_pad($p2, 2, '0', STR_PAD_LEFT);
+    
+                $query->whereRaw("RTRIM(kd_prog1) = ?", [$p1])
+                      ->whereRaw("RTRIM(kd_prog2) = ?", [$p2]);
+            }
+    
+            // --- KODE FORMAT 3 BAGIAN (kd_prog1.kd_prog2.kd_prog3) ---
+            elseif (count($parts) === 3) {
+    
+                [$p1, $p2, $p3] = $parts;
+    
+                $p1 = substr($p1, 0, 1);
+                $p2 = str_pad($p2, 2, '0', STR_PAD_LEFT);
+                $p3 = str_pad($p3, 2, '0', STR_PAD_LEFT);
+    
+                $query->whereRaw("RTRIM(kd_prog1) = ?", [$p1])
+                      ->whereRaw("RTRIM(kd_prog2) = ?", [$p2])
+                      ->whereRaw("RTRIM(kd_prog3) = ?", [$p3]);
+            }
+    
+            // --- PENCARIAN NORMAL (nama) ---
+            else {
+    
+                $query->where(function ($q) use ($searchLower) {
+                    $q->whereRaw("LOWER(nm_program) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(RTRIM(kd_prog1)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(RTRIM(kd_prog2)) LIKE ?", ["%{$searchLower}%"])
+                      ->orWhereRaw("LOWER(RTRIM(kd_prog3)) LIKE ?", ["%{$searchLower}%"]);
+                });
+            }
         }
-
-        $data = $query->paginate(10);
-
-        return ProgramResource::collection($data);
+    
+        return ProgramResource::collection(
+            $query->paginate(10)
+        );
     }
-
+    
+    
     /**
      * Simpan data Program baru.
      */

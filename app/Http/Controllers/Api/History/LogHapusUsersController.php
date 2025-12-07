@@ -16,25 +16,27 @@ class LogHapusUsersController extends Controller
     public function index(Request $request)
     {
         $query = LogUsersModel::with('user') // ✅ include relasi User
-        ->whereNull('deleted_at');
-
+            ->whereNull('deleted_at');
+    
         if ($search = $request->get('search')) {
-        $query->where(function ($q) use ($search) {
-            $q->where('users_id', 'like', "%{$search}%")
-            ->orWhere('deleted_by', 'like', "%{$search}%")
-            ->orWhere('alasan', 'like', "%{$search}%")
-            ->orWhereHas('user', function ($sub) use ($search) {
-                // jika model User punya kolom name / username
-                $sub->where('name', 'like', "%{$search}%");
+            $searchLower = strtolower(trim($search));
+    
+            $query->where(function ($q) use ($searchLower) {
+                $q->whereRaw("LOWER(users_id) LIKE ?", ["%{$searchLower}%"])
+                  ->orWhereRaw("LOWER(deleted_by) LIKE ?", ["%{$searchLower}%"])
+                  ->orWhereRaw("LOWER(alasan) LIKE ?", ["%{$searchLower}%"])
+                  ->orWhereHas('user', function ($sub) use ($searchLower) {
+                      $sub->whereRaw("LOWER(name) LIKE ?", ["%{$searchLower}%"]);
+                  });
             });
-        });
         }
-
+    
         $data = $query->orderBy('deleted_time', 'desc')
-                ->paginate($request->get('per_page', 10));
-
+                      ->paginate($request->get('per_page', 10));
+    
         return LogUsersResource::collection($data);
     }
+    
 
     /**
      * Store log baru
