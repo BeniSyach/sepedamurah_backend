@@ -1032,8 +1032,6 @@ class SP2DController extends Controller
         ]);
     }
     
-
-
     public function downloadBerkas(int $id)
     {
         // Ambil data permohonan SPD berdasarkan id

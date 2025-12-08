@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\HakAkses\UsersRoleController;
 use App\Http\Controllers\Api\History\LogHapusUsersController;
 use App\Http\Controllers\Api\History\LogTTEController;
 use App\Http\Controllers\Api\Laporan\LaporanDaftarBelanjaPerSKPDController;
+use App\Http\Controllers\Api\Laporan\LaporanDPAController;
 use App\Http\Controllers\Api\Laporan\LaporanRealisasiBelanjaController;
 use App\Http\Controllers\Api\Laporan\LaporanRealisasiSumberDanaController;
 use App\Http\Controllers\Api\LaporanFungsional\LaporanFungsionalController;
@@ -296,6 +297,9 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('/fungsional', LaporanFungsionalController::class);
         Route::get('/fungsional/download/{id}', [LaporanFungsionalController::class, 'downloadBerkas'])->name('fungsional.download');
         Route::get('/fungsional/downloadTTE/{id}', [LaporanFungsionalController::class, 'downloadBerkasTTE'])->name('fungsional.downloadtte');
+
+        // Laporan DPA
+        Route::apiResource('/laporan-dpa', LaporanDPAController::class);
 
         // Laporan Realisasi Sumber Dana 
         Route::get('/realisasi-sumber-dana', [LaporanRealisasiSumberDanaController::class, 'index']);

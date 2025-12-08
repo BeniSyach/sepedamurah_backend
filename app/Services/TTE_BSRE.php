@@ -58,7 +58,7 @@ class TTE_BSRE
             }
 
             // Nama file hasil TTE
-            $signedFileName = "signed-{$namaFile}-{$dokumenId}.pdf";
+            $signedFileName = "signed-" . substr($namaFile, 0, 10) . "-{$dokumenId}.pdf";
             $savePath = "pdf_tte/" . $signedFileName;
 
             // Simpan PDF hasil TTE ke storage/app/pdf_tte/
