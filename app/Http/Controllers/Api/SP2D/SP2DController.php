@@ -337,31 +337,30 @@ class SP2DController extends Controller
                   ->orWhereRaw("LOWER(nilai_belanja) LIKE ?", ["%$search%"])
                   ->orWhereRaw("LOWER(no_spm) LIKE ?", ["%$search%"])
                   ->orWhereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"])
-                  ->orWhereRaw("
-                  EXISTS (
-                      SELECT 1 FROM sp2d_sumber_dana sd
-                      JOIN ref_sumber_dana r
-                      ON sd.kd_ref1 = r.kd_ref1
-                      AND sd.kd_ref2 = r.kd_ref2
-                      AND sd.kd_ref3 = r.kd_ref3
-                      AND sd.kd_ref4 = r.kd_ref4
-                      AND sd.kd_ref5 = r.kd_ref5
-                      AND sd.kd_ref6 = r.kd_ref6
-                      WHERE sd.sp2d_id = sp2d.id_sp2d
-                      AND LOWER(r.nm_ref) LIKE LOWER('%{$search}%')
-                  )
-              ");
-                  // 🔥 Tambah nm_opd
-                //   ->orWhereHas('opd', function ($qq) use ($search) {
-                //       $qq->whereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"]);
-                //   });
+                  
+                  // 🔥 Perbaikan: gunakan "use($search)"
+                  ->orWhereHas('sp2dkirim', function ($qq) use ($search) {
+                      $qq->whereRaw("LOWER(namafile) LIKE ?", ["%$search%"]);
+                  })
         
-                //   // 🔥 Tambah referensi dari sumber dana
-                //   ->orWhereHas('sumberDana.referensi', function ($qq) use ($search) {
-                //       $qq->whereRaw("LOWER(nm_ref) LIKE ?", ["%$search%"]);
-                //   });
+                  // 🔥 EXISTS juga tetap di dalam OR group
+                  ->orWhereRaw("
+                      EXISTS (
+                          SELECT 1 FROM sp2d_sumber_dana sd
+                          JOIN ref_sumber_dana r
+                          ON sd.kd_ref1 = r.kd_ref1
+                          AND sd.kd_ref2 = r.kd_ref2
+                          AND sd.kd_ref3 = r.kd_ref3
+                          AND sd.kd_ref4 = r.kd_ref4
+                          AND sd.kd_ref5 = r.kd_ref5
+                          AND sd.kd_ref6 = r.kd_ref6
+                          WHERE sd.sp2d_id = sp2d.id_sp2d
+                          AND LOWER(r.nm_ref) LIKE LOWER('%{$search}%')
+                      )
+                  ");
             });
         }
+        
         
         if ($dateFrom) {
             $query->whereDate($FilterTanggal, '>=', $dateFrom);
