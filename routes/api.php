@@ -231,7 +231,10 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('/batas-waktu', BatasWaktuController::class);
 
          // Akses DPA
-         Route::apiResource('/akses-dpa-skpd', AksesDPAController::class);
+         Route::put('/akses-dpa-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesDPAController::class, 'update']);
+         // hilangkan update bawaan
+        Route::apiResource('/akses-dpa-skpd', AksesDPAController::class)
+        ->except(['update']);
     });
 
     // History
