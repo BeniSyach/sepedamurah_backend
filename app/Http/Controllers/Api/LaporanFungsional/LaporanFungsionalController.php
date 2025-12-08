@@ -39,10 +39,12 @@ class LaporanFungsionalController extends Controller
     
                 // PENGELUARAN
                 if ($jenis === 'Pengeluaran') {
-                    if ($menu === 'pengeluaran' && $userId) {
-                        $query->where('id_pengirim', $userId)
-                              ->whereNull('diterima')
-                              ->whereNull('ditolak');
+                    if ($menu === 'pengeluaran') {
+                        $query->when($userId, function ($q) use ($userId) {
+                            $q->where('id_pengirim', $userId);
+                        })
+                        ->whereNull('diterima')
+                        ->whereNull('ditolak');
                     }
     
                     if ($menu === 'berkas_masuk_pengeluaran') {
@@ -105,23 +107,31 @@ class LaporanFungsionalController extends Controller
                         $query->whereNotNull('ditolak');
                     }
     
-                    if ($menu === 'fungsional_pengeluaran_diterima' && $userId) {
-                        $query->where('id_pengirim', $userId)
-                              ->whereNotNull('diterima');
+                    if ($menu === 'fungsional_pengeluaran_diterima') {
+                        $query->when($userId, function ($q) use ($userId) {
+                            $q->where('id_pengirim', $userId);
+                        })
+                        ->whereNotNull('diterima');
                     }
+                    
     
-                    if ($menu === 'fungsional_pengeluaran_ditolak' && $userId) {
-                        $query->where('id_pengirim', $userId)
-                              ->whereNotNull('ditolak');
+                    if ($menu === 'fungsional_pengeluaran_ditolak') {
+                        $query->when($userId, function ($q) use ($userId) {
+                            $q->where('id_pengirim', $userId);
+                        })
+                        ->whereNotNull('ditolak');
                     }
+                    
                 }
     
                 // PENERIMAAN
                 if ($jenis === 'Penerimaan') {
-                    if ($menu === 'penerimaan' && $userId) {
-                        $query->where('id_pengirim', $userId)
-                              ->whereNull('diterima')
-                              ->whereNull('ditolak');
+                    if ($menu === 'penerimaan') {
+                        $query->when($userId, function ($q) use ($userId) {
+                            $q->where('id_pengirim', $userId);
+                        })
+                        ->whereNull('diterima')
+                        ->whereNull('ditolak');
                     }
     
                     if ($menu === 'berkas_masuk_penerimaan') {
@@ -184,14 +194,18 @@ class LaporanFungsionalController extends Controller
                         $query->whereNotNull('ditolak');
                     }
     
-                    if ($menu === 'fungsional_penerimaan_diterima' && $userId) {
-                        $query->where('id_pengirim', $userId)
-                              ->whereNotNull('diterima');
+                    if ($menu === 'fungsional_penerimaan_diterima') {
+                        $query->when($userId, function ($q) use ($userId) {
+                            $q->where('id_pengirim', $userId);
+                        })
+                        ->whereNotNull('diterima');
                     }
     
-                    if ($menu === 'fungsional_penerimaan_ditolak' && $userId) {
-                        $query->where('id_pengirim', $userId)
-                              ->whereNotNull('ditolak');
+                    if ($menu === 'fungsional_penerimaan_ditolak') {
+                        $query->when($userId, function ($q) use ($userId) {
+                            $q->where('id_pengirim', $userId);
+                        })
+                        ->whereNotNull('ditolak');
                     }
                 }
             }
