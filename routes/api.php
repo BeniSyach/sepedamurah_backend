@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BerkasLainController;
 use App\Http\Controllers\Api\Dashboard\DashboardController;
 use App\Http\Controllers\Api\DatRekeningController;
+use App\Http\Controllers\Api\HakAkses\AksesDPAController;
 use App\Http\Controllers\Api\HakAkses\AksesKuasaBudController;
 use App\Http\Controllers\Api\HakAkses\AksesOperatorController;
 use App\Http\Controllers\Api\HakAkses\BatasWaktuController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Api\MasterData\LevelRekeningController;
 use App\Http\Controllers\Api\MasterData\PaguBelanjaController;
 use App\Http\Controllers\Api\MasterData\PersetujuanController;
 use App\Http\Controllers\Api\MasterData\ProgramController;
+use App\Http\Controllers\Api\MasterData\RefDpaController;
 use App\Http\Controllers\Api\MasterData\RekAkunController;
 use App\Http\Controllers\Api\MasterData\RekeningController;
 use App\Http\Controllers\Api\MasterData\RekJenisController;
@@ -180,6 +182,9 @@ Route::middleware('auth:api')->group(function () {
 
         // Sub Rincian
         Route::apiResource('/sub-rincian', SubRincianController::class);
+
+        // Ref DPA
+        Route::apiResource('/ref-dpa', RefDpaController::class);
     });
 
     // alokasi Dana
@@ -224,6 +229,9 @@ Route::middleware('auth:api')->group(function () {
         // Batas Waktu
         Route::post('/batas-waktu/reset-all', [BatasWaktuController::class, 'resetAll']);
         Route::apiResource('/batas-waktu', BatasWaktuController::class);
+
+         // Akses DPA
+         Route::apiResource('/akses-dpa-skpd', AksesDPAController::class);
     });
 
     // History
