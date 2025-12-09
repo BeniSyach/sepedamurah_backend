@@ -32,29 +32,30 @@ class SP2DController extends Controller
         $FilterTanggal = 'tanggal_upload';
         // 🔍 Query dasar SP2D + relasi yang bisa di-eager-load
         $query = Sp2dModel::query()
-            ->with(['rekening', 'sumberDana', 'sp2dkirim']) // relasi Eloquent valid
-            ->whereNull('sp2d.deleted_at')
-            ->join('ref_opd', function ($join) {
-                $join->on('sp2d.kd_opd1', '=', 'ref_opd.kd_opd1')
-                     ->on('sp2d.kd_opd2', '=', 'ref_opd.kd_opd2')
-                     ->on('sp2d.kd_opd3', '=', 'ref_opd.kd_opd3')
-                     ->on('sp2d.kd_opd4', '=', 'ref_opd.kd_opd4')
-                     ->on('sp2d.kd_opd5', '=', 'ref_opd.kd_opd5');
-            })
-            ->select('sp2d.*', 'ref_opd.nm_opd')
-            ->selectSub(function ($q) {
-                $q->from('sp2d_sumber_dana as sd')
-                    ->join('ref_sumber_dana as r', function ($j) {
-                        $j->on('sd.kd_ref1', '=', 'r.kd_ref1')
-                          ->on('sd.kd_ref2', '=', 'r.kd_ref2')
-                          ->on('sd.kd_ref3', '=', 'r.kd_ref3')
-                          ->on('sd.kd_ref4', '=', 'r.kd_ref4')
-                          ->on('sd.kd_ref5', '=', 'r.kd_ref5')
-                          ->on('sd.kd_ref6', '=', 'r.kd_ref6');
-                    })
-                    ->whereColumn('sd.sp2d_id', 'sp2d.id_sp2d')
-                    ->selectRaw("LISTAGG(r.nm_ref, ', ') WITHIN GROUP (ORDER BY r.nm_ref)");
-            }, 'sumber_danas');
+        ->with(['rekening', 'sumberDana', 'sp2dkirim'])
+        ->whereNull('sp2d.deleted_at')
+        ->leftJoin('ref_opd', function ($join) {
+            $join->on('sp2d.kd_opd1', '=', 'ref_opd.kd_opd1')
+                 ->on('sp2d.kd_opd2', '=', 'ref_opd.kd_opd2')
+                 ->on('sp2d.kd_opd3', '=', 'ref_opd.kd_opd3')
+                 ->on('sp2d.kd_opd4', '=', 'ref_opd.kd_opd4')
+                 ->on('sp2d.kd_opd5', '=', 'ref_opd.kd_opd5');
+        })
+        ->select('sp2d.*', 'ref_opd.nm_opd')
+        ->selectSub(function ($q) {
+            $q->from('sp2d_sumber_dana as sd')
+                ->join('ref_sumber_dana as r', function ($j) {
+                    $j->on('sd.kd_ref1', '=', 'r.kd_ref1')
+                      ->on('sd.kd_ref2', '=', 'r.kd_ref2')
+                      ->on('sd.kd_ref3', '=', 'r.kd_ref3')
+                      ->on('sd.kd_ref4', '=', 'r.kd_ref4')
+                      ->on('sd.kd_ref5', '=', 'r.kd_ref5')
+                      ->on('sd.kd_ref6', '=', 'r.kd_ref6');
+                })
+                ->whereColumn('sd.sp2d_id', 'sp2d.id_sp2d')
+                ->selectRaw("LISTAGG(r.nm_ref, ', ') WITHIN GROUP (ORDER BY r.nm_ref)");
+        }, 'sumber_danas');
+    
 
         if ($menu = $request->get('menu')) {
 
@@ -318,7 +319,8 @@ class SP2DController extends Controller
                 $query->whereNotNull('supervisor_proses')
                       ->whereNotNull('diterima')
                       ->whereHas('sp2dkirim', function ($q) {
-                          $q->whereNull('tgl_tte');
+                          $q->whereNull('tgl_tte')
+                            ->whereNotNull('tte');
                       });
             
                 $FilterTanggal = 'tanggal_upload';

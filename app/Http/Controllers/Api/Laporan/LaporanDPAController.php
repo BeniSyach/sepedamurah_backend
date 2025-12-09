@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Laporan;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\LaporanDPAResource;
 use App\Models\LaporanDPAModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,7 +13,7 @@ class LaporanDPAController extends Controller
     public function index(Request $request)
     {
         $search = strtolower($request->search);
-        $perPage = $request->per_page ?? 10; // 🔥 default 20
+        $perPage = $request->per_page ?? 10;
     
         $query = LaporanDPAModel::with(['dpa', 'user', 'operator'])
             ->whereNull('deleted_at');
@@ -26,11 +27,18 @@ class LaporanDPAController extends Controller
             });
         }
     
-        return response()->json([
-            'status' => true,
-            'data' => $query->orderBy('id', 'desc')->paginate($perPage),
-        ]);
+        // 📌 Ambil pagination dulu
+        $data = $query->orderBy('id', 'desc')->paginate($perPage);
+    
+        // 📌 Tambahkan SKPD dari accessor
+        $data->getCollection()->transform(function ($item) {
+            $item->skpd = $item->skpd; // memanggil accessor getSkpdAttribute
+            return $item;
+        });
+    
+        return LaporanDPAResource::collection($data);
     }
+    
 
     public function store(Request $request)
     {
