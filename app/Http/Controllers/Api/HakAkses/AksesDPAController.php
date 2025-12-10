@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\HakAkses;
 
 use App\Http\Controllers\Controller;
 use App\Models\AksesDPAModel;
+use App\Models\LaporanDPAModel;
 use App\Models\SKPDModel;
 use Illuminate\Http\Request;
 
@@ -256,4 +257,97 @@ class AksesDPAController extends Controller
             'message' => 'Akses DPA berhasil dihapus',
         ]);
     }
+
+    public function cek(Request $request)
+    {
+        // =============== VALIDASI ===============
+        $tahun = $request->tahun;
+        if (!$tahun) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Parameter tahun wajib diisi'
+            ], 400);
+        }
+    
+        // OPD
+        $kd_opd1 = $request->kd_opd1;
+        $kd_opd2 = $request->kd_opd2;
+        $kd_opd3 = $request->kd_opd3;
+        $kd_opd4 = $request->kd_opd4;
+        $kd_opd5 = $request->kd_opd5;
+    
+        // =============== 1. AMBIL AKSES DPA BERDASARKAN OPD ===============
+        $aksesQuery = AksesDPAModel::with('dpa')
+            ->where('tahun', $tahun)
+            ->whereNull('deleted_at');
+    
+        foreach (['kd_opd1','kd_opd2','kd_opd3','kd_opd4','kd_opd5'] as $opd) {
+            if ($request->$opd !== null) {
+                $aksesQuery->where($opd, $request->$opd);
+            }
+        }
+    
+        $akses = $aksesQuery->get();
+    
+        if ($akses->isEmpty()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Akses DPA tidak ditemukan untuk filter OPD tersebut'
+            ], 200);
+        }
+    
+        // =============== 2. AMBIL LAPORAN DPA BERDASARKAN OPD ===============
+        $laporanQuery = LaporanDPAModel::where('tahun', $tahun)->whereNotNull('diterima');
+    
+        foreach (['kd_opd1','kd_opd2','kd_opd3','kd_opd4','kd_opd5'] as $opd) {
+            if ($request->$opd !== null) {
+                $laporanQuery->where($opd, $request->$opd);
+            }
+        }
+    
+        $laporan = $laporanQuery->get();
+    
+        // Index laporan berdasarkan dpa_id
+        $laporanIndex = $laporan->keyBy('dpa_id');
+    
+        // =============== 3. CEK DPA SATU PER SATU ===============
+        $hasil = [];
+        $kurangUpload = [];
+    
+        foreach ($akses as $a) {
+            $ada = $laporanIndex->get($a->dpa_id);
+    
+            $hasil[] = [
+                'akses_id'          => $a->id,
+                'opd'               => "{$a->kd_opd1}.{$a->kd_opd2}.{$a->kd_opd3}.{$a->kd_opd4}.{$a->kd_opd5}",
+                'dpa_id'            => $a->dpa_id,
+                'nama_dpa'          => $a->dpa->nm_dpa ?? null,
+                'status_laporan'    => $ada ? true : false,
+                'laporan_data'      => $ada
+            ];
+    
+            if (!$ada) {
+                $kurangUpload[] = [
+                    'dpa_id'    => $a->dpa_id,
+                    'nama_dpa'  => $a->dpa->nm_dpa ?? 'Nama tidak tersedia',
+                    'opd'       => "{$a->kd_opd1}.{$a->kd_opd2}.{$a->kd_opd3}.{$a->kd_opd4}.{$a->kd_opd5}",
+                    'pesan'     => "Laporan DPA belum diupload."
+                ];
+            }
+        }
+    
+        // =============== 4. STATUS GLOBAL ===============
+        // TRUE = semua laporan memenuhi akses DPA
+        // FALSE = ada laporan yang kurang
+        $statusGlobal = count($kurangUpload) === 0;
+    
+        return response()->json([
+            'status' => true,
+            'status_laporan_memenuhi' => $statusGlobal,    // <==== STATUS GLOBAL
+            'data' => $hasil,
+            'kurang_upload' => $kurangUpload,
+        ]);
+    }
+    
+    
 }

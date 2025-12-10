@@ -495,15 +495,18 @@ class LaporanFungsionalController extends Controller
         $validated = $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'integer',
+            'supervisor_proses' => 'required|string'
         ]);
     
         $ids = $validated['ids'];
+        $supervisor = $validated['supervisor_proses'];
     
         // Update semua berkas yang dipilih
         $updated = LaporanFungsionalModel::whereIn('id', $ids)->update([
             'proses' => 1,                     // status diterima
             'ditolak' => null,                 // pastikan ditolak kosong
             'alasan_tolak' => null,            // hapus alasan tolak
+            'supervisor_proses' => $supervisor,
         ]);
     
         return response()->json([
@@ -523,16 +526,19 @@ class LaporanFungsionalController extends Controller
             'ids' => 'required|array',
             'ids.*' => 'integer',
             'alasan' => 'required|string|max:500',
+            'supervisor_proses' => 'required|string'
         ]);
 
         $ids = $validated['ids'];
         $alasan = $validated['alasan'];
+        $supervisor = $validated['supervisor_proses'];
 
         // Update semua berkas yang dipilih
         $updated = LaporanFungsionalModel::whereIn('id', $ids)->update([
             'ditolak' => now(),
             'alasan_tolak' => $alasan,
             'proses' => 1,              // status proses kalau ditolak
+            'supervisor_proses' => $supervisor,
         ]);
 
         return response()->json([

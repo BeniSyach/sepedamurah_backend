@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Laporan;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LaporanDPAResource;
+use App\Models\AksesOperatorModel;
 use App\Models\LaporanDPAModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,9 +15,95 @@ class LaporanDPAController extends Controller
     {
         $search = strtolower($request->search);
         $perPage = $request->per_page ?? 10;
-    
+        $menu = $request->get('menu');
+        $userId = $request->get('user_id');
+
         $query = LaporanDPAModel::with(['dpa', 'user', 'operator'])
             ->whereNull('deleted_at');
+
+        if ($menu) {
+            if ($menu === 'laporan_dpa') {
+                $query->when($userId, function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->whereNull('diterima')
+                ->whereNull('ditolak');
+            }
+
+            if ($menu === 'operator_laporan_dpa') {
+                $operator = AksesOperatorModel::where('id_operator', $userId)->first();
+                if ($operator) {
+                    $query->where(function ($q) use ($operator) {
+                        $q->where('kd_opd1', $operator->kd_opd1)
+                          ->where('kd_opd2', $operator->kd_opd2)
+                          ->where('kd_opd3', $operator->kd_opd3)
+                          ->where('kd_opd4', $operator->kd_opd4)
+                          ->where('kd_opd5', $operator->kd_opd5);
+                    });
+                }
+                $query->whereNull('id_operator')
+                      ->where('proses', '1')
+                      ->whereNull('diterima')
+                      ->whereNull('ditolak');
+            }
+
+            if ($menu === 'operator_laporan_DPA_diterima') {
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $userId)->get();
+                if ($operatorSkpd) {
+                    $query->where(function ($q) use ($operatorSkpd) {
+                        foreach ($operatorSkpd as $op) {
+                            $q->orWhere(function ($q2) use ($op) {
+                                $q2->where('kd_opd1', $op->kd_opd1)
+                                    ->where('kd_opd2', $op->kd_opd2)
+                                    ->where('kd_opd3', $op->kd_opd3)
+                                    ->where('kd_opd4', $op->kd_opd4)
+                                    ->where('kd_opd5', $op->kd_opd5);
+                            });
+                        }
+                    });
+                }
+                $query->where('proses', '2')
+                      ->whereNotNull('diterima');
+            }
+
+            if ($menu === 'operator_laporan_DPA_ditolak') {
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $userId)->get();
+                if ($operatorSkpd) {
+                    $query->where(function ($q) use ($operatorSkpd) {
+                        foreach ($operatorSkpd as $op) {
+                            $q->orWhere(function ($q2) use ($op) {
+                                $q2->where('kd_opd1', $op->kd_opd1)
+                                    ->where('kd_opd2', $op->kd_opd2)
+                                    ->where('kd_opd3', $op->kd_opd3)
+                                    ->where('kd_opd4', $op->kd_opd4)
+                                    ->where('kd_opd5', $op->kd_opd5);
+                            });
+                        }
+                    });
+                }
+                $query->whereNotNull('ditolak');
+            }
+
+            if ($menu === 'berkas_masuk_laporan_dpa') {
+                $query->whereNull('proses')
+                      ->whereNull('diterima')
+                      ->whereNull('ditolak');
+            }
+
+            if ($menu === 'laporan_DPA_diterima') {
+                $query->when($userId, function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->whereNotNull('diterima');
+            }
+
+            if ($menu === 'laporan_DPA_ditolak') {
+                $query->when($userId, function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->whereNotNull('ditolak');
+            }
+        }
     
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -51,24 +138,17 @@ class LaporanDPAController extends Controller
             'dpa_id' => 'required|integer',
             'user_id' => 'required|integer',
             'tahun' => 'required|integer',
-            'proses' => 'nullable|string',
-            'supervisor_proses' => 'nullable|string',
     
             // 🔥 validasi file
             'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:20480', // 20MB
         ]);
     
-        // 🔥 sudah ada? upload file
+        // 🔥 Upload file jika ada
         if ($request->hasFile('file')) {
-            $uploadedFile = $request->file('file');
-    
-            // nama file unik
-            $filename = time() . '_' . $uploadedFile->getClientOriginalName();
-    
-            // simpan file ke storage/app/laporan_dpa
-            $path = $uploadedFile->storeAs('laporan_dpa', $filename);
-    
-            // simpan ke database
+            // simpan file ke storage/app/public/laporan_dpa
+            $path = $request->file('file')->store('laporan_dpa', 'public');
+
+            // simpan path ke database
             $validated['file'] = $path;
         }
     
@@ -118,10 +198,12 @@ class LaporanDPAController extends Controller
         $validated = $request->validate([
             'proses' => 'nullable|string',
             'supervisor_proses' => 'nullable|string',
-    
+            'dpa_id' => 'nullable|integer',
             // 🔥 file upload
             'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:20480',
-    
+            'diterima' => 'nullable|date',
+            'ditolak' => 'nullable|date',
+            'alasan_tolak' => 'nullable|string',
             'nama_operator' => 'nullable|string',
             'id_operator' => 'nullable|integer',
             'diterima' => 'nullable|date',
@@ -131,23 +213,19 @@ class LaporanDPAController extends Controller
     
         // 🔥 Jika ada file baru yang diupload
         if ($request->hasFile('file')) {
-    
+
             // 🔥 Hapus file lama (jika ada)
-            if ($lap->file && Storage::exists($lap->file)) {
-                Storage::delete($lap->file);
+            if ($lap->file && Storage::disk('public')->exists($lap->file)) {
+                Storage::disk('public')->delete($lap->file);
             }
-    
-            $uploadedFile = $request->file('file');
-    
-            // nama file unik
-            $filename = time() . '_' . $uploadedFile->getClientOriginalName();
-    
-            // simpan file
-            $path = $uploadedFile->storeAs('laporan_dpa', $filename);
-    
-            // simpan path ke DB
+
+            // Simpan file baru ke storage/app/public/laporan_dpa
+            $path = $request->file('file')->store('laporan_dpa', 'public');
+
+            // Simpan path ke database
             $validated['file'] = $path;
         }
+
     
         // 🔥 update data selain file
         $lap->update($validated);
@@ -178,12 +256,72 @@ class LaporanDPAController extends Controller
         ]);
     }
 
+         /**
+     * Menolak banyak Laporan Fungsional sekaligus
+     */
+    public function terimaMulti(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+            'supervisor_proses' => 'required|string'
+        ]);
+    
+        $ids = $validated['ids'];
+        $supervisor = $validated['supervisor_proses'];
+    
+        // Update semua berkas yang dipilih
+        $updated = LaporanDPAModel::whereIn('id', $ids)->update([
+            'proses' => 1,                     // status diterima
+            'ditolak' => null,                 // pastikan ditolak kosong
+            'alasan_tolak' => null,            // hapus alasan tolak
+            'supervisor_proses' => $supervisor,
+        ]);
+    
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menerima $updated berkas Laporan DPA.",
+            'updated' => $updated
+        ]);
+    }
+
+         /**
+     * Menolak banyak Laporan Fungsional sekaligus
+     */
+    public function tolakMulti(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer',
+            'alasan' => 'required|string|max:500',
+            'supervisor_proses' => 'required|string'
+        ]);
+
+        $ids = $validated['ids'];
+        $alasan = $validated['alasan'];
+        $supervisor = $validated['supervisor_proses'];
+
+        // Update semua berkas yang dipilih
+        $updated = LaporanDPAModel::whereIn('id', $ids)->update([
+            'ditolak' => now(),
+            'alasan_tolak' => $alasan,
+            'proses' => 1,              // status proses kalau ditolak
+            'supervisor_proses' => $supervisor,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menolak $updated berkas Laporan Fungsional.",
+            'updated' => $updated
+        ]);
+    }
+
     public function downloadBerkas(int $id)
     {
         // Ambil data permohonan SPD berdasarkan id
-        $permohonan = LaporanDPAModel::findOrFail($id);
+        $laporanDPA = LaporanDPAModel::findOrFail($id);
 
-        $filePath = $permohonan->file;
+        $filePath = $laporanDPA->file;
 
         // Cek apakah file ada di disk public
         $disk = Storage::disk('public');

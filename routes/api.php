@@ -234,6 +234,7 @@ Route::middleware('auth:api')->group(function () {
          // Akses DPA
          Route::put('/akses-dpa-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesDPAController::class, 'update']);
          // hilangkan update bawaan
+        Route::get('/cek-akses-dpa-skpd', [AksesDPAController::class, 'cek']);
         Route::apiResource('/akses-dpa-skpd', AksesDPAController::class)
         ->except(['update']);
     });
@@ -299,6 +300,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/fungsional/downloadTTE/{id}', [LaporanFungsionalController::class, 'downloadBerkasTTE'])->name('fungsional.downloadtte');
 
         // Laporan DPA
+        Route::post('/laporan-dpa-terima-multi', [LaporanDPAController::class, 'terimaMulti']);
+        Route::post('/laporan-dpa-tolak-multi', [LaporanDPAController::class, 'tolakMulti']);
+        Route::get('/laporan-dpa/download/{id}', [LaporanDPAController::class, 'downloadBerkas'])->name('laporan-dpa.download');
         Route::apiResource('/laporan-dpa', LaporanDPAController::class);
 
         // Laporan Realisasi Sumber Dana 
