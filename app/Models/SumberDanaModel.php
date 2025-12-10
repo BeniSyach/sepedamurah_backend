@@ -24,6 +24,7 @@ class SumberDanaModel extends Model
         'kd_ref6',
         'nm_ref',
         'status',
+        'jenis_sumber_dana',
         'created_at',
         'updated_at',
         'deleted_at',

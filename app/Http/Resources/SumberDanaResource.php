@@ -17,6 +17,7 @@ class SumberDanaResource extends JsonResource
             'kd_ref6' => $this->kd_ref6,
             'nm_ref' => $this->nm_ref,
             'status' => $this->status ,
+            'jenis_sumber_dana' => $this->jenis_sumber_dana ,
             'created_at' => $this->created_at ,
             'updated_at' => $this->updated_at,
             'deleted_at' => $this->deleted_at,

@@ -164,6 +164,7 @@ class SP2DSumberDanaController extends Controller
                     COALESCE(a.kd_ref5, b.kd_ref5, c.kd_ref5) AS kd_ref5, 
                     COALESCE(a.kd_ref6, b.kd_ref6, c.kd_ref6) AS kd_ref6,
                     d.nm_ref AS nm_sumber,
+                    d.jenis_sumber_dana,
                     NVL(a.pagu, 0) AS pagu,
                     NVL(a.jumlah_silpa, 0) AS jumlah_silpa,
                     NVL(b.jum_sumber_dana, 0) AS sumber_dana,
