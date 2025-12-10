@@ -319,8 +319,7 @@ class SP2DController extends Controller
                 $query->whereNotNull('supervisor_proses')
                       ->whereNotNull('diterima')
                       ->whereHas('sp2dkirim', function ($q) {
-                          $q->whereNull('tgl_tte')
-                            ->where('status', 0);
+                          $q->where('status', 0);
                       });
             
                 $FilterTanggal = 'tanggal_upload';
