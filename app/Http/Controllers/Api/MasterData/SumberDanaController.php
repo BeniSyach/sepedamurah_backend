@@ -81,6 +81,7 @@ class SumberDanaController extends Controller
             'kd_ref6' => 'required|string|max:10',
             'nm_ref' => 'required|string|max:255',
             'status' => 'nullable|integer',
+            'jenis_sumber_dana' => 'required|string|max:255',
         ]);
 
         try {
