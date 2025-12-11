@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Services\TTE_BSRE;
 use App\Models\LogTTEModel;
+use Illuminate\Support\Facades\DB;
 
 class LaporanFungsionalController extends Controller
 {
@@ -596,157 +597,101 @@ class LaporanFungsionalController extends Controller
         return response()->download($disk->path($filePath), basename($filePath));
     }
 
-    public function cekSudahUploadFungsional(
-        $tahun,
-        $bulan,
-        $kd_opd1,
-        $kd_opd2,
-        $kd_opd3,
-        $kd_opd4,
-        $kd_opd5,
-        $status // 0 atau 1
-    ) {
-        $today = now()->day;
-    
-        // ================ FUNCTION CEK BULAN ====================
-        $cekUploadBulan = function ($th, $bln) use (
-            $kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5, $status
-        ) {
-            // Cek Pengeluaran
-            $pengeluaran = LaporanFungsionalModel::whereRaw("EXTRACT(YEAR FROM tanggal_upload) = ?", [$th])
-                ->whereRaw("EXTRACT(MONTH FROM tanggal_upload) = ?", [(int)$bln])
-                ->where('jenis_berkas', 'Pengeluaran')
-                ->where('kd_opd1', $kd_opd1)
-                ->where('kd_opd2', $kd_opd2)
-                ->where('kd_opd3', $kd_opd3)
-                ->where('kd_opd4', $kd_opd4)
-                ->where('kd_opd5', $kd_opd5)
-                ->whereNotNull('diterima')
-                ->whereNull('deleted_at')
-                ->exists();
-        
-            // Jika status 0 → hanya pengeluaran yang dicek
-            if ($status == 0) {
-                return [
-                    "pengeluaran" => $pengeluaran,
-                    "penerimaan" => true, // dianggap lengkap karena tidak wajib
-                    "lengkap" => $pengeluaran // hanya pengeluaran yg menentukan
-                ];
-            }
-        
-            // Jika status = 1, cek juga penerimaan
-            $penerimaan = LaporanFungsionalModel::whereRaw("EXTRACT(YEAR FROM tanggal_upload) = ?", [$th])
-                ->whereRaw("EXTRACT(MONTH FROM tanggal_upload) = ?", [(int)$bln])
-                ->where('jenis_berkas', 'Penerimaan')
-                ->where('kd_opd1', $kd_opd1)
-                ->where('kd_opd2', $kd_opd2)
-                ->where('kd_opd3', $kd_opd3)
-                ->where('kd_opd4', $kd_opd4)
-                ->where('kd_opd5', $kd_opd5)
-                ->whereNotNull('diterima')
-                ->whereNull('deleted_at')
-                ->exists();
-        
-            return [
-                "pengeluaran" => $pengeluaran,
-                "penerimaan" => $penerimaan,
-                "lengkap" => $pengeluaran && $penerimaan // salah satu kurang → tidak lengkap
-            ];
-        };
-        
-        // =========================================================
-        // CARI TUNGGAKAN BULAN SEBELUMNYA (TERMUKA LINTAS TAHUN)
-        // =========================================================
-    
-        $bulanKurang = [];
-    
-        // --- CEK BULAN DALAM TAHUN YANG SAMA ---
-        for ($i = 1; $i < $bulan; $i++) {
-            // Skip bulan N-1 bila belum lewat tanggal 10
-            if ($today <= 10 && $i == ($bulan - 1)) {
-                continue;
-            }
-        
-            $cek = $cekUploadBulan($tahun, $i);
-        
-            if (!$cek["lengkap"]) {
-                $bulanKurang[] = [$tahun, $i];
-            }
-        }
-    
-        // --- CEK TAHUN SEBELUMNYA (DESEMBER) ---
-        if ($bulan == 1) {
-            $cekLastYear = $cekUploadBulan($tahun - 1, 12);
-            if (!$cekLastYear["lengkap"]) {
-                $bulanKurang[] = [$tahun - 1, 12];
-            }
-        }
-    
-        // =========================================================
-        // LOGIKA KETIKA ADA TUNGGAKAN
-        // =========================================================
-        if (count($bulanKurang) > 0) {
-            return [
-                "wajib" => true,
-                "pengeluaran" => false,
-                "penerimaan" => false,
-                "bulan_kurang" => $bulanKurang,
-                "message" => "Masih ada laporan lama yang belum lengkap."
-            ];
-        }
-    
-        // =========================================================
-        // JIKA TIDAK ADA TUNGGAKAN
-        // =========================================================
-    
-        // Tanggal 1–10 → BULAN INI TIDAK WAJIB UPLOAD
-        if ($today <= 10) {
-            return [
-                "wajib" => false,
-                "pengeluaran" => false,
-                "penerimaan" => false,
-                "bulan_kurang" => [],
-                "message" => "Belum lewat tanggal 10, belum wajib upload bulan ini."
-            ];
-        }
-    
-        // Lewat tanggal 10 → cek bulan berjalan
-        $cekSekarang = $cekUploadBulan($tahun, $bulan);
-    
-        return [
-            "wajib" => true,
-            "pengeluaran" => $cekSekarang["pengeluaran"],
-            "penerimaan" => $cekSekarang["penerimaan"],
-            "bulan_kurang" => [],
-            "message" => $cekSekarang["lengkap"]
-                ? "Semua laporan bulan ini sudah lengkap."
-                : "Belum upload laporan bulan ini."
+    public function cekDataPerBulan($kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5)
+    {
+        $result = [
+            'status' => true,
+            'missing_pengeluaran' => [],
+            'missing_penerimaan' => []
         ];
+    
+        // Ambil tahun dan bulan sekarang
+        $tahun = date('Y');
+        $bulanSekarang = date('n'); // bulan tanpa leading zero (1-12)
+    
+        // Ambil informasi penerimaan dari tabel ref_opd
+        $opd = DB::table('ref_opd')
+            ->select('status_penerimaan')
+            ->where('kd_opd1', $kd_opd1)
+            ->where('kd_opd2', $kd_opd2)
+            ->where('kd_opd3', $kd_opd3)
+            ->where('kd_opd4', $kd_opd4)
+            ->where('kd_opd5', $kd_opd5)
+            ->where('hidden', 0)
+            ->first();
+    
+        if (!$opd) {
+            return [
+                'status' => false,
+                'message' => "OPD tidak ditemukan.",
+                'missing_pengeluaran' => [],
+                'missing_penerimaan' => []
+            ];
+        }
+    
+        // Loop dari bulan 1 hingga bulan sebelum bulan sekarang
+        for ($bulan = 1; $bulan < $bulanSekarang; $bulan++) {
+            // Cek data pengeluaran
+            $pengeluaranExists = DB::table('fungsional')
+                ->where('kd_opd1', $kd_opd1)
+                ->where('kd_opd2', $kd_opd2)
+                ->where('kd_opd3', $kd_opd3)
+                ->where('kd_opd4', $kd_opd4)
+                ->where('kd_opd5', $kd_opd5)
+                ->where('tahun', $tahun)
+                ->whereRaw("EXTRACT(MONTH FROM tanggal_upload) = ?", [$bulan])
+                ->where('jenis_berkas', 'Pengeluaran')
+                ->whereNotNull('diterima')
+                ->whereNull('deleted_at')
+                ->exists();
+    
+            if (!$pengeluaranExists) {
+                $result['status'] = false;
+                $result['missing_pengeluaran'][] = $bulan;
+            }
+    
+            // Jika penerimaan = 1, cek juga jenis berkas penerimaan
+            if ($opd->status_penerimaan == 1) {
+                $penerimaanExists = DB::table('fungsional')
+                    ->where('kd_opd1', $kd_opd1)
+                    ->where('kd_opd2', $kd_opd2)
+                    ->where('kd_opd3', $kd_opd3)
+                    ->where('kd_opd4', $kd_opd4)
+                    ->where('kd_opd5', $kd_opd5)
+                    ->where('tahun', $tahun)
+                    ->whereRaw("EXTRACT(MONTH FROM tanggal_upload) = ?", [$bulan])
+                    ->where('jenis_berkas', 'Penerimaan')
+                    ->whereNotNull('diterima')
+                    ->whereNull('deleted_at')
+                    ->exists();
+    
+                if (!$penerimaanExists) {
+                    $result['status'] = false;
+                    $result['missing_penerimaan'][] = $bulan;
+                }
+            }
+        }
+    
+        return $result;
     }
     
-    public function apiCekSudahUploadFungsional(Request $request)
+    public function apiCekDataPerBulan(Request $request)
     {
         $validated = $request->validate([
-            "tahun" => "required|integer",
-            "bulan" => "required|integer",
             "kd_opd1" => "required",
             "kd_opd2" => "required",
             "kd_opd3" => "required",
             "kd_opd4" => "required",
             "kd_opd5" => "required",
-            "status" => "required|in:0,1",
         ]);
     
         return response()->json(
-            $this->cekSudahUploadFungsional(
-                $request->tahun,
-                $request->bulan,
+            $this->cekDataPerBulan(
                 $request->kd_opd1,
                 $request->kd_opd2,
                 $request->kd_opd3,
                 $request->kd_opd4,
-                $request->kd_opd5,
-                $request->status
+                $request->kd_opd5
             )
         );
     }
