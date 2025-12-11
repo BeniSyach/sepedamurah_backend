@@ -24,9 +24,20 @@ class LaporanFungsionalController extends Controller
     public function index(Request $request)
     {
         $query = LaporanFungsionalModel::with(['pengirim', 'operator'])
-            ->whereNull('deleted_at');
+        ->whereNull('fungsional.deleted_at')
+        ->join('ref_opd as opd', function ($join) {
+            $join->on('opd.kd_opd1', '=', 'fungsional.kd_opd1')
+                 ->on('opd.kd_opd2', '=', 'fungsional.kd_opd2')
+                 ->on('opd.kd_opd3', '=', 'fungsional.kd_opd3')
+                 ->on('opd.kd_opd4', '=', 'fungsional.kd_opd4')
+                 ->on('opd.kd_opd5', '=', 'fungsional.kd_opd5');
+        })
+        ->select(
+            'fungsional.*',
+            'opd.nm_opd' // Hanya ambil nm_opd
+        );
     
-        $search = $request->get('search') ? strtolower(trim($request->get('search'))) : null;
+        $search = $request->get('search');
         $userId = $request->get('user_id');
         $jenis = $request->get('jenis');
         $menu = $request->get('menu');
@@ -216,9 +227,10 @@ class LaporanFungsionalController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw("LOWER(nama_pengirim) LIKE ?", ["%{$search}%"])
                   ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER(tahun) LIKE ?", ["%{$search}%"]);
+                  ->orWhereRaw("LOWER(tahun) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(opd.nm_opd) LIKE ?", ["%{$search}%"]); // 🔥 ditambah
             });
-        }
+        }        
     
         $perPage = $request->get('per_page', 10);
         $data = $query->orderBy('tanggal_upload', 'desc')
