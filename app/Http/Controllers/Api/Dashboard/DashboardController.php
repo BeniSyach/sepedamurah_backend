@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\AksesDPAModel;
+use App\Models\DPAModel;
+use App\Models\LaporanDPAModel;
 use App\Models\LaporanFungsionalModel;
 use App\Models\PermohonanSPDModel;
 use App\Models\SKPDModel;
@@ -423,6 +426,261 @@ class DashboardController extends Controller
         return response()->json([
             'success' => true,
             'data' => $summary
+        ]);
+    }
+
+    public function getMonitoringData(Request $request)
+    {
+        $tahun = $request->input('tahun', date('Y'));
+        $dpaId = $request->input('dpa_id', null);
+
+        // Query akses DPA dengan filter
+        $aksesQuery = AksesDPAModel::with('dpa')
+            ->where('tahun', $tahun);
+
+        if ($dpaId && $dpaId !== 'all') {
+            $aksesQuery->where('dpa_id', $dpaId);
+        }
+
+        $aksesData = $aksesQuery->get();
+
+        // Mapping data monitoring
+        $monitoring = [];
+        $summary = [
+            'total' => 0,
+            'uploaded' => 0,
+            'notUploaded' => 0,
+            'percentage' => 0,
+        ];
+
+        foreach ($aksesData as $akses) {
+            // Cek apakah sudah ada laporan
+            $laporan = LaporanDPAModel::where('kd_opd1', $akses->kd_opd1)
+                ->where('kd_opd2', $akses->kd_opd2)
+                ->where('kd_opd3', $akses->kd_opd3)
+                ->where('kd_opd4', $akses->kd_opd4)
+                ->where('kd_opd5', $akses->kd_opd5)
+                ->where('dpa_id', $akses->dpa_id)
+                ->where('tahun', $tahun)
+                ->whereNull('deleted_at')
+                ->first();
+
+            // Ambil data SKPD
+            $skpd = SKPDModel::where('kd_opd1', $akses->kd_opd1)
+                ->where('kd_opd2', $akses->kd_opd2)
+                ->where('kd_opd3', $akses->kd_opd3)
+                ->where('kd_opd4', $akses->kd_opd4)
+                ->where('kd_opd5', $akses->kd_opd5)
+                ->first();
+
+            $status = $laporan ? 'Sudah Upload' : 'Belum Upload';
+
+            // Tentukan status proses
+            $prosesStatus = null;
+            if ($laporan) {
+                if ($laporan->diterima) {
+                    $prosesStatus = 'Diterima';
+                } elseif ($laporan->ditolak) {
+                    $prosesStatus = 'Ditolak';
+                } elseif ($laporan->proses) {
+                    $prosesStatus = 'Diproses';
+                } else {
+                    $prosesStatus = 'Pending';
+                }
+            }
+
+            $monitoring[] = [
+                'id' => $laporan ? $laporan->id : null,
+                'kd_opd' => "{$akses->kd_opd1}.{$akses->kd_opd2}.{$akses->kd_opd3}.{$akses->kd_opd4}.{$akses->kd_opd5}",
+                'kd_opd1' => $akses->kd_opd1,
+                'kd_opd2' => $akses->kd_opd2,
+                'kd_opd3' => $akses->kd_opd3,
+                'kd_opd4' => $akses->kd_opd4,
+                'kd_opd5' => $akses->kd_opd5,
+                'nama_skpd' => $skpd->nm_opd ?? 'SKPD Tidak Ditemukan',
+                'dpa_id' => $akses->dpa_id,
+                'nama_dpa' => $akses->dpa->nm_dpa ?? '-',
+                'status' => $status,
+                'tanggal_upload' => $laporan ? $laporan->created_at : null,
+                'proses_status' => $prosesStatus,
+                'operator' => $laporan ? $laporan->nama_operator : null,
+                'user_id' => $laporan ? $laporan->user_id : null,
+            ];
+
+            // Update summary
+            $summary['total']++;
+            if ($status === 'Sudah Upload') {
+                $summary['uploaded']++;
+            } else {
+                $summary['notUploaded']++;
+            }
+        }
+
+        // Hitung persentase
+        if ($summary['total'] > 0) {
+            $summary['percentage'] = round(($summary['uploaded'] / $summary['total']) * 100, 2);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'monitoring' => $monitoring,
+                'summary' => $summary,
+                'tahun' => $tahun,
+            ]
+        ]);
+    }
+
+
+    public function getAvailableYears()
+    {
+        $years = AksesDPAModel::select('tahun')
+            ->distinct()
+            ->orderBy('tahun', 'desc')
+            ->pluck('tahun');
+
+        return response()->json([
+            'success' => true,
+            'data' => $years
+        ]);
+    }
+
+    public function getDPATypes()
+    {
+        $dpaTypes = DPAModel::select('id', 'nm_dpa')
+            ->whereNull('deleted_at')
+            ->orderBy('nm_dpa')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $dpaTypes
+        ]);
+    }
+
+    public function getLaporanDetail($id)
+    {
+        $laporan = LaporanDPAModel::with(['dpa', 'user', 'operator'])
+            ->find($id);
+
+        if (!$laporan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Laporan tidak ditemukan'
+            ], 404);
+        }
+
+        // Get SKPD info
+        $skpd = SKPDModel::where('kd_opd1', $laporan->kd_opd1)
+            ->where('kd_opd2', $laporan->kd_opd2)
+            ->where('kd_opd3', $laporan->kd_opd3)
+            ->where('kd_opd4', $laporan->kd_opd4)
+            ->where('kd_opd5', $laporan->kd_opd5)
+            ->first();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'laporan' => $laporan,
+                'skpd' => $skpd,
+            ]
+        ]);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $tahun = $request->input('tahun', date('Y'));
+        $dpaId = $request->input('dpa_id', null);
+
+        // Get monitoring data (reuse logic from getMonitoringData)
+        $monitoringResponse = $this->getMonitoringData($request);
+        $monitoring = $monitoringResponse->getData()->data->monitoring;
+
+        // Setup headers for CSV export
+        $filename = "monitoring_dpa_{$tahun}_" . date('YmdHis') . ".csv";
+        
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0'
+        ];
+
+        $callback = function() use ($monitoring) {
+            $file = fopen('php://output', 'w');
+            
+            // Add BOM for UTF-8
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // Header
+            fputcsv($file, [
+                'No',
+                'Kode OPD',
+                'Nama SKPD',
+                'Jenis DPA',
+                'Status Upload',
+                'Tanggal Upload',
+                'Status Proses',
+                'Operator'
+            ]);
+
+            // Data rows
+            foreach ($monitoring as $index => $item) {
+                fputcsv($file, [
+                    $index + 1,
+                    $item->kd_opd,
+                    $item->nama_skpd,
+                    $item->nama_dpa,
+                    $item->status,
+                    $item->tanggal_upload ? date('d/m/Y H:i', strtotime($item->tanggal_upload)) : '-',
+                    $item->proses_status ?? '-',
+                    $item->operator ?? '-'
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function getStatisticsByDPA(Request $request)
+    {
+        $tahun = $request->input('tahun', date('Y'));
+
+        $statistics = AksesDPAModel::with('dpa')
+            ->where('tahun', $tahun)
+            ->get()
+            ->groupBy('dpa_id')
+            ->map(function ($group) use ($tahun) {
+                $dpaName = $group->first()->dpa->nm_dpa ?? 'Unknown';
+                $total = $group->count();
+                
+                $uploaded = $group->filter(function ($akses) use ($tahun) {
+                    return LaporanDPAModel::where('kd_opd1', $akses->kd_opd1)
+                        ->where('kd_opd2', $akses->kd_opd2)
+                        ->where('kd_opd3', $akses->kd_opd3)
+                        ->where('kd_opd4', $akses->kd_opd4)
+                        ->where('kd_opd5', $akses->kd_opd5)
+                        ->where('dpa_id', $akses->dpa_id)
+                        ->where('tahun', $tahun)
+                        ->whereNull('deleted_at')
+                        ->exists();
+                })->count();
+
+                return [
+                    'name' => $dpaName,
+                    'uploaded' => $uploaded,
+                    'notUploaded' => $total - $uploaded,
+                    'total' => $total,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $statistics
         ]);
     }
 }

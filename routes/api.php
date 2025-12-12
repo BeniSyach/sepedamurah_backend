@@ -89,6 +89,17 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/chart-sp2d-per-bulan',[ DashboardController::class, 'chartSp2dPerBulan']);
         Route::get('/check-fungsional',[ DashboardController::class, 'tableCheckFungsional']);
         Route::get('/count-fungsional',[ DashboardController::class, 'summary']);
+        // Get monitoring data
+        Route::get('/monitoring-dpa', [DashboardController::class, 'getMonitoringData']);
+
+        // Get available years
+        Route::get('/monitoring-dpa/years', [DashboardController::class, 'getAvailableYears']);
+        
+        // Get DPA types
+        Route::get('/monitoring-dpa/dpa-types', [DashboardController::class, 'getDPATypes']);
+        
+        // Get statistics by DPA (for charts)
+        Route::get('/monitoring-dpa/statistics', [DashboardController::class, 'getStatisticsByDPA']);
     });
 
     // Master Data
