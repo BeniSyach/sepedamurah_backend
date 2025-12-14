@@ -220,22 +220,20 @@ class ProgramController extends Controller
 
     public function get_program_sp2d(Request $request)
     {
-        // Ambil user login dari JWT
         $user = auth()->user();
+        $role = trim(strtolower($request->get('role', '')));
     
         if (!$user) {
             return response()->json(['error' => 'User tidak terautentikasi'], 401);
         }
     
-        // Ambil kd_bu dari request
         $kd_bu1 = $request->input('kd_bu1');
         $kd_bu2 = $request->input('kd_bu2');
     
-        if (!$kd_bu1 && !$kd_bu2) {
-            return response()->json(['error' => 'Parameter kd_bu wajib diisi'], 400);
+        if (!$kd_bu1 || !$kd_bu2) {
+            return response()->json(['error' => 'Parameter kd_bu1 dan kd_bu2 wajib diisi'], 400);
         }
     
-        // Query Builder Laravel
         $query = DB::table('REF_PROGRAM')
             ->distinct()
             ->select('REF_PROGRAM.*')
@@ -260,19 +258,24 @@ class ProgramController extends Controller
                     , ' ', ''))
                 "));
             })
-            ->where('REF_OPD.KD_OPD1', $user->kd_opd1)
-            ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
-            ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
-            ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
-            ->where('REF_OPD.KD_OPD5', $user->kd_opd5)
             ->where('REF_OPD.HIDDEN', 0)
             ->where('PAGU_BELANJA.KD_PROG1', $kd_bu1)
             ->where('PAGU_BELANJA.KD_PROG2', $kd_bu2)
-            ->where('PAGU_BELANJA.IS_DELETED', 0)
-            ->get();
+            ->where('PAGU_BELANJA.IS_DELETED', 0);
     
-            return response()->json([
-                'data' => $query
-            ]);
+        // 🔥 FILTER OPD HANYA JIKA BUKAN ADMIN
+        if ($role !== 'administrator') {
+            $query->where('REF_OPD.KD_OPD1', $user->kd_opd1)
+                  ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
+                  ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
+                  ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
+                  ->where('REF_OPD.KD_OPD5', $user->kd_opd5);
+        }
+    
+        return response()->json([
+            'data' => $query->get(),
+            'role' => $role
+        ]);
     }
+    
 }

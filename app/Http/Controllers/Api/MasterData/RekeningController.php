@@ -217,14 +217,15 @@ class RekeningController extends Controller
 
     public function get_rekening_sp2d(Request $request)
     {
-        // 🔐 Ambil user yang sedang login (pastikan middleware auth:api aktif)
+        // 🔐 User login
         $user = auth()->user();
+        $role = trim(strtolower($request->get('role', '')));
     
         if (!$user) {
             return response()->json(['error' => 'User tidak terautentikasi'], 401);
         }
     
-        // 📥 Ambil kd_subkeg dari request
+        // 📥 Parameter sub kegiatan
         $kd_subkeg1 = $request->input('kd_subkeg1');
         $kd_subkeg2 = $request->input('kd_subkeg2');
         $kd_subkeg3 = $request->input('kd_subkeg3');
@@ -232,24 +233,28 @@ class RekeningController extends Controller
         $kd_subkeg5 = $request->input('kd_subkeg5');
         $kd_subkeg6 = $request->input('kd_subkeg6');
     
-        if (!$kd_subkeg1) {
-            return response()->json(['error' => 'Parameter kd_subkeg wajib diisi'], 400);
+        if (
+            !$kd_subkeg1 || !$kd_subkeg2 || !$kd_subkeg3 ||
+            !$kd_subkeg4 || !$kd_subkeg5 || !$kd_subkeg6
+        ) {
+            return response()->json([
+                'error' => 'Parameter kd_subkeg1 s/d kd_subkeg6 wajib diisi'
+            ], 400);
         }
     
-        // ⚙️ Bangun query utama
+        // ⚙️ Query utama
         $query = DB::table('REF_REKENING')
             ->distinct()
             ->select('REF_REKENING.*')
             ->join('PAGU_BELANJA', function ($join) {
                 $join->on(DB::raw("TRIM(REF_REKENING.KD_REKENING1)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING1)"))
-                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING2)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING2)"))
-                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING3)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING3)"))
-                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING4)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING4)"))
-                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING5)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING5)"))
-                ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING6)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING6)"));           
+                     ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING2)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING2)"))
+                     ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING3)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING3)"))
+                     ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING4)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING4)"))
+                     ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING5)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING5)"))
+                     ->on(DB::raw("TRIM(REF_REKENING.KD_REKENING6)"), '=', DB::raw("TRIM(PAGU_BELANJA.KD_REKENING6)"));
             })
             ->join('REF_OPD', function ($join) {
-                // Jika pakai PostgreSQL
                 $join->on(DB::raw("
                     LOWER(REPLACE(COALESCE(REF_OPD.KODE_OPD, ''), ' ', ''))
                 "), '=', DB::raw("
@@ -265,25 +270,28 @@ class RekeningController extends Controller
                     , ' ', ''))
                 "));
             })
-            ->where('REF_OPD.KD_OPD1', $user->kd_opd1)
-            ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
-            ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
-            ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
-            ->where('REF_OPD.KD_OPD5', $user->kd_opd5)
             ->where('REF_OPD.HIDDEN', 0)
             ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG1)"), trim($kd_subkeg1))
             ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG2)"), trim($kd_subkeg2))
             ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG3)"), trim($kd_subkeg3))
             ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG4)"), trim($kd_subkeg4))
             ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG5)"), trim($kd_subkeg5))
-            ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG6)"), trim($kd_subkeg6))
-            
-            // ->where('PAGU_BELANJA.IS_DELETED', 0)
-            ->get();
+            ->where(DB::raw("TRIM(PAGU_BELANJA.KD_SUBKEG6)"), trim($kd_subkeg6));
+            // ->where('PAGU_BELANJA.IS_DELETED', 0); // opsional
     
-        // 🔄 Kembalikan hasil JSON
+        // 🔥 FILTER OPD hanya jika BUKAN ADMIN
+        if ($role !== 'administrator') {
+            $query->where('REF_OPD.KD_OPD1', $user->kd_opd1)
+                  ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
+                  ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
+                  ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
+                  ->where('REF_OPD.KD_OPD5', $user->kd_opd5);
+        }
+    
         return response()->json([
-            'data' => $query
+            'data' => $query->get(),
+            'role' => $role
         ]);
     }
+    
 }

@@ -179,16 +179,15 @@ class UrusanController extends Controller
          }
      }
      
-     public function get_urusan_sp2d()
+     public function get_urusan_sp2d(Request $request)
      {
-         // Ambil user dari JWT token
          $user = auth()->user();
-
+         $role = trim(strtolower($request->get('role', ''))); // ⬅️ role dari request
+         $isAdmin = $role === 'administrator';
          if (!$user) {
              return response()->json(['error' => 'User tidak terautentikasi'], 401);
          }
      
-         // Query setara dengan CI3 kamu
          $query = DB::table('REF_URUSAN')
              ->distinct()
              ->select('REF_URUSAN.*')
@@ -211,18 +210,23 @@ class UrusanController extends Controller
                      , ' ', ''))
                  "));
              })
-             ->where('REF_OPD.KD_OPD1', $user->kd_opd1)
-             ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
-             ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
-             ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
-             ->where('REF_OPD.KD_OPD5', $user->kd_opd5)
              ->where('REF_OPD.HIDDEN', 0)
-             ->where('PAGU_BELANJA.IS_DELETED', 0)
-             ->get();
+             ->where('PAGU_BELANJA.IS_DELETED', 0);
      
-             return response()->json([
-                'data' => $query
-            ]);
+
+        if (!$isAdmin) {
+             $query->where('REF_OPD.KD_OPD1', $user->kd_opd1)
+                   ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
+                   ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
+                   ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
+                   ->where('REF_OPD.KD_OPD5', $user->kd_opd5);
+         }
+     
+         return response()->json([
+             'data' => $query->get(),
+             'role' => $role
+         ]);
      }
+     
     
 }

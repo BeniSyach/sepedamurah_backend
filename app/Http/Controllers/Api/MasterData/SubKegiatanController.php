@@ -216,25 +216,28 @@ class SubKegiatanController extends Controller
 
     public function get_sub_kegiatan_sp2d(Request $request)
     {
-        // 🔐 Ambil user dari JWT (pastikan middleware auth:api aktif)
+        // 🔐 User login
         $user = auth()->user();
+        $role = trim(strtolower($request->get('role', '')));
     
         if (!$user) {
             return response()->json(['error' => 'User tidak terautentikasi'], 401);
         }
     
-        // 📥 Ambil kd_keg dari body request
+        // 📥 Parameter kegiatan
         $kd_keg1 = $request->input('kd_keg1');
         $kd_keg2 = $request->input('kd_keg2');
         $kd_keg3 = $request->input('kd_keg3');
         $kd_keg4 = $request->input('kd_keg4');
         $kd_keg5 = $request->input('kd_keg5');
     
-        if (!$kd_keg1 && !$kd_keg2 && !$kd_keg3 && !$kd_keg4 && !$kd_keg5) {
-            return response()->json(['error' => 'Parameter kd_keg wajib diisi'], 400);
+        if (!$kd_keg1 || !$kd_keg2 || !$kd_keg3 || !$kd_keg4 || !$kd_keg5) {
+            return response()->json([
+                'error' => 'Parameter kd_keg1 s/d kd_keg5 wajib diisi'
+            ], 400);
         }
     
-        // ⚙️ Bangun query Laravel
+        // ⚙️ Query builder
         $query = DB::table('REF_SUBKEGIATAN')
             ->distinct()
             ->select('REF_SUBKEGIATAN.*')
@@ -262,22 +265,27 @@ class SubKegiatanController extends Controller
                     , ' ', ''))
                 "));
             })
-            ->where('REF_OPD.KD_OPD1', $user->kd_opd1)
-            ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
-            ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
-            ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
-            ->where('REF_OPD.KD_OPD5', $user->kd_opd5)
             ->where('REF_OPD.HIDDEN', 0)
             ->where('PAGU_BELANJA.KD_KEG1', $kd_keg1)
             ->where('PAGU_BELANJA.KD_KEG2', $kd_keg2)
             ->where('PAGU_BELANJA.KD_KEG3', $kd_keg3)
             ->where('PAGU_BELANJA.KD_KEG4', $kd_keg4)
             ->where('PAGU_BELANJA.KD_KEG5', $kd_keg5)
-            ->where('PAGU_BELANJA.IS_DELETED', 0)
-            ->get();
+            ->where('PAGU_BELANJA.IS_DELETED', 0);
     
-            return response()->json([
-                'data' => $query
-            ]);
+        // 🔥 FILTER OPD hanya jika BUKAN ADMIN
+        if ($role !== 'administrator') {
+            $query->where('REF_OPD.KD_OPD1', $user->kd_opd1)
+                  ->where('REF_OPD.KD_OPD2', $user->kd_opd2)
+                  ->where('REF_OPD.KD_OPD3', $user->kd_opd3)
+                  ->where('REF_OPD.KD_OPD4', $user->kd_opd4)
+                  ->where('REF_OPD.KD_OPD5', $user->kd_opd5);
+        }
+    
+        return response()->json([
+            'data' => $query->get(),
+            'role' => $role
+        ]);
     }
+    
 }
