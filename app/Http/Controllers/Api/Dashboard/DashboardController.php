@@ -433,17 +433,17 @@ class DashboardController extends Controller
     {
         $tahun = $request->input('tahun', date('Y'));
         $dpaId = $request->input('dpa_id', null);
-
+    
         // Query akses DPA dengan filter
         $aksesQuery = AksesDPAModel::with('dpa')
             ->where('tahun', $tahun);
-
+    
         if ($dpaId && $dpaId !== 'all') {
             $aksesQuery->where('dpa_id', $dpaId);
         }
-
+    
         $aksesData = $aksesQuery->get();
-
+    
         // Mapping data monitoring
         $monitoring = [];
         $summary = [
@@ -452,9 +452,10 @@ class DashboardController extends Controller
             'notUploaded' => 0,
             'percentage' => 0,
         ];
-
+    
         foreach ($aksesData as $akses) {
-            // Cek apakah sudah ada laporan
+    
+            // 🔍 Cek apakah sudah ada laporan
             $laporan = LaporanDPAModel::where('kd_opd1', $akses->kd_opd1)
                 ->where('kd_opd2', $akses->kd_opd2)
                 ->where('kd_opd3', $akses->kd_opd3)
@@ -464,31 +465,31 @@ class DashboardController extends Controller
                 ->where('tahun', $tahun)
                 ->whereNull('deleted_at')
                 ->first();
-
-            // Ambil data SKPD
+    
+            // 🏢 Ambil data SKPD
             $skpd = SKPDModel::where('kd_opd1', $akses->kd_opd1)
                 ->where('kd_opd2', $akses->kd_opd2)
                 ->where('kd_opd3', $akses->kd_opd3)
                 ->where('kd_opd4', $akses->kd_opd4)
                 ->where('kd_opd5', $akses->kd_opd5)
                 ->first();
-
+    
             $status = $laporan ? 'Sudah Upload' : 'Belum Upload';
-
-            // Tentukan status proses
+    
+            // 📌 Tentukan status proses
             $prosesStatus = null;
             if ($laporan) {
                 if ($laporan->diterima) {
-                    $prosesStatus = 'Diterima';
+                    $prosesStatus = 'Berkas telah diverifikasi';
                 } elseif ($laporan->ditolak) {
-                    $prosesStatus = 'Ditolak';
+                    $prosesStatus = 'Berkas ditolak';
                 } elseif ($laporan->proses) {
-                    $prosesStatus = 'Diproses';
+                    $prosesStatus = 'Berkas sedang diproses';
                 } else {
-                    $prosesStatus = 'Pending';
+                    $prosesStatus = 'Berkas terkirim';
                 }
             }
-
+    
             $monitoring[] = [
                 'id' => $laporan ? $laporan->id : null,
                 'kd_opd' => "{$akses->kd_opd1}.{$akses->kd_opd2}.{$akses->kd_opd3}.{$akses->kd_opd4}.{$akses->kd_opd5}",
@@ -506,8 +507,8 @@ class DashboardController extends Controller
                 'operator' => $laporan ? $laporan->nama_operator : null,
                 'user_id' => $laporan ? $laporan->user_id : null,
             ];
-
-            // Update summary
+    
+            // 📊 Update summary
             $summary['total']++;
             if ($status === 'Sudah Upload') {
                 $summary['uploaded']++;
@@ -515,12 +516,24 @@ class DashboardController extends Controller
                 $summary['notUploaded']++;
             }
         }
-
-        // Hitung persentase
+    
+        // 🔽 SORTING BERDASARKAN created_at (tanggal_upload)
+        // Sudah Upload terbaru di atas, Belum Upload di bawah
+        $monitoring = collect($monitoring)
+            ->sortByDesc(function ($item) {
+                return $item['tanggal_upload'] ?? '1900-01-01';
+            })
+            ->values()
+            ->toArray();
+    
+        // 📈 Hitung persentase
         if ($summary['total'] > 0) {
-            $summary['percentage'] = round(($summary['uploaded'] / $summary['total']) * 100, 2);
+            $summary['percentage'] = round(
+                ($summary['uploaded'] / $summary['total']) * 100,
+                2
+            );
         }
-
+    
         return response()->json([
             'success' => true,
             'data' => [
@@ -530,6 +543,7 @@ class DashboardController extends Controller
             ]
         ]);
     }
+    
 
 
     public function getAvailableYears()
