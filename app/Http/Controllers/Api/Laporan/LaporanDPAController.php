@@ -19,7 +19,18 @@ class LaporanDPAController extends Controller
         $userId = $request->get('user_id');
 
         $query = LaporanDPAModel::with(['dpa', 'user', 'operator'])
-            ->whereNull('deleted_at');
+        ->leftJoin('ref_opd', function ($join) {
+            $join->on('laporan_dpa.kd_opd1', '=', 'ref_opd.kd_opd1')
+                 ->on('laporan_dpa.kd_opd2', '=', 'ref_opd.kd_opd2')
+                 ->on('laporan_dpa.kd_opd3', '=', 'ref_opd.kd_opd3')
+                 ->on('laporan_dpa.kd_opd4', '=', 'ref_opd.kd_opd4')
+                 ->on('laporan_dpa.kd_opd5', '=', 'ref_opd.kd_opd5');
+        })
+        ->whereNull('laporan_dpa.deleted_at')
+        ->select([
+            'laporan_dpa.*',
+            'ref_opd.nm_opd',
+        ]);
 
         if ($menu) {
             if ($menu === 'laporan_dpa') {
@@ -106,13 +117,18 @@ class LaporanDPAController extends Controller
         }
     
         if ($search) {
+            $search = strtolower($search);
+        
             $query->where(function ($q) use ($search) {
-                $q->whereRaw("LOWER(nama_operator) LIKE ?", ["%$search%"])
-                  ->orWhereRaw("LOWER(file) LIKE ?", ["%$search%"])
-                  ->orWhereRaw("LOWER(proses) LIKE ?", ["%$search%"])
-                  ->orWhereRaw("LOWER(supervisor_proses) LIKE ?", ["%$search%"]);
+                $q->whereRaw('LOWER("LAPORAN_DPA"."NAMA_OPERATOR") LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER("LAPORAN_DPA"."FILE") LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER("LAPORAN_DPA"."PROSES") LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER("LAPORAN_DPA"."SUPERVISOR_PROSES") LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"]);
             });
         }
+        
+        
     
         // 📌 Ambil pagination dulu
         $data = $query->orderBy('id', 'desc')->paginate($perPage);
@@ -166,7 +182,7 @@ class LaporanDPAController extends Controller
     {
         $data = LaporanDPAModel::with(['dpa', 'user', 'operator'])
             ->where('id', $id)
-            ->whereNull('deleted_at')
+            ->whereNull('laporan_dpa.deleted_at')
             ->first();
 
         if (!$data) {
