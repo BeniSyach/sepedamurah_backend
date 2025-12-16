@@ -464,6 +464,7 @@ class DashboardController extends Controller
                 ->where('dpa_id', $akses->dpa_id)
                 ->where('tahun', $tahun)
                 ->whereNull('deleted_at')
+                ->orderBy('id', 'desc')
                 ->first();
     
             // 🏢 Ambil data SKPD
