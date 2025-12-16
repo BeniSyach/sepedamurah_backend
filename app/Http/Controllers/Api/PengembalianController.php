@@ -57,6 +57,10 @@ class PengembalianController extends Controller
     if ($to = $request->get('date_to')) {
         $query->whereDate('tgl_rekam', '<=', $to);
     }
+
+    if ($nik = $request->get('nik')) {
+        $query->where('nik', $nik);
+    }
         
     if ($status = $request->get('status')) {
 
