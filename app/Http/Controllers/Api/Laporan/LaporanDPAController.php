@@ -158,7 +158,27 @@ class LaporanDPAController extends Controller
             // 🔥 validasi file
             'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:20480', // 20MB
         ]);
-    
+
+        // =====================================================
+        // 🔍 CEK APAKAH DPA SUDAH ADA & SUDAH DIVERIFIKASI
+        // =====================================================
+        $exists = LaporanDPAModel::where('kd_opd1', $validated['kd_opd1'])
+        ->where('kd_opd2', $validated['kd_opd2'])
+        ->where('kd_opd3', $validated['kd_opd3'])
+        ->where('kd_opd4', $validated['kd_opd4'])
+        ->where('kd_opd5', $validated['kd_opd5'])
+        ->where('dpa_id',  $validated['dpa_id'])
+        ->where('tahun',   $validated['tahun'])
+        ->whereNotNull('diterima') // 🔥 sudah diverifikasi
+        ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'DPA sudah di-upload dan diverifikasi, tidak bisa upload ulang'
+            ], 422);
+        }
+        
         // 🔥 Upload file jika ada
         if ($request->hasFile('file')) {
             // simpan file ke storage/app/public/laporan_dpa
