@@ -145,6 +145,8 @@ Route::middleware('auth:api')->group(function () {
 
 
         // Pagu Belanja
+        Route::post('/pagu-belanja/import-excel', [PaguBelanjaController::class, 'importExcel']);
+        Route::post('/pagu-belanja/restore', [PaguBelanjaController::class, 'restoreLastVersion']);
         Route::apiResource('/pagu-belanja', PaguBelanjaController::class);
 
         // Jenis SPM

@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\PaguBelanjaModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\PaguBelanjaResource;
+use App\Imports\PaguBelanjaImport;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class PaguBelanjaController extends Controller
 {
@@ -251,4 +254,102 @@ class PaguBelanjaController extends Controller
             ], 500);
         }
     }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls'
+        ]);
+    
+        // 1️⃣ Ambil versi terakhir
+        $lastBerapax = PaguBelanjaModel::max('kd_berapax') ?? 0;
+        $newBerapax  = $lastBerapax + 1;
+    
+        try {
+            // 2️⃣ Import dulu (JANGAN sentuh versi lama)
+            Excel::import(
+                new PaguBelanjaImport($newBerapax),
+                $request->file('file')
+            );
+    
+            // 3️⃣ Jika sukses → nonaktifkan versi lama
+            if ($lastBerapax > 0) {
+                PaguBelanjaModel::where('kd_berapax', $lastBerapax)
+                    ->update(['is_deleted' => 1]);
+            }
+    
+            return response()->json([
+                'status' => true,
+                'message' => 'Import Excel berhasil'
+            ]);
+    
+        } catch (\Throwable $e) {
+    
+            // 4️⃣ Jika gagal → HAPUS PERMANENT versi baru
+            PaguBelanjaModel::where('kd_berapax', $newBerapax)->delete();
+    
+            return response()->json([
+                'status' => false,
+                'message' => 'Import gagal, data dikembalikan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+
+    public function restoreLastVersion()
+    {
+        // Versi terbaru (yang sekarang aktif)
+        $current = PaguBelanjaModel::where('is_deleted', 0)
+            ->max('kd_berapax');
+
+        if (!$current) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tidak ada versi aktif'
+            ], 404);
+        }
+
+        // Versi sebelumnya
+        $previous = PaguBelanjaModel::where('kd_berapax', '<', $current)
+            ->max('kd_berapax');
+
+        if (!$previous) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tidak ada versi sebelumnya'
+            ], 404);
+        }
+
+        DB::connection('oracle')->beginTransaction();
+
+        try {
+            // Nonaktifkan versi salah
+            PaguBelanjaModel::where('kd_berapax', $current)
+                ->update(['is_deleted' => 1]);
+            // 🔥 HAPUS PERMANENT versi salah
+            PaguBelanjaModel::where('kd_berapax', $current)->delete();
+
+            // Aktifkan versi lama
+            PaguBelanjaModel::where('kd_berapax', $previous)
+                ->update(['is_deleted' => 0]);
+
+            DB::connection('oracle')->commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => "Berhasil restore ke versi {$previous}"
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::connection('oracle')->rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Restore gagal',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
