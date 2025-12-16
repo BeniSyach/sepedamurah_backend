@@ -85,7 +85,7 @@ class PaguBelanjaController extends Controller
         }
     
         // Pilih field dari PaguBelanja
-        $data = $query->selectRaw('pagu_belanja.*')
+        $data = $query->selectRaw('DISTINCT pagu_belanja.*')
                     ->where('is_deleted',0)
                     ->orderBy('pagu_belanja.tahun_rek', 'desc')
                     ->paginate(10);
