@@ -77,7 +77,7 @@ class LaporanDaftarBelanjaPerSKPDController extends Controller
                             AND SD.KD_REF4 = D.KD_REF4
                             AND SD.KD_REF5 = D.KD_REF5
                             AND SD.KD_REF6 = D.KD_REF6
-                        WHERE SD.SP2D_ID = d.id_sp2d
+                        WHERE SD.SP2D_ID = d.id_sp2d AND SD.DELETED_AT IS NULL
                     )
                 ) AS sumber_dana,
     
@@ -172,7 +172,7 @@ class LaporanDaftarBelanjaPerSKPDController extends Controller
                             AND SD.KD_REF4 = D.KD_REF4
                             AND SD.KD_REF5 = D.KD_REF5
                             AND SD.KD_REF6 = D.KD_REF6
-                        WHERE SD.SP2D_ID = d.id_sp2d
+                        WHERE SD.SP2D_ID = d.id_sp2d AND SD.DELETED_AT IS NULL
                     )
                 ) AS sumber_dana,
     
@@ -271,7 +271,7 @@ class LaporanDaftarBelanjaPerSKPDController extends Controller
                             AND SD.KD_REF4 = D.KD_REF4
                             AND SD.KD_REF5 = D.KD_REF5
                             AND SD.KD_REF6 = D.KD_REF6
-                        WHERE SD.SP2D_ID = d.id_sp2d
+                        WHERE SD.SP2D_ID = d.id_sp2d AND SD.DELETED_AT IS NULL
                     )
                 ) AS sumber_dana,
 

@@ -83,42 +83,70 @@ class SP2DSumberDanaController extends Controller
     /**
      * Update SP2D Sumber Dana
      */
-    public function update(Request $request, $id)
+    public function update(Request $request)
     {
-        $sumber = SP2DSumberDanaModel::where('ID', $id)
-                                     ->whereNull('DELETED_AT')
-                                     ->first();
-
-        if (!$sumber) {
+        $request->validate([
+            'id' => 'required',
+            'sumber_dana' => 'required|json',
+        ]);
+    
+        $sp2dId = $request->id;
+        $sumberDanaList = json_decode($request->sumber_dana, true);
+    
+        if (!is_array($sumberDanaList) || count($sumberDanaList) === 0) {
             return response()->json([
                 'status' => false,
-                'message' => 'Data tidak ditemukan',
-            ], 404);
+                'message' => 'Sumber dana tidak valid',
+            ], 422);
         }
-
-        $validated = $request->validate([
-            'KD_REF1' => 'required|string|max:1',
-            'KD_REF2' => 'required|string|max:1',
-            'KD_REF3' => 'nullable|string|max:2',
-            'KD_REF4' => 'nullable|string|max:2',
-            'KD_REF5' => 'nullable|string|max:2',
-            'KD_REF6' => 'nullable|string|max:4',
-            'NILAI' => 'nullable|numeric',
-        ]);
-
+    
+        DB::beginTransaction();
+    
         try {
-            $sumber->update($validated);
-
+            /** 🔥 Soft delete sumber dana lama */
+            SP2DSumberDanaModel::where('sp2d_id', $sp2dId)
+                ->whereNull('deleted_at')
+                ->update([
+                    'deleted_at' => now(),
+                ]);
+    
+            /** 🔥 Insert ulang sumber dana */
+            foreach ($sumberDanaList as $item) {
+                validator($item, [
+                    'kd_ref1' => 'required|string|max:1',
+                    'kd_ref2' => 'required|string|max:1',
+                    'kd_ref3' => 'nullable|string|max:2',
+                    'kd_ref4' => 'nullable|string|max:2',
+                    'kd_ref5' => 'nullable|string|max:2',
+                    'kd_ref6' => 'nullable|string|max:4',
+                    'nilai'   => 'required|numeric|min:0',
+                ])->validate();
+    
+                SP2DSumberDanaModel::create([
+                    'sp2d_id' => $sp2dId,
+                    'kd_ref1' => $item['kd_ref1'],
+                    'kd_ref2' => $item['kd_ref2'],
+                    'kd_ref3' => $item['kd_ref3'] ?? null,
+                    'kd_ref4' => $item['kd_ref4'] ?? null,
+                    'kd_ref5' => $item['kd_ref5'] ?? null,
+                    'kd_ref6' => $item['kd_ref6'] ?? null,
+                    'nilai'   => $item['nilai'],
+                ]);
+            }
+    
+            DB::commit();
+    
             return response()->json([
                 'status' => true,
-                'message' => 'Data berhasil diperbarui',
-                'data' => new SP2DSumberDanaResource($sumber),
+                'message' => 'Sumber dana berhasil diperbarui',
             ]);
-
-        } catch (\Exception $e) {
+    
+        } catch (\Throwable $e) {
+            DB::rollBack();
+    
             return response()->json([
                 'status' => false,
-                'message' => 'Gagal memperbarui data',
+                'message' => 'Gagal memperbarui sumber dana',
                 'error' => $e->getMessage(),
             ], 500);
         }

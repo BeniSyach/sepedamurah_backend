@@ -53,6 +53,7 @@ class SP2DController extends Controller
                       ->on('sd.kd_ref6', '=', 'r.kd_ref6');
                 })
                 ->whereColumn('sd.sp2d_id', 'sp2d.id_sp2d')
+                ->whereNull('sd.deleted_at')
                 ->selectRaw("LISTAGG(r.nm_ref, ', ') WITHIN GROUP (ORDER BY r.nm_ref)");
         }, 'sumber_danas');
     
@@ -357,7 +358,7 @@ class SP2DController extends Controller
                           AND sd.kd_ref4 = r.kd_ref4
                           AND sd.kd_ref5 = r.kd_ref5
                           AND sd.kd_ref6 = r.kd_ref6
-                          WHERE sd.sp2d_id = sp2d.id_sp2d
+                          WHERE sd.sp2d_id = sp2d.id_sp2d AND sd.deleted_at is null
                           AND LOWER(r.nm_ref) LIKE LOWER('%{$search}%')
                       )
                   ");
