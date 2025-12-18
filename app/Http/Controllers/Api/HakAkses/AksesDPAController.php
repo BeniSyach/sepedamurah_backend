@@ -16,15 +16,29 @@ class AksesDPAController extends Controller
     public function index(Request $request)
     {
         // Ambil akses_dpa + relasi DPA
-        $data = AksesDPAModel::with(['dpa'])
-            ->whereNull('deleted_at')
-            ->when($request->filled('tahun'), fn($q) => $q->where('tahun', $request->tahun))
-            ->orderBy('kd_opd1')
-            ->orderBy('kd_opd2')
-            ->orderBy('kd_opd3')
-            ->orderBy('kd_opd4')
-            ->orderBy('kd_opd5')
-            ->get();
+        $data = AksesDPAModel::query()
+        ->with(['dpa'])
+        ->join('ref_opd', function ($join) {
+            $join->on('akses_dpa.kd_opd1', '=', 'ref_opd.kd_opd1')
+                 ->on('akses_dpa.kd_opd2', '=', 'ref_opd.kd_opd2')
+                 ->on('akses_dpa.kd_opd3', '=', 'ref_opd.kd_opd3')
+                 ->on('akses_dpa.kd_opd4', '=', 'ref_opd.kd_opd4')
+                 ->on('akses_dpa.kd_opd5', '=', 'ref_opd.kd_opd5');
+        })
+        ->whereNull('akses_dpa.deleted_at')
+        ->when($request->filled('search'), function ($q) use ($request) {
+            $search = strtolower($request->search);
+    
+            $q->where(function ($sub) use ($search) {
+                $sub->whereRaw('LOWER(REF_OPD.NM_OPD) LIKE ?', ["%{$search}%"])
+                    ->orWhereHas('dpa', function ($dpa) use ($search) {
+                        $dpa->whereRaw('LOWER(NM_DPA) LIKE ?', ["%{$search}%"]);
+                    });
+            });
+        })
+        ->select('akses_dpa.*', 'ref_opd.nm_opd') // sesuaikan kolom ref_opd
+        ->get();
+    
     
         // Group berdasarkan kode OPD
         $grouped = $data->groupBy(function ($item) {
@@ -61,23 +75,6 @@ class AksesDPAController extends Controller
                     'nm_dpa' => $x->dpa->nm_dpa
                 ])->values()
             ];
-        }
-    
-        // ==============================
-        // 🔎 Search berdasarkan nama OPD atau nama DPA
-        // ==============================
-        if ($request->filled('search')) {
-            $search = strtolower($request->search);
-    
-            $result = collect($result)->filter(function ($row) use ($search) {
-                $namaOpd = strtolower($row['nm_opd']);
-    
-                $matchDpa = collect($row['dpa'])->contains(function ($dpa) use ($search) {
-                    return str_contains(strtolower($dpa['nm_dpa']), $search);
-                });
-    
-                return str_contains($namaOpd, $search) || $matchDpa;
-            })->values();
         }
     
         // ==============================

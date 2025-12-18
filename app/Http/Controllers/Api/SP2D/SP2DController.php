@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Http\Resources\SP2DResource;
 use App\Models\AksesKuasaBUDModel;
 use App\Models\AksesOperatorModel;
+use App\Models\PaguBelanjaModel;
+use App\Models\SKPDModel;
 use App\Models\SP2DRekeningModel;
 use App\Models\SP2DSumberDanaModel;
 use App\Models\User;
@@ -438,6 +440,146 @@ class SP2DController extends Controller
         ]);
     }
     
+    private function parseKodeOpd(string $kodeOpd): array
+    {
+        $parts = explode('.', $kodeOpd);
+
+        return [
+            'kd_opd1' => $parts[0] ?? '0',
+            'kd_opd2' => $parts[1] ?? '0',
+            'kd_opd3' => $parts[2] ?? '0',
+            'kd_opd4' => $parts[3] ?? '0',
+            'kd_opd5' => $parts[4] ?? '0',
+            'kd_opd6' => $parts[5] ?? '0',
+            'kd_opd7' => $parts[6] ?? '0',
+            'kd_opd8' => $parts[7] ?? '0',
+        ];
+    }
+
+    private function checkPaguBelanja(array $sp2dRekPayload, array $opd, string $tahun, array $opd5)
+    {
+        $maxBerapax = PaguBelanjaModel::max('kd_berapax');
+
+        foreach ($sp2dRekPayload as $urusan) {
+            foreach ($urusan['bidangUrusan'] as $bidang) {
+                foreach ($bidang['program'] as $program) {
+                    foreach ($program['kegiatan'] as $kegiatan) {
+                        foreach ($kegiatan['subKegiatan'] as $sub) {
+                            foreach ($sub['rekening'] as $rek) {
+
+                                // 🔹 Ambil pagu belanja
+                                $pagu = PaguBelanjaModel::where([
+                                    'kd_urusan'    => $urusan['kd_urusan'],
+                                    'kd_bu1'       => $bidang['kd_bu1'],
+                                    'kd_bu2'       => $bidang['kd_bu2'],
+                                    'kd_prog1'     => $program['kd_prog1'],
+                                    'kd_prog2'     => $program['kd_prog2'],
+                                    'kd_prog3'     => $program['kd_prog3'],
+                                    'kd_keg1'      => $kegiatan['kd_keg1'],
+                                    'kd_keg2'      => $kegiatan['kd_keg2'],
+                                    'kd_keg3'      => $kegiatan['kd_keg3'],
+                                    'kd_keg4'      => $kegiatan['kd_keg4'],
+                                    'kd_keg5'      => $kegiatan['kd_keg5'],
+                                    'kd_subkeg1'   => $sub['kd_subkeg1'],
+                                    'kd_subkeg2'   => $sub['kd_subkeg2'],
+                                    'kd_subkeg3'   => $sub['kd_subkeg3'],
+                                    'kd_subkeg4'   => $sub['kd_subkeg4'],
+                                    'kd_subkeg5'   => $sub['kd_subkeg5'],
+                                    'kd_subkeg6'   => $sub['kd_subkeg6'],
+                                    'kd_rekening1' => $rek['kd_rekening1'],
+                                    'kd_rekening2' => $rek['kd_rekening2'],
+                                    'kd_rekening3' => $rek['kd_rekening3'],
+                                    'kd_rekening4' => $rek['kd_rekening4'],
+                                    'kd_rekening5' => $rek['kd_rekening5'],
+                                    'kd_rekening6' => $rek['kd_rekening6'],
+                                    // 'kd_opd1' => $opd[0],
+                                    // 'kd_opd2' => $opd[1],
+                                    // 'kd_opd3' => $opd[2],
+                                    // 'kd_opd4' => $opd[3],
+                                    // 'kd_opd5' => $opd[4],
+                                    // 'kd_opd6' => $opd[5],
+                                    // 'kd_opd7' => $opd[6],
+                                    // 'kd_opd8' => $opd[7],
+                                    'kd_opd1' => $opd['kd_opd1'],
+                                    'kd_opd2' => $opd['kd_opd2'],
+                                    'kd_opd3' => $opd['kd_opd3'],
+                                    'kd_opd4' => $opd['kd_opd4'],
+                                    'kd_opd5' => $opd['kd_opd5'],
+                                    'kd_opd6' => $opd['kd_opd6'],
+                                    'kd_opd7' => $opd['kd_opd7'],
+                                    'kd_opd8' => $opd['kd_opd8'],
+                                    'tahun_rek' => $tahun,
+                                    'kd_berapax' =>$maxBerapax
+                                ])->first();
+
+                                if (!$pagu || $pagu->jumlah_pagu <= 0) {
+                                    throw new \Exception(
+                                        'Pagu belanja kosong atau nol pada rekening ' .
+                                        implode('.', [
+                                            $rek['kd_rekening1'],
+                                            $rek['kd_rekening2'],
+                                            $rek['kd_rekening3'],
+                                            $rek['kd_rekening4'],
+                                            $rek['kd_rekening5'],
+                                            $rek['kd_rekening6'],
+                                        ])
+                                    );
+                                }
+
+                                // 🔹 Ambil SP2D yang sesuai OPD dan tahun
+                            $sp2dIds = SP2DModel::where('tahun', $tahun)
+                            ->where('kd_opd1', $opd5['kd_opd1'])
+                            ->where('kd_opd2', $opd5['kd_opd2'])
+                            ->where('kd_opd3', $opd5['kd_opd3'])
+                            ->where('kd_opd4', $opd5['kd_opd4'])
+                            ->where('kd_opd5', $opd5['kd_opd5'])
+                            ->pluck('id_sp2d');
+
+                            // 🔹 Total SP2DRekening yang sudah terpakai
+                            $terpakai = SP2DRekeningModel::whereIn('sp2d_id', $sp2dIds)
+                                ->where([
+                                    'kd_urusan'    => $urusan['kd_urusan'],
+                                    'kd_bu1'       => $bidang['kd_bu1'],
+                                    'kd_bu2'       => $bidang['kd_bu2'],
+                                    'kd_prog1'     => $program['kd_prog1'],
+                                    'kd_prog2'     => $program['kd_prog2'],
+                                    'kd_prog3'     => $program['kd_prog3'],
+                                    'kd_keg1'      => $kegiatan['kd_keg1'],
+                                    'kd_keg2'      => $kegiatan['kd_keg2'],
+                                    'kd_keg3'      => $kegiatan['kd_keg3'],
+                                    'kd_keg4'      => $kegiatan['kd_keg4'],
+                                    'kd_keg5'      => $kegiatan['kd_keg5'],
+                                    'kd_subkeg1'   => $sub['kd_subkeg1'],
+                                    'kd_subkeg2'   => $sub['kd_subkeg2'],
+                                    'kd_subkeg3'   => $sub['kd_subkeg3'],
+                                    'kd_subkeg4'   => $sub['kd_subkeg4'],
+                                    'kd_subkeg5'   => $sub['kd_subkeg5'],
+                                    'kd_subkeg6'   => $sub['kd_subkeg6'],
+                                    'kd_rekening1' => $rek['kd_rekening1'],
+                                    'kd_rekening2' => $rek['kd_rekening2'],
+                                    'kd_rekening3' => $rek['kd_rekening3'],
+                                    'kd_rekening4' => $rek['kd_rekening4'],
+                                    'kd_rekening5' => $rek['kd_rekening5'],
+                                    'kd_rekening6' => $rek['kd_rekening6'],
+                                ])->sum('nilai');
+
+                            $sisaPagu = $pagu->jumlah_pagu - $terpakai;
+
+                                if ($rek['nilai'] > $sisaPagu) {
+                                    throw new \Exception(
+                                        'Sisa pagu tidak mencukupi. Sisa: ' .
+                                        number_format($sisaPagu) .
+                                        ', diminta: ' .
+                                        number_format($rek['nilai'])
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Store SP2D baru
@@ -507,7 +649,45 @@ class SP2DController extends Controller
                 ], 422);
             }
         }
-    
+
+        $opdRequest = [
+            'kd_opd1' => $validated['kd_opd1'] ?? null,
+            'kd_opd2' => $validated['kd_opd2'] ?? null,
+            'kd_opd3' => $validated['kd_opd3'] ?? null,
+            'kd_opd4' => $validated['kd_opd4'] ?? null,
+            'kd_opd5' => $validated['kd_opd5'] ?? null,
+        ];
+
+        $skpd = SKPDModel::where('kd_opd1', $opdRequest['kd_opd1'])
+        ->where('kd_opd2', $opdRequest['kd_opd2'])
+        ->where('kd_opd3', $opdRequest['kd_opd3'])
+        ->where('kd_opd4', $opdRequest['kd_opd4'])
+        ->where('kd_opd5', $opdRequest['kd_opd5'])
+        ->first();
+
+        if (!$skpd) {
+            return response()->json([
+                'status' => false,
+                'message' => 'SKPD tidak ditemukan berdasarkan kode OPD'
+            ], 422);
+        }
+
+        $kodeOpd = $skpd->kode_opd;
+        $opdFull = $this->parseKodeOpd($kodeOpd);
+
+        // if (!empty($validated['sp2d_rek'])) {
+        //     $sp2dRekPayload = json_decode($validated['sp2d_rek'], true);
+        
+        //     try {
+        //         $this->checkPaguBelanja($sp2dRekPayload, $opdFull, $validated['tahun'], $opdRequest);
+        //     } catch (\Exception $e) {
+        //         return response()->json([
+        //             'status'  => false,
+        //             'message' => $e->getMessage(),
+        //         ], 422);
+        //     }
+        // }
+        
         try {
             $folder = 'sp2d/' . date('Ymd');
     
