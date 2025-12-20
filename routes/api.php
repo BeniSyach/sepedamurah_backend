@@ -7,17 +7,23 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BerkasLainController;
 use App\Http\Controllers\Api\Dashboard\DashboardController;
 use App\Http\Controllers\Api\DatRekeningController;
+use App\Http\Controllers\Api\HakAkses\AksesAssetBendaharaController;
 use App\Http\Controllers\Api\HakAkses\AksesDPAController;
 use App\Http\Controllers\Api\HakAkses\AksesKuasaBudController;
 use App\Http\Controllers\Api\HakAkses\AksesOperatorController;
+use App\Http\Controllers\Api\HakAkses\AksesPajakBendaharaController;
+use App\Http\Controllers\Api\HakAkses\AksesSp2bKeBudController;
 use App\Http\Controllers\Api\HakAkses\BatasWaktuController;
 use App\Http\Controllers\Api\HakAkses\UsersRoleController;
 use App\Http\Controllers\Api\History\LogHapusUsersController;
 use App\Http\Controllers\Api\History\LogTTEController;
+use App\Http\Controllers\Api\Laporan\LaporanAssetBendaharaController;
 use App\Http\Controllers\Api\Laporan\LaporanDaftarBelanjaPerSKPDController;
 use App\Http\Controllers\Api\Laporan\LaporanDPAController;
+use App\Http\Controllers\Api\Laporan\LaporanPajakBendaharaController;
 use App\Http\Controllers\Api\Laporan\LaporanRealisasiBelanjaController;
 use App\Http\Controllers\Api\Laporan\LaporanRealisasiSumberDanaController;
+use App\Http\Controllers\Api\Laporan\LaporanSp2bKeBudController;
 use App\Http\Controllers\Api\LaporanFungsional\LaporanFungsionalController;
 use App\Http\Controllers\Api\MasterData\BidangUrusanController;
 use App\Http\Controllers\Api\MasterData\JenisBelanjaController;
@@ -28,7 +34,10 @@ use App\Http\Controllers\Api\MasterData\LevelRekeningController;
 use App\Http\Controllers\Api\MasterData\PaguBelanjaController;
 use App\Http\Controllers\Api\MasterData\PersetujuanController;
 use App\Http\Controllers\Api\MasterData\ProgramController;
+use App\Http\Controllers\Api\MasterData\RefAssetBendaharaController;
 use App\Http\Controllers\Api\MasterData\RefDpaController;
+use App\Http\Controllers\Api\MasterData\RefPajakBendaharaController;
+use App\Http\Controllers\Api\MasterData\RefSp2bKeBudController;
 use App\Http\Controllers\Api\MasterData\RekAkunController;
 use App\Http\Controllers\Api\MasterData\RekeningController;
 use App\Http\Controllers\Api\MasterData\RekJenisController;
@@ -104,7 +113,8 @@ Route::middleware('auth:api')->group(function () {
 
     // Master Data
     Route::prefix('master-data')->group(function () {
-        
+
+        // Urusan
         Route::apiResource('/urusan', UrusanController::class);
         Route::get('/urusan-by-pagu-belanja',[ UrusanController::class, 'get_urusan_sp2d']);
 
@@ -142,7 +152,6 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/rekening/{kd_rekening1}/{kd_rekening2}/{kd_rekening3}/{kd_rekening4}/{kd_rekening5}/{kd_rekening6}', [RekeningController::class, 'destroy']);
         Route::apiResource('/rekening', RekeningController::class)->only(['index', 'store']);
         Route::get('/rekening-by-pagu-belanja', [RekeningController::class, 'get_rekening_sp2d']);
-
 
         // Pagu Belanja
         Route::post('/pagu-belanja/import-excel', [PaguBelanjaController::class, 'importExcel']);
@@ -199,6 +208,15 @@ Route::middleware('auth:api')->group(function () {
 
         // Ref DPA
         Route::apiResource('/ref-dpa', RefDpaController::class);
+
+        // Ref Pajak Bendahara
+        Route::apiResource('/ref-pajak-bendahara', RefPajakBendaharaController::class);
+
+        // Ref Asset Bendahara
+        Route::apiResource('/ref-asset-bendahara', RefAssetBendaharaController::class);
+
+        // Ref SP2B Ke BUD
+        Route::apiResource('/ref-sp2b-to-bud', RefSp2bKeBudController::class);
     });
 
     // alokasi Dana
@@ -250,6 +268,27 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/cek-akses-dpa-skpd', [AksesDPAController::class, 'cek']);
         Route::apiResource('/akses-dpa-skpd', AksesDPAController::class)
         ->except(['update']);
+
+        // Akses Pajak Bendahara
+        Route::put('/akses-pajak-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesPajakBendaharaController::class, 'update']);
+        // hilangkan update bawaan
+       Route::get('/cek-akses-pajak-bendahara', [AksesPajakBendaharaController::class, 'cek']);
+       Route::apiResource('/akses-pajak-bendahara', AksesPajakBendaharaController::class)
+       ->except(['update']);
+
+        // Akses Asset Bendahara
+        Route::put('/akses-asset-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesAssetBendaharaController::class, 'update']);
+        // hilangkan update bawaan
+        Route::get('/cek-akses-asset-bendahara', [AksesAssetBendaharaController::class, 'cek']);
+        Route::apiResource('/akses-asset-bendahara', AksesAssetBendaharaController::class)
+        ->except(['update']);
+
+        // Akses SP2B Ke BUD
+        Route::put('/akses-sp2b-ke-bud/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesSp2bKeBudController::class, 'update']);
+        // hilangkan update bawaan
+        Route::get('/cek-akses-sp2b-ke-bud', [AksesSp2bKeBudController::class, 'cek']);
+        Route::apiResource('/akses-sp2b-ke-bud', AksesSp2bKeBudController::class)
+        ->except(['update']);
     });
 
     // History
@@ -284,8 +323,6 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/tolak-multi', [SP2DController::class, 'tolakMulti']);
         Route::post('/hapus-multi-sp2d', [SP2DController::class, 'HapusMulti']);
         Route::apiResource('/permohonan-sp2d', SP2DController::class);
-  
-
 
         // SP2D Terkirim
         Route::apiResource('/sp2d-kirim', SP2DKirimController::class);
@@ -317,6 +354,24 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/laporan-dpa-tolak-multi', [LaporanDPAController::class, 'tolakMulti']);
         Route::get('/laporan-dpa/download/{id}', [LaporanDPAController::class, 'downloadBerkas'])->name('laporan-dpa.download');
         Route::apiResource('/laporan-dpa', LaporanDPAController::class);
+
+        // Laporan Pajak Bendahara
+        Route::post('/laporan-pajak-bendahara-terima-multi', [LaporanPajakBendaharaController::class, 'terimaMulti']);
+        Route::post('/laporan-pajak-bendahara-tolak-multi', [LaporanPajakBendaharaController::class, 'tolakMulti']);
+        Route::get('/laporan-pajak-bendahara/download/{id}', [LaporanPajakBendaharaController::class, 'downloadBerkas'])->name('laporan-pajak-bendahara.download');
+        Route::apiResource('/laporan-pajak-bendahara', LaporanPajakBendaharaController::class);
+
+        // Laporan Asset Bendahara
+        Route::post('/laporan-asset-bendahara-terima-multi', [LaporanAssetBendaharaController::class, 'terimaMulti']);
+        Route::post('/laporan-asset-bendahara-tolak-multi', [LaporanAssetBendaharaController::class, 'tolakMulti']);
+        Route::get('/laporan-asset-bendahara/download/{id}', [LaporanAssetBendaharaController::class, 'downloadBerkas'])->name('laporan-asset-bendahara.download');
+        Route::apiResource('/laporan-asset-bendahara', LaporanAssetBendaharaController::class);
+
+        // Laporan SP2B Ke BUD
+        Route::post('/laporan-sp2b-to-bud-terima-multi', [LaporanSp2bKeBudController::class, 'terimaMulti']);
+        Route::post('/laporan-sp2b-to-bud-tolak-multi', [LaporanSp2bKeBudController::class, 'tolakMulti']);
+        Route::get('/laporan-sp2b-to-bud/download/{id}', [LaporanSp2bKeBudController::class, 'downloadBerkas'])->name('laporan-sp2b-to-bud.download');
+        Route::apiResource('/laporan-sp2b-to-bud', LaporanSp2bKeBudController::class);
 
         // Laporan Realisasi Sumber Dana 
         Route::get('/realisasi-sumber-dana', [LaporanRealisasiSumberDanaController::class, 'index']);
