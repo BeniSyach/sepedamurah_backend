@@ -69,7 +69,7 @@ class AksesSp2bKeBudController extends Controller
                 'nama_opd' => $skpd?->nm_opd ?? 'Tidak ditemukan',
                 'sp2b'     => $items->map(fn ($x) => [
                     'id'       => $x->refSp2bKeBud?->id,
-                    'nm_sp2b'  => $x->refSp2bKeBud?->nm_sp2b,
+                    'nm_sp2b_ke_bud'  => $x->refSp2bKeBud?->nm_sp2b_ke_bud,
                 ])->values(),
             ];
         }
@@ -299,7 +299,7 @@ class AksesSp2bKeBudController extends Controller
                 'akses_id'        => $a->id,
                 'opd'             => "{$a->kd_opd1}.{$a->kd_opd2}.{$a->kd_opd3}.{$a->kd_opd4}.{$a->kd_opd5}",
                 'ref_sp2b_id'     => $a->ref_sp2b_ke_bud_id,
-                'nama_sp2b'       => $a->refSp2bKeBud?->nm_sp2b,
+                'nama_sp2b'       => $a->refSp2bKeBud?->nm_sp2b_ke_bud,
                 'status_laporan'  => $ada ? true : false,
                 'laporan_data'    => $ada,
             ];
@@ -307,7 +307,7 @@ class AksesSp2bKeBudController extends Controller
             if (!$ada) {
                 $kurangUpload[] = [
                     'ref_sp2b_id' => $a->ref_sp2b_ke_bud_id,
-                    'nama_sp2b'   => $a->refSp2bKeBud?->nm_sp2b ?? 'Nama tidak tersedia',
+                    'nama_sp2b'   => $a->refSp2bKeBud?->nm_sp2b_ke_bud ?? 'Nama tidak tersedia',
                     'opd'         => "{$a->kd_opd1}.{$a->kd_opd2}.{$a->kd_opd3}.{$a->kd_opd4}.{$a->kd_opd5}",
                     'pesan'       => 'Laporan SP2B ke BUD belum diupload atau belum diverifikasi'
                 ];

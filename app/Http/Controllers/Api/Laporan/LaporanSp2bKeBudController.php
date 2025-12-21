@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Laporan;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\LaporanSp2bKeBUDResource;
 use App\Models\LaporanSp2bKeBudModel;
 use App\Models\AksesOperatorModel;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ class LaporanSp2bKeBudController extends Controller
         $menu    = $request->get('menu');
         $userId  = $request->get('user_id');
 
-        $query = LaporanSp2bKeBudModel::with(['refSp2bKeBud'])
+        $query = LaporanSp2bKeBudModel::with(['refSp2bKeBud', 'user', 'operator'])
             ->leftJoin('ref_opd', function ($join) {
                 $join->on('laporan_sp2b_ke_bud.kd_opd1', '=', 'ref_opd.kd_opd1')
                      ->on('laporan_sp2b_ke_bud.kd_opd2', '=', 'ref_opd.kd_opd2')
@@ -38,7 +39,9 @@ class LaporanSp2bKeBudController extends Controller
 
             // 📌 Bendahara - draft
             if ($menu === 'laporan_sp2b_ke_bud') {
-                $query->where('user_id', $userId)
+                $query->when($userId, function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
                       ->whereNull('diterima')
                       ->whereNull('ditolak');
             }
@@ -86,18 +89,43 @@ class LaporanSp2bKeBudController extends Controller
 
             // 📌 Operator - ditolak
             if ($menu === 'operator_laporan_sp2b_ditolak') {
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $userId)->get();
+                if ($operatorSkpd) {
+                    $query->where(function ($q) use ($operatorSkpd) {
+                        foreach ($operatorSkpd as $op) {
+                            $q->orWhere(function ($q2) use ($op) {
+                                $q2->where('kd_opd1', $op->kd_opd1)
+                                    ->where('kd_opd2', $op->kd_opd2)
+                                    ->where('kd_opd3', $op->kd_opd3)
+                                    ->where('kd_opd4', $op->kd_opd4)
+                                    ->where('kd_opd5', $op->kd_opd5);
+                            });
+                        }
+                    });
+                }
                 $query->whereNotNull('ditolak');
             }
 
+            if ($menu === 'berkas_masuk_laporan_sp2b_ke_bud') {
+                $query->whereNull('proses')
+                      ->whereNull('diterima')
+                      ->whereNull('ditolak');
+            }
+
+
             // 📌 Bendahara - diterima
             if ($menu === 'laporan_sp2b_diterima') {
-                $query->where('user_id', $userId)
+                $query->when($userId, function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
                       ->whereNotNull('diterima');
             }
 
             // 📌 Bendahara - ditolak
             if ($menu === 'laporan_sp2b_ditolak') {
-                $query->where('user_id', $userId)
+                $query->when($userId, function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
                       ->whereNotNull('ditolak');
             }
         }
@@ -113,7 +141,17 @@ class LaporanSp2bKeBudController extends Controller
             });
         }
 
-        return $query->orderBy('id', 'desc')->paginate($perPage);
+        // 📌 Ambil pagination dulu
+        $data = $query->orderBy('id', 'desc')->paginate($perPage);
+
+        // 📌 Tambahkan SKPD dari accessor
+        $data->getCollection()->transform(function ($item) {
+            $item->skpd = $item->skpd; // memanggil accessor getSkpdAttribute
+            return $item;
+        });
+
+        return LaporanSp2bKeBUDResource::collection($data);
+
     }
 
     /* ======================

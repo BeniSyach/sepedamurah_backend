@@ -67,7 +67,7 @@ class AksesAssetBendaharaController extends Controller
                 'nama_opd' => $skpd?->nm_opd ?? 'Tidak ditemukan',
                 'asset'    => $items->map(fn ($x) => [
                     'id'       => $x->refAssetBendahara?->id,
-                    'nm_asset' => $x->refAssetBendahara?->nm_asset,
+                    'nm_asset_bendahara' => $x->refAssetBendahara?->nm_asset_bendahara,
                 ])->values(),
             ];
         }
@@ -297,7 +297,7 @@ class AksesAssetBendaharaController extends Controller
                 'akses_id'       => $a->id,
                 'opd'            => "{$a->kd_opd1}.{$a->kd_opd2}.{$a->kd_opd3}.{$a->kd_opd4}.{$a->kd_opd5}",
                 'ref_asset_id'   => $a->ref_asset_id,
-                'nama_asset'     => $a->refAssetBendahara?->nm_asset,
+                'nama_asset'     => $a->refAssetBendahara?->nm_asset_bendahara,
                 'status_laporan' => $ada ? true : false,
                 'laporan_data'   => $ada,
             ];
@@ -305,7 +305,7 @@ class AksesAssetBendaharaController extends Controller
             if (!$ada) {
                 $kurangUpload[] = [
                     'ref_asset_id' => $a->ref_asset_id,
-                    'nama_asset'   => $a->refAssetBendahara?->nm_asset ?? 'Nama tidak tersedia',
+                    'nama_asset'   => $a->refAssetBendahara?->nm_asset_bendahara ?? 'Nama tidak tersedia',
                     'opd'          => "{$a->kd_opd1}.{$a->kd_opd2}.{$a->kd_opd3}.{$a->kd_opd4}.{$a->kd_opd5}",
                     'pesan'        => 'Laporan Asset Bendahara belum diupload atau belum diverifikasi'
                 ];
