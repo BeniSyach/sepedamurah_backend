@@ -382,6 +382,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/realisasi-belanja', [LaporanRealisasiBelanjaController::class, 'index']);
         Route::get('/realisasi-belanja/download/pdf/{tahun}/{bulan}', [LaporanRealisasiBelanjaController::class, 'export_pdf'])->name('realisasi-belanja.download_pdf');
         Route::get('/realisasi-belanja/download/excel/{tahun}/{bulan}', [LaporanRealisasiBelanjaController::class, 'export_excel'])->name('realisasi-belanja.download_excel');
+        Route::get('/laporan-belanja-opd', [LaporanRealisasiBelanjaController::class, 'indexPerOpd']);
 
         // Laporan Daftar Belanja Per SKPD
         Route::get('/daftar-belanja-skpd', [LaporanDaftarBelanjaPerSKPDController::class, 'index']);
