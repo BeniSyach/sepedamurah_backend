@@ -401,6 +401,14 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/pengembalian/rekap/pdf',[PengembalianController::class, 'rekapPengembalianPDF']);
     Route::get('/pengembalian/rekap/excel', [PengembalianController::class, 'rekapPengembalianExcel']);
 
+    Route::put(
+        '/dat-rekening/{tahun}/{kd1}/{kd2}/{kd3}/{kd4}/{kd5?}/{kd6?}',
+        [DatRekeningController::class, 'update']
+    );
+    Route::delete(
+        '/dat-rekening/{tahun}/{kd1}/{kd2}/{kd3}/{kd4}/{kd5?}/{kd6?}',
+        [DatRekeningController::class, 'destroy']
+    );
     Route::apiResource('/dat-rekening', DatRekeningController::class)
-        ->except(['index']);
+        ->except(['index', 'update', 'destroy']);
 });
