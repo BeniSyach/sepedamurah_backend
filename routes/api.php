@@ -259,6 +259,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('/akses-kuasa-bud', AksesKuasaBudController::class);
 
         // Batas Waktu
+        Route::post('/batas-waktu/reset-all-tutup', [BatasWaktuController::class, 'resetAllTutup']);
         Route::post('/batas-waktu/reset-all', [BatasWaktuController::class, 'resetAll']);
         Route::apiResource('/batas-waktu', BatasWaktuController::class);
 

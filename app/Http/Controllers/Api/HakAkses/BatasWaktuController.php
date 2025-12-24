@@ -424,4 +424,54 @@ class BatasWaktuController extends Controller
         }
     }
 
+    public function resetAllTutup()
+    {
+        try {
+            $allBatas = BatasWaktuModel::whereNull('deleted_at')->get();
+
+            if ($allBatas->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Tidak ada data jadwal untuk di-reset',
+                ], 404);
+            }
+
+            // Default jam kerja per hari
+            $defaultJam = [
+                'Monday'    => ['waktu_awal' => '08:00', 'waktu_akhir' => '08:00'],
+                'Tuesday'   => ['waktu_awal' => '08:00', 'waktu_akhir' => '08:00'],
+                'Wednesday' => ['waktu_awal' => '08:00', 'waktu_akhir' => '08:00'],
+                'Thursday'  => ['waktu_awal' => '08:00', 'waktu_akhir' => '08:00'],
+                'Friday'    => ['waktu_awal' => '08:00', 'waktu_akhir' => '08:00'],
+            ];
+
+            foreach ($allBatas as $batas) {
+                $hari = $batas->hari;
+                if (!isset($defaultJam[$hari])) {
+                    continue; // skip jika hari tidak ada default
+                }
+
+                $batas->update([
+                    'waktu_awal' => $defaultJam[$hari]['waktu_awal'],
+                    'waktu_akhir' => $defaultJam[$hari]['waktu_akhir'],
+                    'istirahat_awal' => '12:00',
+                    'istirahat_akhir' => '13:00',
+                    'keterangan' => 'Pelayanan Dibuka',
+                ]);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Semua jadwal berhasil di tutup',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Terjadi kesalahan saat reset jadwal',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 }
