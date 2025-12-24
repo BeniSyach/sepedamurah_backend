@@ -456,7 +456,7 @@ class BatasWaktuController extends Controller
                     'waktu_akhir' => $defaultJam[$hari]['waktu_akhir'],
                     'istirahat_awal' => '12:00',
                     'istirahat_akhir' => '13:00',
-                    'keterangan' => 'Pelayanan Dibuka',
+                    'keterangan' => 'Pelayanan Ditutup',
                 ]);
             }
 
