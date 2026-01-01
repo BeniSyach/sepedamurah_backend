@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RealisasiSumberDanaModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\RealisasiSumberDanaResource;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class RealisasiTransferSumberDanaController extends Controller
@@ -120,12 +121,13 @@ class RealisasiTransferSumberDanaController extends Controller
             'kd_ref6' => 'nullable|string|max:4',
             'nm_sumber' => 'required|string|max:500',
             'tgl_diterima' => 'required|date',
-            'tahun' => 'required|string|max:4',
+            // 'tahun' => 'required|string|max:4',
             'jumlah_sumber' => 'nullable|numeric',
             'keterangan_2' => 'nullable|string|max:255',
         ]);
 
         try {
+            $validated['tahun'] = Carbon::parse($validated['tgl_diterima'])->format('Y');
           // Hitung data sama berdasarkan kode ref + tahun
         $count_same = RealisasiSumberDanaModel::where([
             'kd_ref1' => $validated['kd_ref1'],
@@ -137,6 +139,7 @@ class RealisasiTransferSumberDanaController extends Controller
             'tahun'   => $validated['tahun'],
         ])->count();
 
+       
         // Set nilai keterangan = count_same + 1
         $validated['keterangan'] = $count_same + 1;
 
