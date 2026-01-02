@@ -221,6 +221,15 @@ class SP2DController extends Controller
                 $FilterTanggal = 'diterima';
             }
 
+            // (opsional) kalau kamu juga punya 'sp2d_ditolak'
+            if ($menu === 'sp2d_ditolak') {
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+                $query->whereNotNull('ditolak'); // hanya yang ditolak
+                $FilterTanggal = 'ditolak';
+            }
+
             // ✅ SP2D Diterima Kuasa BUD
             if ($menu === 'sp2d_diterima_kuasa_bud') {
                 $userId = $request->get('user_id');
@@ -233,10 +242,10 @@ class SP2DController extends Controller
                         foreach ($aksesKuasaBUD as $op) {
                             $q->orWhere(function ($q2) use ($op) {
                                 $q2->where('sp2d.kd_opd1', $op->kd_opd1)
-                                   ->where('sp2d.kd_opd2', $op->kd_opd2)
-                                   ->where('sp2d.kd_opd3', $op->kd_opd3)
-                                   ->where('sp2d.kd_opd4', $op->kd_opd4)
-                                   ->where('sp2d.kd_opd5', $op->kd_opd5);
+                                    ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                    ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                    ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                    ->where('sp2d.kd_opd5', $op->kd_opd5);
                             });
                         }
                     });
@@ -249,23 +258,14 @@ class SP2DController extends Controller
             
                 // Filter tambahan
                 $query->whereNotNull('supervisor_proses')
-                      ->whereNotNull('diterima')
-                      ->whereHas('sp2dkirim', function ($q) {
-                          $q->whereNotNull('tgl_tte')
+                        ->whereNotNull('diterima')
+                        ->whereHas('sp2dkirim', function ($q) {
+                            $q->whereNotNull('tgl_tte')
                             ->whereNull('tgl_kirim_kebank')
                             ->whereNull('publish');
-                      });
+                        });
             
                 $FilterTanggal = 'tanggal_upload';
-            }
-
-            // (opsional) kalau kamu juga punya 'sp2d_ditolak'
-            if ($menu === 'sp2d_ditolak') {
-                if ($userId = $request->get('user_id')) {
-                    $query->where('id_user', $userId);
-                }
-                $query->whereNotNull('ditolak'); // hanya yang ditolak
-                $FilterTanggal = 'ditolak';
             }
 
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
@@ -330,6 +330,166 @@ class SP2DController extends Controller
                 $FilterTanggal = 'tanggal_upload';
             }
             
+            // LPJ UPNIHIL
+            if($menu == 'permohonan_lpj_up_nihil'){
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                    // $query->whereNull('proses');
+                }
+                // ambil data yg belum diperiksa operator
+                $query->where('id_operator', '0');
+            
+                $query->whereNull('diterima')->whereNull('ditolak');
+                $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
+            }
+
+            // Operator
+            if($menu == 'permohonan_lpj_up_nihil_operator'){
+               // Ambil data SKPD dari operator yang login
+               $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+               if ($operatorSkpd) {
+                $query->where(function ($q) use ($operatorSkpd) {
+                    foreach ($operatorSkpd as $op) {
+                        $q->orWhere(function ($q2) use ($op) {
+                            $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                               ->where('sp2d.kd_opd2', $op->kd_opd2)
+                               ->where('sp2d.kd_opd3', $op->kd_opd3)
+                               ->where('sp2d.kd_opd4', $op->kd_opd4)
+                               ->where('sp2d.kd_opd5', $op->kd_opd5);
+                        });
+                    }
+                });
+                
+               }
+                // ambil data yg belum diperiksa operator
+                $query->where('id_operator', '0');
+                $query->where('proses', '1');
+                $query->whereNotNull('supervisor_proses');
+                $query->whereNull('diterima')->whereNull('ditolak');
+                $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
+            }
+
+            if($menu == 'permohonan_lpj_up_nihil_terima_operator'){
+                // Ambil data SKPD dari operator yang login
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+ 
+     
+                if ($operatorSkpd) {
+                 $query->where(function ($q) use ($operatorSkpd) {
+                     foreach ($operatorSkpd as $op) {
+                         $q->orWhere(function ($q2) use ($op) {
+                             $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                                ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                ->where('sp2d.kd_opd5', $op->kd_opd5);
+                         });
+                     }
+                 });
+                 
+                }
+                 // ambil data yg belum diperiksa operator
+                //  $query->where('id_operator', '0');
+                //  $query->where('proses', '1');
+                 $query->whereNotNull('supervisor_proses');
+                 $query->whereNotNull('diterima');
+                 $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
+                 $FilterTanggal = 'diterima';
+            }
+
+            if($menu == 'permohonan_lpj_up_nihil_tolak_operator'){
+                // Ambil data SKPD dari operator yang login
+                $operatorSkpd = AksesOperatorModel::where('id_operator', $request->get('user_id'))->get();
+ 
+     
+                if ($operatorSkpd) {
+                 $query->where(function ($q) use ($operatorSkpd) {
+                     foreach ($operatorSkpd as $op) {
+                         $q->orWhere(function ($q2) use ($op) {
+                             $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                                ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                ->where('sp2d.kd_opd5', $op->kd_opd5);
+                         });
+                     }
+                 });
+                 
+                }
+                 // ambil data yg belum diperiksa operator
+                //  $query->where('id_operator', '0');
+                //  $query->where('proses', '1');
+                 $query->whereNotNull('supervisor_proses');
+                 $query->whereNotNull('ditolak');
+                 $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
+                 $FilterTanggal = 'ditolak';
+            }
+
+            if($menu == 'berkas_masuk_lpj_up_nihil'){
+                $query->whereNull('proses');
+                // hanya tampilkan yang belum diverifikasi
+                $query->whereNull('diterima')->whereNull('ditolak');
+                $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
+            }
+
+            // ✅ lpj_up_nihil Diterima
+            if ($menu === 'lpj_up_nihil_diterima') {
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+                $query->where('proses', '2');
+                $query->whereNotNull('diterima'); // hanya yang sudah diterima
+                $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
+                $FilterTanggal = 'diterima';
+            }
+
+            // ✅ SP2D Diterima Kuasa BUD
+            if ($menu === 'lpj_up_nihil_diterima_kuasa_bud') {
+                $userId = $request->get('user_id');
+            
+                // Ambil data SKPD dari operator yang login
+                $aksesKuasaBUD = AksesKuasaBUDModel::where('id_kbud', $userId)->get();
+            
+                if ($aksesKuasaBUD->isNotEmpty()) {
+                    $query->where(function ($q) use ($aksesKuasaBUD) {
+                        foreach ($aksesKuasaBUD as $op) {
+                            $q->orWhere(function ($q2) use ($op) {
+                                $q2->where('sp2d.kd_opd1', $op->kd_opd1)
+                                    ->where('sp2d.kd_opd2', $op->kd_opd2)
+                                    ->where('sp2d.kd_opd3', $op->kd_opd3)
+                                    ->where('sp2d.kd_opd4', $op->kd_opd4)
+                                    ->where('sp2d.kd_opd5', $op->kd_opd5);
+                            });
+                        }
+                    });
+                } else {
+                    // Jika tidak ada SKPD yang diampu, filter berdasarkan sp2dkirim.id_operator
+                    $query->whereHas('sp2dkirim', function ($q) use ($userId) {
+                        $q->where('id_operator', $userId);
+                    });
+                }
+            
+                // Filter tambahan
+                $query->whereNotNull('supervisor_proses')
+                        ->whereNotNull('diterima')
+                        ->whereHas('sp2dkirim', function ($q) {
+                            $q->whereNotNull('tgl_tte')
+                            ->whereNull('tgl_kirim_kebank')
+                            ->whereNull('publish');
+                        });
+                $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
+                $FilterTanggal = 'tanggal_upload';
+            }
+
+            // (opsional) kalau kamu juga punya 'lpj_up_nihil_ditolak'
+            if ($menu === 'lpj_up_nihil_ditolak') {
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_user', $userId);
+                }
+                $query->whereNotNull('ditolak'); // hanya yang ditolak
+                $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
+                $FilterTanggal = 'ditolak';
+            }
         }
     
         // 🔎 Pencarian fleksibel
