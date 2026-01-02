@@ -28,11 +28,15 @@ class PaguSumberDanaController extends Controller
         // 🔍 Filter pencarian
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->orWhere('pagu_sumber_dana.tahun', 'like', "%{$search}%");
                 $q->orWhere('pagu', 'like', "%{$search}%");
                 $q->orWhere('jumlah_silpa', 'like', "%{$search}%");
                 $q->orWhereRaw("LOWER(nm_ref) LIKE ?", ["%$search%"]);
             });
+        }
+
+        // 🔍 Filter tahun jika ada parameter "tahun"
+        if ($tahun = $request->get('tahun')) {
+            $query->where('pagu_sumber_dana.tahun', $tahun);
         }
     
         // 🔢 Pagination dan sorting
