@@ -71,6 +71,10 @@ class SP2DController extends Controller
                 $query->where('id_operator', '0');
             
                 $query->whereNull('diterima')->whereNull('ditolak');
+                $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
                 
             }
 
@@ -97,6 +101,11 @@ class SP2DController extends Controller
                 $query->where('proses', '1');
                 $query->whereNotNull('supervisor_proses');
                 $query->whereNull('diterima')->whereNull('ditolak');
+                $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
             }
 
             if($menu == 'permohonan_sp2d_terima_operator'){
@@ -123,6 +132,11 @@ class SP2DController extends Controller
                 //  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('diterima');
+                 $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
                  $FilterTanggal = 'diterima';
             }
 
@@ -150,6 +164,11 @@ class SP2DController extends Controller
                 //  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('ditolak');
+                 $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
                  $FilterTanggal = 'ditolak';
             }
 
@@ -177,6 +196,11 @@ class SP2DController extends Controller
                  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('diterima');
+                 $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
             }
             
             if($menu == 'permohonan_sp2d_publish_operator'){
@@ -203,12 +227,22 @@ class SP2DController extends Controller
                  $query->where('proses', '1');
                  $query->whereNotNull('supervisor_proses');
                  $query->whereNotNull('diterima');
+                 $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
             }
 
             if($menu == 'berkas_masuk_sp2d'){
                 $query->whereNull('proses');
                 // hanya tampilkan yang belum diverifikasi
                 $query->whereNull('diterima')->whereNull('ditolak');
+                $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
             }
 
             // ✅ SP2D Diterima
@@ -218,6 +252,11 @@ class SP2DController extends Controller
                 }
                 $query->where('proses', '2');
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
+                $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
                 $FilterTanggal = 'diterima';
             }
 
@@ -227,6 +266,11 @@ class SP2DController extends Controller
                     $query->where('id_user', $userId);
                 }
                 $query->whereNotNull('ditolak'); // hanya yang ditolak
+                $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
                 $FilterTanggal = 'ditolak';
             }
 
@@ -264,6 +308,11 @@ class SP2DController extends Controller
                             ->whereNull('tgl_kirim_kebank')
                             ->whereNull('publish');
                         });
+                $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                        ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                        
             
                 $FilterTanggal = 'tanggal_upload';
             }
@@ -277,6 +326,11 @@ class SP2DController extends Controller
                     $q->whereNotNull('publish')
                       ->where('publish', '1');
                 });
+                $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
                 $FilterTanggal = 'diterima';
             }
 
@@ -289,6 +343,11 @@ class SP2DController extends Controller
                 $query->whereHas('sp2dkirim', function ($q) {
                     $q->whereNotNull('tgl_kirim_kebank');
                 });
+                $query->whereNot(function ($q) {
+                    $q->where('jenis_berkas', 'GU')
+                      ->whereRaw('LOWER(nama_file) LIKE ?', ['%nihil%']);
+                });
+                
                 $FilterTanggal = 'diterima';
             }
 
