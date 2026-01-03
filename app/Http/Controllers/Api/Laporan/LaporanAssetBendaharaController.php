@@ -140,6 +140,10 @@ class LaporanAssetBendaharaController extends Controller
             });
         }
 
+        if ($request->filled('tahun')) {
+            $query->where('tahun', $request->tahun);
+        }
+
         // 📌 Ambil pagination dulu
         $data = $query->orderBy('id', 'desc')->paginate($perPage);
 

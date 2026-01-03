@@ -19,23 +19,29 @@ class AksesPajakBendaharaController extends Controller
             ->with('refPajakBendahara')
             ->join('ref_opd', function ($join) {
                 $join->on('akses_pajak_bendahara.kd_opd1', '=', 'ref_opd.kd_opd1')
-                     ->on('akses_pajak_bendahara.kd_opd2', '=', 'ref_opd.kd_opd2')
-                     ->on('akses_pajak_bendahara.kd_opd3', '=', 'ref_opd.kd_opd3')
-                     ->on('akses_pajak_bendahara.kd_opd4', '=', 'ref_opd.kd_opd4')
-                     ->on('akses_pajak_bendahara.kd_opd5', '=', 'ref_opd.kd_opd5');
+                    ->on('akses_pajak_bendahara.kd_opd2', '=', 'ref_opd.kd_opd2')
+                    ->on('akses_pajak_bendahara.kd_opd3', '=', 'ref_opd.kd_opd3')
+                    ->on('akses_pajak_bendahara.kd_opd4', '=', 'ref_opd.kd_opd4')
+                    ->on('akses_pajak_bendahara.kd_opd5', '=', 'ref_opd.kd_opd5');
             })
             ->whereNull('akses_pajak_bendahara.deleted_at')
+
+            // ✅ FILTER TAHUN JIKA ADA
+            ->when($request->filled('tahun'), function ($q) use ($request) {
+                $q->where('akses_pajak_bendahara.tahun', $request->tahun);
+            })
+
             ->when($request->filled('search'), function ($q) use ($request) {
                 $search = strtolower($request->search);
-        
+
                 $q->where(function ($sub) use ($search) {
-                    $sub->whereRaw('LOWER(REF_OPD.NM_OPD) LIKE ?', ["%{$search}%"])
-                        ->orWhereHas('dpa', function ($dpa) use ($search) {
-                            $dpa->whereRaw('LOWER(nm_pajak_bendahara) LIKE ?', ["%{$search}%"]);
+                    $sub->whereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%{$search}%"])
+                        ->orWhereHas('refPajakBendahara', function ($pajak) use ($search) {
+                            $pajak->whereRaw('LOWER(nm_pajak_bendahara) LIKE ?', ["%{$search}%"]);
                         });
                 });
             })
-            ->select('akses_pajak_bendahara.*', 'ref_opd.nm_opd') // sesuaikan kolom ref_opd
+            ->select('akses_pajak_bendahara.*', 'ref_opd.nm_opd')
             ->get();
 
         // GROUP BY OPD

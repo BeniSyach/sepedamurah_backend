@@ -16,27 +16,34 @@ class AksesAssetBendaharaController extends Controller
     public function index(Request $request)
     {
         $data = AksesAssetBendaharaModel::query()
-            ->with(['refAssetBendahara'])
-            ->join('ref_opd', function ($join) {
-                $join->on('akses_asset_bendahara.kd_opd1', '=', 'ref_opd.kd_opd1')
-                     ->on('akses_asset_bendahara.kd_opd2', '=', 'ref_opd.kd_opd2')
-                     ->on('akses_asset_bendahara.kd_opd3', '=', 'ref_opd.kd_opd3')
-                     ->on('akses_asset_bendahara.kd_opd4', '=', 'ref_opd.kd_opd4')
-                     ->on('akses_asset_bendahara.kd_opd5', '=', 'ref_opd.kd_opd5');
-            })
-            ->whereNull('akses_asset_bendahara.deleted_at')
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $search = strtolower($request->search);
-
-                $q->where(function ($sub) use ($search) {
-                    $sub->whereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%{$search}%"])
-                        ->orWhereHas('refAssetBendahara', function ($asset) use ($search) {
-                            $asset->whereRaw('LOWER(nm_asset) LIKE ?', ["%{$search}%"]);
-                        });
-                });
-            })
-            ->select('akses_asset_bendahara.*', 'ref_opd.nm_opd')
-            ->get();
+        ->with(['refAssetBendahara'])
+        ->join('ref_opd', function ($join) {
+            $join->on('akses_asset_bendahara.kd_opd1', '=', 'ref_opd.kd_opd1')
+                 ->on('akses_asset_bendahara.kd_opd2', '=', 'ref_opd.kd_opd2')
+                 ->on('akses_asset_bendahara.kd_opd3', '=', 'ref_opd.kd_opd3')
+                 ->on('akses_asset_bendahara.kd_opd4', '=', 'ref_opd.kd_opd4')
+                 ->on('akses_asset_bendahara.kd_opd5', '=', 'ref_opd.kd_opd5');
+        })
+        ->whereNull('akses_asset_bendahara.deleted_at')
+    
+        // ✅ FILTER TAHUN JIKA ADA
+        ->when($request->filled('tahun'), function ($q) use ($request) {
+            $q->where('akses_asset_bendahara.tahun', $request->tahun);
+        })
+    
+        ->when($request->filled('search'), function ($q) use ($request) {
+            $search = strtolower($request->search);
+    
+            $q->where(function ($sub) use ($search) {
+                $sub->whereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%{$search}%"])
+                    ->orWhereHas('refAssetBendahara', function ($asset) use ($search) {
+                        $asset->whereRaw('LOWER(nm_asset_bendahara) LIKE ?', ["%{$search}%"]);
+                    });
+            });
+        })
+        ->select('akses_asset_bendahara.*', 'ref_opd.nm_opd')
+        ->get();
+    
 
         // GROUP BY OPD
         $grouped = $data->groupBy(function ($item) {

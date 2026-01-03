@@ -15,25 +15,35 @@ class LogTTEController extends Controller
      */
     public function index(Request $request)
     {
-        $query = DB::connection('oracle')->table('TTE_HISTORY')
-                    ->whereNull('deleted_at');
+        $query = DB::connection('oracle')
+            ->table('tte_history')
+            ->whereNull('deleted_at');
     
+        // 🔎 SEARCH
         if ($search = $request->get('search')) {
             $searchLower = strtolower(trim($search));
     
             $query->where(function ($q) use ($searchLower) {
-                $q->whereRaw("LOWER(kategori) LIKE ?", ["%{$searchLower}%"])
-                  ->orWhereRaw("LOWER(tte) LIKE ?", ["%{$searchLower}%"])
-                  ->orWhereRaw("LOWER(nama_penandatangan) LIKE ?", ["%{$searchLower}%"]);
+                $q->whereRaw('LOWER(kategori) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(tte) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(nama_penandatangan) LIKE ?', ["%{$searchLower}%"]);
             });
         }
     
-        $data = $query->orderBy('tgl_tte', 'desc')
-                      ->paginate($request->get('per_page', 10));
+        // ✅ FILTER TAHUN JIKA ADA
+        if ($request->filled('tahun')) {
+            $query->whereRaw(
+                'EXTRACT(YEAR FROM tgl_tte) = ?',
+                [$request->tahun]
+            );
+        }
+    
+        $data = $query
+            ->orderBy('tgl_tte', 'desc')
+            ->paginate($request->get('per_page', 10));
     
         return LogTTEResource::collection($data);
     }
-    
 
     /**
      * Simpan log baru

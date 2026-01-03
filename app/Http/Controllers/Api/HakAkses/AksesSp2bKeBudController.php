@@ -16,27 +16,33 @@ class AksesSp2bKeBudController extends Controller
     public function index(Request $request)
     {
         $data = AksesSp2bKeBudModel::query()
-            ->with(['refSp2bKeBud'])
-            ->join('ref_opd', function ($join) {
-                $join->on('akses_sp2b_ke_bud.kd_opd1', '=', 'ref_opd.kd_opd1')
-                     ->on('akses_sp2b_ke_bud.kd_opd2', '=', 'ref_opd.kd_opd2')
-                     ->on('akses_sp2b_ke_bud.kd_opd3', '=', 'ref_opd.kd_opd3')
-                     ->on('akses_sp2b_ke_bud.kd_opd4', '=', 'ref_opd.kd_opd4')
-                     ->on('akses_sp2b_ke_bud.kd_opd5', '=', 'ref_opd.kd_opd5');
-            })
-            ->whereNull('akses_sp2b_ke_bud.deleted_at')
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $search = strtolower($request->search);
-
-                $q->where(function ($sub) use ($search) {
-                    $sub->whereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%{$search}%"])
-                        ->orWhereHas('refSp2bKeBud', function ($sp2b) use ($search) {
-                            $sp2b->whereRaw('LOWER(nm_sp2b) LIKE ?', ["%{$search}%"]);
-                        });
-                });
-            })
-            ->select('akses_sp2b_ke_bud.*', 'ref_opd.nm_opd')
-            ->get();
+        ->with(['refSp2bKeBud'])
+        ->join('ref_opd', function ($join) {
+            $join->on('akses_sp2b_ke_bud.kd_opd1', '=', 'ref_opd.kd_opd1')
+                 ->on('akses_sp2b_ke_bud.kd_opd2', '=', 'ref_opd.kd_opd2')
+                 ->on('akses_sp2b_ke_bud.kd_opd3', '=', 'ref_opd.kd_opd3')
+                 ->on('akses_sp2b_ke_bud.kd_opd4', '=', 'ref_opd.kd_opd4')
+                 ->on('akses_sp2b_ke_bud.kd_opd5', '=', 'ref_opd.kd_opd5');
+        })
+        ->whereNull('akses_sp2b_ke_bud.deleted_at')
+    
+        // ✅ FILTER TAHUN JIKA ADA
+        ->when($request->filled('tahun'), function ($q) use ($request) {
+            $q->where('akses_sp2b_ke_bud.tahun', $request->tahun);
+        })
+    
+        ->when($request->filled('search'), function ($q) use ($request) {
+            $search = strtolower($request->search);
+    
+            $q->where(function ($sub) use ($search) {
+                $sub->whereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%{$search}%"])
+                    ->orWhereHas('refSp2bKeBud', function ($sp2b) use ($search) {
+                        $sp2b->whereRaw('LOWER(nm_sp2b_ke_bud) LIKE ?', ["%{$search}%"]);
+                    });
+            });
+        })
+        ->select('akses_sp2b_ke_bud.*', 'ref_opd.nm_opd')
+        ->get();    
 
         // ==============================
         // GROUP BY OPD

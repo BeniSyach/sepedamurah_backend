@@ -34,6 +34,14 @@ class BerkasLainController extends Controller
             $query->where('users_id', $userId);
         }
 
+        // 📅 FILTER TAHUN JIKA ADA (dari tgl_surat)
+        if ($request->filled('tahun')) {
+            $query->whereRaw(
+                'EXTRACT(YEAR FROM tgl_surat) = ?',
+                [$request->tahun]
+            );
+        }
+
         // Pagination dan urut berdasarkan tanggal surat
         $data = $query->orderBy('tgl_surat', 'desc')
                     ->paginate($request->get('per_page', 10));

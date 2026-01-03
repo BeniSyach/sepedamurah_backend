@@ -15,7 +15,6 @@ class AksesDPAController extends Controller
      */
     public function index(Request $request)
     {
-        // Ambil akses_dpa + relasi DPA
         $data = AksesDPAModel::query()
         ->with(['dpa'])
         ->join('ref_opd', function ($join) {
@@ -26,18 +25,28 @@ class AksesDPAController extends Controller
                  ->on('akses_dpa.kd_opd5', '=', 'ref_opd.kd_opd5');
         })
         ->whereNull('akses_dpa.deleted_at')
+    
+        // ✅ FILTER TAHUN
+        ->when($request->filled('tahun'), function ($q) use ($request) {
+            $q->whereHas('dpa', function ($dpa) use ($request) {
+                $dpa->where('tahun', $request->tahun);
+            });
+        })
+    
+        // 🔍 SEARCH
         ->when($request->filled('search'), function ($q) use ($request) {
             $search = strtolower($request->search);
     
             $q->where(function ($sub) use ($search) {
-                $sub->whereRaw('LOWER(REF_OPD.NM_OPD) LIKE ?', ["%{$search}%"])
+                $sub->whereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%{$search}%"])
                     ->orWhereHas('dpa', function ($dpa) use ($search) {
-                        $dpa->whereRaw('LOWER(NM_DPA) LIKE ?', ["%{$search}%"]);
+                        $dpa->whereRaw('LOWER(nm_dpa) LIKE ?', ["%{$search}%"]);
                     });
             });
         })
-        ->select('akses_dpa.*', 'ref_opd.nm_opd') // sesuaikan kolom ref_opd
+        ->select('akses_dpa.*', 'ref_opd.nm_opd')
         ->get();
+    
     
     
         // Group berdasarkan kode OPD

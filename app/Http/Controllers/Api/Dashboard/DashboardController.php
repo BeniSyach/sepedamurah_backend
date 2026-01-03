@@ -19,19 +19,30 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $from = $request->from;
-        $to   = $request->to;
+        $from  = $request->from;
+        $to    = $request->to;
+        $tahun = $request->tahun;
+    
+        /**
+         * Helper filter tanggal / tahun
+         */
+        $applyDateFilter = function ($query, $column) use ($from, $to, $tahun) {
+            if ($from && $to) {
+                $query->whereBetween($column, [$from, $to]);
+            } elseif ($tahun) {
+                // Oracle-friendly
+                $query->whereRaw("EXTRACT(YEAR FROM {$column}) = ?", [$tahun]);
+            }
+        };
     
         // ==============================================================================================
-        // TOTAL GABUNGAN (PAKAI TANGGAL UPLOAD)
+        // TOTAL GABUNGAN SPD (pakai tanggal_upload)
         // ==============================================================================================
         $permohonanSPD = DB::table('permohonan_spd')->whereNull('deleted_at');
         $sp2dKirim     = DB::table('spd_terkirim')->whereNull('deleted_at');
     
-        if ($from && $to) {
-            $permohonanSPD->whereBetween('tanggal_upload', [$from, $to]);
-            $sp2dKirim->whereBetween('tanggal_upload', [$from, $to]);
-        }
+        $applyDateFilter($permohonanSPD, 'tanggal_upload');
+        $applyDateFilter($sp2dKirim, 'tanggal_upload');
     
         $totalSPDGabungan = $permohonanSPD
             ->select('id')
@@ -42,74 +53,54 @@ class DashboardController extends Controller
             ->count();
     
         // ==============================================================================================
-        // SPD TERKAIT MODEL
+        // SPD
         // ==============================================================================================
-        // Terverifikasi (pakai tanggal diterima)
         $spdTerverifikasi = PermohonanSPDModel::whereNotNull('diterima');
-        if ($from && $to) {
-            $spdTerverifikasi->whereBetween('diterima', [$from, $to]);
-        }
+        $applyDateFilter($spdTerverifikasi, 'diterima');
         $totalSPDTerverifikasi = $spdTerverifikasi->count();
     
-        // Ditolak (pakai tanggal ditolak)
         $spdDitolak = PermohonanSPDModel::whereNotNull('ditolak');
-        if ($from && $to) {
-            $spdDitolak->whereBetween('ditolak', [$from, $to]);
-        }
+        $applyDateFilter($spdDitolak, 'ditolak');
         $totalSPDDitolak = $spdDitolak->count();
     
-        // TTE (pakai tgl_tte)
         $spdTTE = SPDTerkirimModel::whereNotNull('tgl_tte');
-        if ($from && $to) {
-            $spdTTE->whereBetween('tgl_tte', [$from, $to]);
-        }
+        $applyDateFilter($spdTTE, 'tgl_tte');
         $totalSPDTTE = $spdTTE->count();
     
         // ==============================================================================================
         // SP2D
         // ==============================================================================================
-        // Total permohonan SP2D (pakai tanggal upload)
         $sp2dPermohonan = SP2DModel::query();
-        if ($from && $to) {
-            $sp2dPermohonan->whereBetween('tanggal_upload', [$from, $to]);
-        }
+        $applyDateFilter($sp2dPermohonan, 'tanggal_upload');
         $totalSP2DPermohonan = $sp2dPermohonan->count();
     
-        // SP2D Terverifikasi (pakai tanggal diterima)
         $sp2dTerverifikasi = SP2DModel::whereNotNull('diterima');
-        if ($from && $to) {
-            $sp2dTerverifikasi->whereBetween('diterima', [$from, $to]);
-        }
+        $applyDateFilter($sp2dTerverifikasi, 'diterima');
         $totalSP2DTerverifikasi = $sp2dTerverifikasi->count();
     
-        // SP2D Ditolak (pakai tanggal ditolak)
         $sp2dDitolak = SP2DModel::whereNotNull('ditolak');
-        if ($from && $to) {
-            $sp2dDitolak->whereBetween('ditolak', [$from, $to]);
-        }
+        $applyDateFilter($sp2dDitolak, 'ditolak');
         $totalSP2DDitolak = $sp2dDitolak->count();
     
-        // SP2D TTE (pakai tgl_tte)
         $sp2dTTE = SP2DKirimModel::whereNotNull('tgl_tte');
-        if ($from && $to) {
-            $sp2dTTE->whereBetween('tgl_tte', [$from, $to]);
-        }
+        $applyDateFilter($sp2dTTE, 'tgl_tte');
         $totalSP2DTTE = $sp2dTTE->count();
     
         return response()->json([
             'status' => true,
             'data' => [
-                'total_permohonan_spd' => $totalSPDGabungan,
-                'total_spd_terverifikasi' => $totalSPDTerverifikasi,
-                'total_spd_ditolak' => $totalSPDDitolak,
-                'total_spd_tte' => $totalSPDTTE,
-                'total_permohonan_sp2d' => $totalSP2DPermohonan,
-                'total_sp2d_terverifikasi' => $totalSP2DTerverifikasi,
-                'total_sp2d_ditolak' => $totalSP2DDitolak,
-                'total_sp2d_tte' => $totalSP2DTTE,
+                'total_permohonan_spd'      => $totalSPDGabungan,
+                'total_spd_terverifikasi'   => $totalSPDTerverifikasi,
+                'total_spd_ditolak'         => $totalSPDDitolak,
+                'total_spd_tte'             => $totalSPDTTE,
+                'total_permohonan_sp2d'     => $totalSP2DPermohonan,
+                'total_sp2d_terverifikasi'  => $totalSP2DTerverifikasi,
+                'total_sp2d_ditolak'        => $totalSP2DDitolak,
+                'total_sp2d_tte'            => $totalSP2DTTE,
             ]
         ]);
     }
+    
     
     public function berkas_masuk_sp2d()
     {

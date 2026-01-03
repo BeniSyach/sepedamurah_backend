@@ -75,12 +75,22 @@ class SPDTerkirimController extends Controller
                 });
             }
 
-            if($menu == 'spd_ditandatangani_bud'){
+            if ($menu === 'spd_ditandatangani_bud') {
+
                 if ($userId = $request->get('user_id')) {
                     $query->where('id_penerima', $userId)
-                            ->where('publish', '1');
-                }  
+                          ->where('publish', '1');
+                }
+            
+                // ✅ FILTER TAHUN DARI tanggal_upload (JIKA ADA)
+                if ($request->filled('tahun')) {
+                    $query->whereRaw(
+                        'EXTRACT(YEAR FROM tanggal_upload) = ?',
+                        [$request->tahun]
+                    );
+                }
             }
+            
         }
     
         // Filter search

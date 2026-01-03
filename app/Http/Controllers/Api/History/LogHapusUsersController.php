@@ -15,27 +15,38 @@ class LogHapusUsersController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LogUsersModel::with('user') // ✅ include relasi User
+        $query = LogUsersModel::with('user') // include relasi User
             ->whereNull('deleted_at');
     
+        // 🔎 SEARCH
         if ($search = $request->get('search')) {
             $searchLower = strtolower(trim($search));
     
             $query->where(function ($q) use ($searchLower) {
-                $q->whereRaw("LOWER(users_id) LIKE ?", ["%{$searchLower}%"])
-                  ->orWhereRaw("LOWER(deleted_by) LIKE ?", ["%{$searchLower}%"])
-                  ->orWhereRaw("LOWER(alasan) LIKE ?", ["%{$searchLower}%"])
+                $q->whereRaw('LOWER(TO_CHAR(users_id)) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(deleted_by) LIKE ?', ["%{$searchLower}%"])
+                  ->orWhereRaw('LOWER(alasan) LIKE ?', ["%{$searchLower}%"])
                   ->orWhereHas('user', function ($sub) use ($searchLower) {
-                      $sub->whereRaw("LOWER(name) LIKE ?", ["%{$searchLower}%"]);
+                      $sub->whereRaw('LOWER(name) LIKE ?', ["%{$searchLower}%"]);
                   });
             });
         }
     
-        $data = $query->orderBy('deleted_time', 'desc')
-                      ->paginate($request->get('per_page', 10));
+        // ✅ FILTER TAHUN JIKA ADA
+        if ($request->filled('tahun')) {
+            $query->whereRaw(
+                'EXTRACT(YEAR FROM deleted_time) = ?',
+                [$request->tahun]
+            );
+        }
+    
+        $data = $query
+            ->orderBy('deleted_time', 'desc')
+            ->paginate($request->get('per_page', 10));
     
         return LogUsersResource::collection($data);
     }
+    
     
 
     /**

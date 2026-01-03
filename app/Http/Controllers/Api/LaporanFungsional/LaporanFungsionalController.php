@@ -228,10 +228,14 @@ class LaporanFungsionalController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw("LOWER(nama_pengirim) LIKE ?", ["%{$search}%"])
                   ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER(tahun) LIKE ?", ["%{$search}%"])
                   ->orWhereRaw("LOWER(opd.nm_opd) LIKE ?", ["%{$search}%"]); // 🔥 ditambah
             });
-        }        
+        }       
+        
+        if ($request->filled('tahun')) {
+            $query->where('tahun', $request->tahun);
+        }
+        
     
         $perPage = $request->get('per_page', 10);
         $data = $query->orderBy('tanggal_upload', 'desc')
