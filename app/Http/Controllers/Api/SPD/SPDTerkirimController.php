@@ -31,11 +31,11 @@ class SPDTerkirimController extends Controller
                  $query->where(function ($q) use ($operatorSkpd) {
                      foreach ($operatorSkpd as $op) {
                          $q->orWhere(function ($q2) use ($op) {
-                             $q2->where('permohonan_spd.kd_opd1', $op->kd_opd1)
-                                ->where('permohonan_spd.kd_opd2', $op->kd_opd2)
-                                ->where('permohonan_spd.kd_opd3', $op->kd_opd3)
-                                ->where('permohonan_spd.kd_opd4', $op->kd_opd4)
-                                ->where('permohonan_spd.kd_opd5', $op->kd_opd5);
+                             $q2->where('spd_terkirim.kd_opd1', $op->kd_opd1)
+                                ->where('spd_terkirim.kd_opd2', $op->kd_opd2)
+                                ->where('spd_terkirim.kd_opd3', $op->kd_opd3)
+                                ->where('spd_terkirim.kd_opd4', $op->kd_opd4)
+                                ->where('spd_terkirim.kd_opd5', $op->kd_opd5);
                          });
                      }
                  });
@@ -51,11 +51,11 @@ class SPDTerkirimController extends Controller
                  $query->where(function ($q) use ($operatorSkpd) {
                      foreach ($operatorSkpd as $op) {
                          $q->orWhere(function ($q2) use ($op) {
-                             $q2->where('permohonan_spd.kd_opd1', $op->kd_opd1)
-                                ->where('permohonan_spd.kd_opd2', $op->kd_opd2)
-                                ->where('permohonan_spd.kd_opd3', $op->kd_opd3)
-                                ->where('permohonan_spd.kd_opd4', $op->kd_opd4)
-                                ->where('permohonan_spd.kd_opd5', $op->kd_opd5);
+                             $q2->where('spd_terkirim.kd_opd1', $op->kd_opd1)
+                                ->where('spd_terkirim.kd_opd2', $op->kd_opd2)
+                                ->where('spd_terkirim.kd_opd3', $op->kd_opd3)
+                                ->where('spd_terkirim.kd_opd4', $op->kd_opd4)
+                                ->where('spd_terkirim.kd_opd5', $op->kd_opd5);
                          });
                      }
                  });
@@ -348,7 +348,7 @@ class SPDTerkirimController extends Controller
         // Ambil data permohonan SPD berdasarkan id
         $permohonan = SPDTerkirimModel::findOrFail($id);
 
-        $filePath = $permohonan->nama_file_asli; // misal: permohonan_spd/20251107/testing.pdf
+        $filePath = $permohonan->nama_file_asli; // misal: spd_terkirim/20251107/testing.pdf
 
         // Cek apakah file ada di disk public
         $disk = Storage::disk('public');
