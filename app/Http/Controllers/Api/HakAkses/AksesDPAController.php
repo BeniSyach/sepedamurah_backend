@@ -78,6 +78,7 @@ class AksesDPAController extends Controller
                 'kd_opd3' => $first->kd_opd3,
                 'kd_opd4' => $first->kd_opd4,
                 'kd_opd5' => $first->kd_opd5,
+                'tahun' => $first->tahun,
                 'nama_opd' => $skpd?->nm_opd ?? 'Tidak ditemukan',
                 'dpa' => $items->map(fn($x) => [
                     'id' => $x->dpa->id,
@@ -243,27 +244,40 @@ class AksesDPAController extends Controller
     /**
      * Soft delete akses DPA.
      */
-    public function destroy($id)
+    public function destroy($kd1, $kd2, $kd3, $kd4, $kd5, $tahun)
     {
-        $akses = AksesDPAModel::where('id', $id)
-            ->whereNull('deleted_at')
-            ->first();
-
+        // validasi tahun
+        if (!is_numeric($tahun) || strlen($tahun) !== 4) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tahun tidak valid',
+            ], 400);
+        }
+    
+        $akses = AksesDPAModel::where([
+            'kd_opd1' => $kd1,
+            'kd_opd2' => $kd2,
+            'kd_opd3' => $kd3,
+            'kd_opd4' => $kd4,
+            'kd_opd5' => $kd5,
+            'tahun'   => $tahun,
+        ])->first();
+    
         if (!$akses) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
         $akses->delete();
-
+    
         return response()->json([
             'status' => true,
-            'message' => 'Akses DPA berhasil dihapus',
+            'message' => 'Akses DPA tahun ' . $tahun . ' berhasil dihapus',
         ]);
-    }
-
+    }    
+    
     public function cek(Request $request)
     {
         // =============== VALIDASI ===============

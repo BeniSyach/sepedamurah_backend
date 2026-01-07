@@ -266,6 +266,10 @@ Route::middleware('auth:api')->group(function () {
          // Akses DPA
          Route::put('/akses-dpa-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesDPAController::class, 'update']);
          // hilangkan update bawaan
+         Route::delete(
+            '/akses-dpa-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
+            [AksesDPAController::class, 'destroy']
+        );
         Route::get('/cek-akses-dpa-skpd', [AksesDPAController::class, 'cek']);
         Route::apiResource('/akses-dpa-skpd', AksesDPAController::class)
         ->except(['update']);
@@ -273,6 +277,10 @@ Route::middleware('auth:api')->group(function () {
         // Akses Pajak Bendahara
         Route::put('/akses-pajak-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesPajakBendaharaController::class, 'update']);
         // hilangkan update bawaan
+        Route::delete(
+            '/akses-pajak-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
+            [AksesPajakBendaharaController::class, 'destroy']
+        );
        Route::get('/cek-akses-pajak-bendahara', [AksesPajakBendaharaController::class, 'cek']);
        Route::apiResource('/akses-pajak-bendahara', AksesPajakBendaharaController::class)
        ->except(['update']);
@@ -280,6 +288,10 @@ Route::middleware('auth:api')->group(function () {
         // Akses Asset Bendahara
         Route::put('/akses-asset-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesAssetBendaharaController::class, 'update']);
         // hilangkan update bawaan
+        Route::delete(
+            '/akses-asset-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
+            [AksesAssetBendaharaController::class, 'destroy']
+        );
         Route::get('/cek-akses-asset-bendahara', [AksesAssetBendaharaController::class, 'cek']);
         Route::apiResource('/akses-asset-bendahara', AksesAssetBendaharaController::class)
         ->except(['update']);
@@ -287,6 +299,10 @@ Route::middleware('auth:api')->group(function () {
         // Akses SP2B Ke BUD
         Route::put('/akses-sp2b-ke-bud/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesSp2bKeBudController::class, 'update']);
         // hilangkan update bawaan
+        Route::delete(
+            '/akses-sp2b-ke-bud/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
+            [AksesSp2bKeBudController::class, 'destroy']
+        );
         Route::get('/cek-akses-sp2b-ke-bud', [AksesSp2bKeBudController::class, 'cek']);
         Route::apiResource('/akses-sp2b-ke-bud', AksesSp2bKeBudController::class)
         ->except(['update']);

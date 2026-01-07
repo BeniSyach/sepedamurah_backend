@@ -224,26 +224,39 @@ class AksesSp2bKeBudController extends Controller
     /**
      * Soft delete akses
      */
-    public function destroy($id)
+    public function destroy($kd1, $kd2, $kd3, $kd4, $kd5, $tahun)
     {
-        $data = AksesSp2bKeBudModel::where('id', $id)
-            ->whereNull('deleted_at')
-            ->first();
-
+        // validasi tahun
+        if (!is_numeric($tahun) || strlen($tahun) !== 4) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tahun tidak valid',
+            ], 400);
+        }
+    
+        $data = AksesSp2bKeBudModel::where([
+            'kd_opd1' => $kd1,
+            'kd_opd2' => $kd2,
+            'kd_opd3' => $kd3,
+            'kd_opd4' => $kd4,
+            'kd_opd5' => $kd5,
+            'tahun'   => $tahun,
+        ])->first();
+    
         if (!$data) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
         $data->delete();
-
+    
         return response()->json([
             'status'  => true,
-            'message' => 'Akses SP2B ke BUD berhasil dihapus',
+            'message' => 'Akses SP2B ke BUD tahun ' . $tahun . ' berhasil dihapus',
         ]);
-    }
+    }    
 
     public function cek(Request $request)
     {

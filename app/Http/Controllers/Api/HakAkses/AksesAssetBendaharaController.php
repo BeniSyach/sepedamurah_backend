@@ -223,24 +223,37 @@ class AksesAssetBendaharaController extends Controller
     /**
      * Soft delete akses
      */
-    public function destroy($id)
+    public function destroy($kd1, $kd2, $kd3, $kd4, $kd5, $tahun)
     {
-        $data = AksesAssetBendaharaModel::where('id', $id)
-            ->whereNull('deleted_at')
-            ->first();
-
+        // validasi tahun
+        if (!is_numeric($tahun) || strlen($tahun) !== 4) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tahun tidak valid',
+            ], 400);
+        }
+    
+        $data = AksesAssetBendaharaModel::where([
+            'kd_opd1' => $kd1,
+            'kd_opd2' => $kd2,
+            'kd_opd3' => $kd3,
+            'kd_opd4' => $kd4,
+            'kd_opd5' => $kd5,
+            'tahun'   => $tahun,
+        ])->first();
+    
         if (!$data) {
             return response()->json([
                 'status' => false,
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
-
+    
         $data->delete();
-
+    
         return response()->json([
             'status'  => true,
-            'message' => 'Akses asset bendahara berhasil dihapus',
+            'message' => 'Akses asset bendahara tahun ' . $tahun . ' berhasil dihapus',
         ]);
     }
 
