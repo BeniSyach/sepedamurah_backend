@@ -78,8 +78,7 @@ class SPDTerkirimController extends Controller
             if ($menu === 'spd_ditandatangani_bud') {
 
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_penerima', $userId)
-                          ->where('publish', '1');
+                    $query->where('id_penerima', $userId);
                 }
             
                 // ✅ FILTER TAHUN DARI tanggal_upload (JIKA ADA)
@@ -89,6 +88,7 @@ class SPDTerkirimController extends Controller
                         [$request->tahun]
                     );
                 }
+                $query->where('publish', '1');
             }
             
         }
