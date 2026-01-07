@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\PermohonanSPDModel;
 use Illuminate\Http\Request;
 use App\Http\Resources\PermohonanSPDResource;
+use App\Http\Resources\SPDTerkirimResource;
 use App\Models\AksesOperatorModel;
+use App\Models\SPDTerkirimModel;
 use App\Models\User;
 use App\Models\UsersPermissionModel;
 use App\Services\TelegramService;
@@ -168,6 +170,29 @@ class PermohonanSPDController extends Controller
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
                 $FilterTanggal = 'diterima';
             }
+
+            // ✅ SPD Diterima BUD
+            if ($menu === 'spd_diterima_bud') {
+
+                $query = SPDTerkirimModel::with('permohonan')
+                    ->whereNull('deleted_at');
+
+                if ($userId = $request->get('user_id')) {
+                    $query->where('id_penerima', $userId);
+                }
+
+                if ($request->filled('tahun')) {
+                    $query->whereYear('tanggal_upload', $request->tahun);
+                }
+
+                $query->where('TTE', 'Yes');
+
+                return SPDTerkirimResource::collection(
+                    $query->orderBy('created_at', 'desc')
+                        ->paginate($request->get('per_page', 10))
+                );
+            }
+
 
             // (opsional) kalau kamu juga punya 'spd_ditolak'
             if ($menu === 'spd_ditolak') {
