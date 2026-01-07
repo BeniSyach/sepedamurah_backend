@@ -12,6 +12,13 @@ class RefDpaController extends Controller
     public function index(Request $request)
     {
         $query = DPAModel::query();
+        $currentYear = date('Y');
+
+        // hanya data nm_dpa yang mengandung tahun sekarang
+        $query->whereRaw(
+            'LOWER(nm_dpa) LIKE ?',
+            ["%{$currentYear}%"]
+        );
 
         if ($search = $request->get('search')) {
             $search = strtolower(trim($search));
