@@ -36,7 +36,7 @@ class AksesKuasaBudController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'id_kbud' => 'required|string|max:50|unique:KUASA_BUD,id_kbud',
+            'id_kbud' => 'required|string|max:50',
             'kd_opd1' => 'required|string|max:2',
             'kd_opd2' => 'required|string|max:2',
             'kd_opd3' => 'nullable|string|max:2',
