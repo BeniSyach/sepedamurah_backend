@@ -59,7 +59,10 @@ class AksesOperatorController extends Controller
             // Simpan ke database
             $aksesOperator->save();
     
-            return new AksesOperatorResource($aksesOperator);
+            return response()->json([
+                'status' => true,
+                'message' => 'Berhasil Menambah Akses Operator',
+            ], 201);
     
         } catch (\Exception $e) {
             return response()->json([

@@ -57,7 +57,10 @@ class AksesKuasaBudController extends Controller
                 'created_at' => now(),
             ]);
 
-            return new AksesKuasaBUDResource($kbud);
+            return response()->json([
+                'status' => true,
+                'message' => 'Berhasil Menambah Akses Kuasa BUD',
+            ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
