@@ -280,7 +280,7 @@ class RealisasiTransferSumberDanaController extends Controller
     {
         // Path file log
         $logFile = storage_path('logs/sumber_dana_pajak.log');
-
+        $tahun = date('Y');
         try {
             // Log: Memulai proses
             file_put_contents($logFile, "[" . now() . "] Memulai proses sumber_dana_pajak...\n", FILE_APPEND);
@@ -301,20 +301,26 @@ class RealisasiTransferSumberDanaController extends Controller
                 'kd_ref4' => $KD_REF4,
                 'kd_ref5' => $KD_REF5,
                 'kd_ref6' => $KD_REF6,
+                'tahun'   => $tahun,
             ])->forceDelete();
 
             file_put_contents($logFile, "[" . now() . "] Data lama berhasil dihapus.\n", FILE_APPEND);
 
-            // Query untuk mendapatkan data penerimaan per tanggal di tahun 2025
+         
+
             $data = DB::connection('oracle')->select("
                 SELECT 
                     TO_CHAR(TRUNC(tgl_bayar), 'YYYY-MM-DD') AS tanggal_bayar, 
                     SUM(jum_bayar) AS total_penerimaan
                 FROM v_pembayaran_gab@pajak_daerah
-                WHERE EXTRACT(YEAR FROM tgl_bayar) = 2025
+                WHERE EXTRACT(YEAR FROM tgl_bayar) = :tahun
                 GROUP BY TRUNC(tgl_bayar)
                 ORDER BY TRUNC(tgl_bayar) ASC
-            ");
+            ", [
+                'tahun' => $tahun
+            ]);
+            
+        
 
             if (count($data) === 0) {
                 throw new \Exception("Tidak ada data yang ditemukan.");
