@@ -45,10 +45,8 @@ class AksesKuasaBudController extends Controller
         ]);
 
         try {
-            $id = DB::connection('oracle')->selectOne('SELECT NO_OPERATOR.NEXTVAL AS id FROM dual')->id;
 
-            DB::connection('oracle')->table('KUASA_BUD')->insert([
-                'id' => $id,
+          $kbud =  DB::connection('oracle')->table('KUASA_BUD')->insert([
                 'id_kbud' => $validated['id_kbud'],
                 'kd_opd1' => $validated['kd_opd1'],
                 'kd_opd2' => $validated['kd_opd2'],
@@ -58,8 +56,6 @@ class AksesKuasaBudController extends Controller
                 'date_created' => now(),
                 'created_at' => now(),
             ]);
-
-            $kbud = DB::connection('oracle')->table('KUASA_BUD')->where('id', $id)->first();
 
             return new AksesKuasaBUDResource($kbud);
 
