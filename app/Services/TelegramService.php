@@ -131,4 +131,25 @@ class TelegramService
 
         return $this->sendMessage($chat_id, $message);
     }
+
+    public function sendLaporan($chat_id, $jenis_laporan)
+    {
+        $message = "📄 Ada Laporan Masuk $jenis_laporan";
+
+        return $this->sendMessage($chat_id, $message);
+    }
+
+    public function sendLaporanDiterima($chat_id, $jenis_laporan)
+    {
+        $message = "📄 Laporan anda *$jenis_laporan* Telah diterima \nTTD\nBPKAD SERDANG BEDAGAI";
+
+        return $this->sendMessage($chat_id, $message);
+    }
+
+    public function sendLaporanDitolak($chat_id, $jenis_laporan, $alasan)
+    {
+        $message = "📄 Laporan anda *$jenis_laporan* Telah ditolak dengan alasan:\n *$alasan* \n \nTTD\nBPKAD SERDANG BEDAGAI";
+
+        return $this->sendMessage($chat_id, $message);
+    }
 }

@@ -5,9 +5,13 @@ namespace App\Http\Controllers\Api\Laporan;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LaporanDPAResource;
 use App\Models\AksesOperatorModel;
+use App\Models\DPAModel;
 use App\Models\LaporanDPAModel;
+use App\Models\User;
+use App\Models\UsersPermissionModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Services\TelegramService;
 
 class LaporanDPAController extends Controller
 {
@@ -145,7 +149,7 @@ class LaporanDPAController extends Controller
     }
     
 
-    public function store(Request $request)
+    public function store(Request $request, TelegramService $telegram)
     {
         $validated = $request->validate([
             'kd_opd1' => 'required',
@@ -191,6 +195,28 @@ class LaporanDPAController extends Controller
         }
     
         $data = LaporanDPAModel::create($validated);
+        if ($data) {
+
+            $jenis_laporan = DPAModel::where('id', $validated['dpa_id'])->value('nm_dpa');
+
+            $supervisors = UsersPermissionModel::with('user')
+            ->where('users_rule_id', 4)
+            ->get();
+
+            foreach ($supervisors as $supervisor) {
+                $chatId = $supervisor->user->chat_id ?? null;
+
+                if ($chatId) {
+                    $telegram->sendLaporan($chatId, $jenis_laporan);
+                }
+            }
+        } else {
+            // Jika gagal create
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data.'
+            ], 500);
+        }
     
         return response()->json([
             'status' => true,
@@ -220,7 +246,7 @@ class LaporanDPAController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, TelegramService $telegram)
     {
         $lap = LaporanDPAModel::where('id', $id)
             ->whereNull('deleted_at')
@@ -232,6 +258,9 @@ class LaporanDPAController extends Controller
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
+
+        $old_diterima = $lap->diterima;
+        $old_ditolak  = $lap->ditolak;
     
         $validated = $request->validate([
             'proses' => 'nullable|string',
@@ -267,6 +296,30 @@ class LaporanDPAController extends Controller
     
         // 🔥 update data selain file
         $lap->update($validated);
+        $lap->refresh(); 
+
+        // TRIGGER TERIMA
+        if (is_null($old_diterima) && !is_null($lap->diterima)) {
+            $jenis_laporan = DPAModel::where('id', $lap->dpa_id)->value('nm_dpa');
+            $user_id = $lap->user_id;
+            $user = User::where('id', $user_id)->first();
+            $chatId = $user->chat_id ?? null;
+            if ($chatId) {
+                $telegram->sendLaporanDiterima($chatId, $jenis_laporan);
+            }
+        }
+
+        // TRIGGER TOLAK
+        if (is_null($old_ditolak) && !is_null($lap->ditolak)) {
+            $jenis_laporan = DPAModel::where('id', $lap->dpa_id)->value('nm_dpa');
+            $user_id = $lap->user_id;
+            $user = User::where('id', $user_id)->first();
+            $chatId = $user->chat_id ?? null;
+            $ket = $request->alasan_tolak ?? '-';
+            if ($chatId) {
+                $telegram->sendLaporanDitolak($chatId, $jenis_laporan, $ket);
+            }
+        }
     
         return response()->json([
             'status' => true,

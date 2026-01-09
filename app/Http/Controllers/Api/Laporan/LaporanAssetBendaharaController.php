@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\LaporanAssetBendaharaResource;
 use App\Models\LaporanAssetBendaharaModel;
 use App\Models\AksesOperatorModel;
+use App\Models\RefAssetBendaharaModel;
+use App\Models\User;
+use App\Models\UsersPermissionModel;
+use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -160,7 +164,7 @@ class LaporanAssetBendaharaController extends Controller
     /* ======================
      |  STORE
      ======================*/
-    public function store(Request $request)
+    public function store(Request $request, TelegramService $telegram)
     {
         $validated = $request->validate([
             'kd_opd1'      => 'required',
@@ -181,6 +185,28 @@ class LaporanAssetBendaharaController extends Controller
         }
 
         $data = LaporanAssetBendaharaModel::create($validated);
+        if ($data) {
+
+            $jenis_laporan = RefAssetBendaharaModel::where('id', $validated['ref_asset_id'])->value('nm_asset_bendahara');
+
+            $supervisors = UsersPermissionModel::with('user')
+            ->where('users_rule_id', 4)
+            ->get();
+
+            foreach ($supervisors as $supervisor) {
+                $chatId = $supervisor->user->chat_id ?? null;
+
+                if ($chatId) {
+                    $telegram->sendLaporan($chatId, $jenis_laporan);
+                }
+            }
+        } else {
+            // Jika gagal create
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data.'
+            ], 500);
+        }
 
         return response()->json([
             'status'  => true,
@@ -215,7 +241,7 @@ class LaporanAssetBendaharaController extends Controller
     /* ======================
      |  UPDATE
      ======================*/
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, TelegramService $telegram)
     {
         $lap = LaporanAssetBendaharaModel::where('id', $id)
             ->whereNull('deleted_at')
@@ -227,6 +253,9 @@ class LaporanAssetBendaharaController extends Controller
                 'message' => 'Data tidak ditemukan'
             ], 404);
         }
+
+        $old_diterima = $lap->diterima;
+        $old_ditolak  = $lap->ditolak;
 
         $validated = $request->validate([
             'proses'            => 'nullable|string',
@@ -251,6 +280,30 @@ class LaporanAssetBendaharaController extends Controller
         }
 
         $lap->update($validated);
+        $lap->refresh();
+
+         // TRIGGER TERIMA
+         if (is_null($old_diterima) && !is_null($lap->diterima)) {
+            $jenis_laporan = RefAssetBendaharaModel::where('id', $lap->ref_asset_id)->value('nm_asset_bendahara');
+            $user_id = $lap->user_id;
+            $user = User::where('id', $user_id)->first();
+            $chatId = $user->chat_id ?? null;
+            if ($chatId) {
+                $telegram->sendLaporanDiterima($chatId, $jenis_laporan);
+            }
+        }
+
+        // TRIGGER TOLAK
+        if (is_null($old_ditolak) && !is_null($lap->ditolak)) {
+            $jenis_laporan = RefAssetBendaharaModel::where('id', $lap->ref_asset_id)->value('nm_asset_bendahara');
+            $user_id = $lap->user_id;
+            $user = User::where('id', $user_id)->first();
+            $chatId = $user->chat_id ?? null;
+            $ket = $request->alasan_tolak ?? '-';
+            if ($chatId) {
+                $telegram->sendLaporanDitolak($chatId, $jenis_laporan, $ket);
+            }
+        }
 
         return response()->json([
             'status'  => true,

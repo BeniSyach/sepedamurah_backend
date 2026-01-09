@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\LaporanPajakBendaharaResource;
 use App\Models\LaporanPajakBendaharaModel;
 use App\Models\AksesOperatorModel;
+use App\Models\RefPajakBendaharaModel;
+use App\Models\User;
+use App\Models\UsersPermissionModel;
+use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -158,7 +162,7 @@ class LaporanPajakBendaharaController extends Controller
     /* =======================
      |  STORE
      =======================*/
-    public function store(Request $request)
+    public function store(Request $request, TelegramService $telegram)
     {
         $validated = $request->validate([
             'kd_opd1'        => 'required',
@@ -179,6 +183,28 @@ class LaporanPajakBendaharaController extends Controller
         }
 
         $data = LaporanPajakBendaharaModel::create($validated);
+        if ($data) {
+
+            $jenis_laporan = RefPajakBendaharaModel::where('id', $validated['ref_pajak_id'])->value('nm_pajak_bendahara');
+
+            $supervisors = UsersPermissionModel::with('user')
+            ->where('users_rule_id', 4)
+            ->get();
+
+            foreach ($supervisors as $supervisor) {
+                $chatId = $supervisor->user->chat_id ?? null;
+
+                if ($chatId) {
+                    $telegram->sendLaporan($chatId, $jenis_laporan);
+                }
+            }
+        } else {
+            // Jika gagal create
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data.'
+            ], 500);
+        }
 
         return response()->json([
             'status'  => true,
@@ -213,7 +239,7 @@ class LaporanPajakBendaharaController extends Controller
     /* =======================
      |  UPDATE
      =======================*/
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, TelegramService $telegram)
     {
         $lap = LaporanPajakBendaharaModel::where('id', $id)
             ->whereNull('deleted_at')
@@ -225,6 +251,9 @@ class LaporanPajakBendaharaController extends Controller
                 'message' => 'Data tidak ditemukan'
             ], 404);
         }
+
+        $old_diterima = $lap->diterima;
+        $old_ditolak  = $lap->ditolak;
 
         $validated = $request->validate([
             'proses'            => 'nullable|string',
@@ -248,6 +277,30 @@ class LaporanPajakBendaharaController extends Controller
         }
 
         $lap->update($validated);
+        $lap->refresh(); 
+
+         // TRIGGER TERIMA
+         if (is_null($old_diterima) && !is_null($lap->diterima)) {
+            $jenis_laporan = RefPajakBendaharaModel::where('id', $lap->ref_pajak_id)->value('nm_pajak_bendahara');
+            $user_id = $lap->user_id;
+            $user = User::where('id', $user_id)->first();
+            $chatId = $user->chat_id ?? null;
+            if ($chatId) {
+                $telegram->sendLaporanDiterima($chatId, $jenis_laporan);
+            }
+        }
+
+        // TRIGGER TOLAK
+        if (is_null($old_ditolak) && !is_null($lap->ditolak)) {
+            $jenis_laporan = RefPajakBendaharaModel::where('id', $lap->ref_pajak_id)->value('nm_pajak_bendahara');
+            $user_id = $lap->user_id;
+            $user = User::where('id', $user_id)->first();
+            $chatId = $user->chat_id ?? null;
+            $ket = $request->alasan_tolak ?? '-';
+            if ($chatId) {
+                $telegram->sendLaporanDitolak($chatId, $jenis_laporan, $ket);
+            }
+        }
 
         return response()->json([
             'status'  => true,
