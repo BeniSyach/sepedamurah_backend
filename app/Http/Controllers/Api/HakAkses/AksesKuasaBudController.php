@@ -59,7 +59,7 @@ class AksesKuasaBudController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Berhasil Menambah Batas Waktu SKPD',
+                'message' => 'Berhasil Menambah Akses Kuasa BUD',
             ], 201);
 
         } catch (\Exception $e) {

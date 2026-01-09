@@ -226,9 +226,10 @@ class LaporanFungsionalController extends Controller
         // Filter pencarian teks
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->whereRaw("LOWER(nama_pengirim) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%{$search}%"])
-                  ->orWhereRaw("LOWER(opd.nm_opd) LIKE ?", ["%{$search}%"]); // 🔥 ditambah
+                $q->whereRaw("LOWER(fungsional.nama_pengirim) LIKE ?", ["%".strtolower($search)."%"])
+                    ->orWhereRaw("LOWER(fungsional.nama_file) LIKE ?", ["%".strtolower($search)."%"])
+                    ->orWhereRaw("LOWER(opd.nm_opd) LIKE ?", ["%".strtolower($search)."%"]);
+
             });
         }       
         
