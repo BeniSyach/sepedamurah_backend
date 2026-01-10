@@ -14,13 +14,69 @@ class RealisasiTransferSumberDanaController extends Controller
     /**
      * Tampilkan daftar sumber dana (dengan pagination + search)
      */
+    // public function index(Request $request)
+    // {
+    //     $tahun = $request->get('tahun', date('Y'));
+    
+    //     $query = RealisasiSumberDanaModel::select([
+    //         'kd_ref1', 'kd_ref2', 'kd_ref3', 'kd_ref4', 'kd_ref5', 'kd_ref6',
+    //         DB::raw('MAX(nm_sumber) AS nm_sumber'),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 1 THEN jumlah_sumber ELSE 0 END) AS total_jan"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 2 THEN jumlah_sumber ELSE 0 END) AS total_feb"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 3 THEN jumlah_sumber ELSE 0 END) AS total_mar"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 4 THEN jumlah_sumber ELSE 0 END) AS total_apr"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 5 THEN jumlah_sumber ELSE 0 END) AS total_may"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 6 THEN jumlah_sumber ELSE 0 END) AS total_jun"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 7 THEN jumlah_sumber ELSE 0 END) AS total_jul"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 8 THEN jumlah_sumber ELSE 0 END) AS total_aug"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 9 THEN jumlah_sumber ELSE 0 END) AS total_sep"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 10 THEN jumlah_sumber ELSE 0 END) AS total_oct"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 11 THEN jumlah_sumber ELSE 0 END) AS total_nov"),
+    //         DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 12 THEN jumlah_sumber ELSE 0 END) AS total_dec"),
+    //     ])
+    //     ->where('tahun', $tahun)
+    //     ->whereNull('deleted_at')
+    //     ->groupBy(
+    //         'kd_ref1', 'kd_ref2', 'kd_ref3', 'kd_ref4', 'kd_ref5', 'kd_ref6'
+    //     )
+    //     ->orderBy('kd_ref1')
+    //     ->orderBy('kd_ref2')
+    //     ->orderBy('kd_ref3')
+    //     ->orderBy('kd_ref4')
+    //     ->orderBy('kd_ref5')
+    //     ->orderBy('kd_ref6');
+    
+    //     // Optional: pencarian (harus pakai havingRaw karena aggregate)
+    //     if ($search = $request->get('search')) {
+    //         $query->havingRaw("LOWER(MAX(nm_sumber)) LIKE ?", ['%' . strtolower($search) . '%']);
+    //     }
+    
+    //     // 👉 tanpa paginate
+    //     $data = $query->get();
+    
+    //     return response()->json([
+    //         'total' => $data->count(),
+    //         'data' => $data,
+    //     ]);
+    // }
+
     public function index(Request $request)
     {
-        $tahun = $request->get('tahun', date('Y'));
-    
+        // === FILTER TANGGAL (DEFAULT: AWAL–AKHIR BULAN) ===
+        $tglAwal = $request->get(
+            'tgl_awal',
+            date('Y-m-01') // awal bulan
+        );
+
+        $tglAkhir = $request->get(
+            'tgl_akhir',
+            date('Y-m-t') // akhir bulan
+        );
+
         $query = RealisasiSumberDanaModel::select([
             'kd_ref1', 'kd_ref2', 'kd_ref3', 'kd_ref4', 'kd_ref5', 'kd_ref6',
             DB::raw('MAX(nm_sumber) AS nm_sumber'),
+
             DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 1 THEN jumlah_sumber ELSE 0 END) AS total_jan"),
             DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 2 THEN jumlah_sumber ELSE 0 END) AS total_feb"),
             DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 3 THEN jumlah_sumber ELSE 0 END) AS total_mar"),
@@ -34,31 +90,43 @@ class RealisasiTransferSumberDanaController extends Controller
             DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 11 THEN jumlah_sumber ELSE 0 END) AS total_nov"),
             DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 12 THEN jumlah_sumber ELSE 0 END) AS total_dec"),
         ])
-        ->where('tahun', $tahun)
-        ->whereNull('deleted_at')
-        ->groupBy(
-            'kd_ref1', 'kd_ref2', 'kd_ref3', 'kd_ref4', 'kd_ref5', 'kd_ref6'
-        )
-        ->orderBy('kd_ref1')
-        ->orderBy('kd_ref2')
-        ->orderBy('kd_ref3')
-        ->orderBy('kd_ref4')
-        ->orderBy('kd_ref5')
-        ->orderBy('kd_ref6');
-    
-        // Optional: pencarian (harus pakai havingRaw karena aggregate)
+            ->whereNull('deleted_at')
+
+            // 🔥 FILTER PERTANGGAL
+            ->whereBetween(DB::raw('TRUNC(tgl_diterima)'), [
+                DB::raw("TO_DATE('$tglAwal','YYYY-MM-DD')"),
+                DB::raw("TO_DATE('$tglAkhir','YYYY-MM-DD')")
+            ])
+
+            ->groupBy(
+                'kd_ref1', 'kd_ref2', 'kd_ref3',
+                'kd_ref4', 'kd_ref5', 'kd_ref6'
+            )
+            ->orderBy('kd_ref1')
+            ->orderBy('kd_ref2')
+            ->orderBy('kd_ref3')
+            ->orderBy('kd_ref4')
+            ->orderBy('kd_ref5')
+            ->orderBy('kd_ref6');
+
+        // === SEARCH (aggregate) ===
         if ($search = $request->get('search')) {
-            $query->havingRaw("LOWER(MAX(nm_sumber)) LIKE ?", ['%' . strtolower($search) . '%']);
+            $query->havingRaw(
+                "LOWER(MAX(nm_sumber)) LIKE ?",
+                ['%' . strtolower($search) . '%']
+            );
         }
-    
-        // 👉 tanpa paginate
+
         $data = $query->get();
-    
+
         return response()->json([
             'total' => $data->count(),
+            'tgl_awal' => $tglAwal,
+            'tgl_akhir' => $tglAkhir,
             'data' => $data,
         ]);
     }
+
 
     public function detailTFSD(Request $request)
     {

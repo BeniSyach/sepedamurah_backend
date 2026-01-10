@@ -9,6 +9,8 @@ use App\Http\Resources\SPDTerkirimResource;
 use App\Models\AksesKuasaBUDModel;
 use Illuminate\Support\Facades\Storage;
 use App\Models\LogTTEModel;
+use App\Models\User;
+use App\Services\TelegramService;
 use App\Services\TTE_BSRE;
 use Illuminate\Support\Facades\Auth;
 
@@ -70,9 +72,9 @@ class SPDTerkirimController extends Controller
                     $q->where('tte', '!=', 'Yes')
                       ->orWhereNull('tte')
                       ->orWhere('tte', '=', '0')
-                      ->orWhere('tte', '=', '')
-                      ->whereNotNull('paraf_kbud');
+                      ->orWhere('tte', '=', '');
                 });
+                $query->where('paraf_kbud', '1');
             }
 
             if ($menu === 'spd_ditandatangani_bud') {
@@ -223,7 +225,7 @@ class SPDTerkirimController extends Controller
     /**
      * Update SPD Terkirim
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $id, TelegramService $telegram)
     {
         $spd = SPDTerkirimModel::where('id', $id)
             ->whereNull('deleted_at')
@@ -235,6 +237,8 @@ class SPDTerkirimController extends Controller
                 'message' => 'Data tidak ditemukan',
             ], 404);
         }
+
+        $old_publish  = $spd->publish;
     
         // Validasi input
         $validated = $request->validate([
@@ -262,7 +266,7 @@ class SPDTerkirimController extends Controller
             'kd_opd4' => 'nullable|string|max:5',
             'kd_opd5' => 'nullable|string|max:5',
             'file_tte' => 'nullable|file|mimes:pdf|max:5120', // file tte opsional
-            'publish' => 'nullable|boolean',
+            'publish' => 'nullable',
         ]);
     
         $disk = Storage::disk('public');
@@ -303,6 +307,16 @@ class SPDTerkirimController extends Controller
                 'tanggal_upload' => $validated['tanggal_upload'] ?? now(),
                 'updated_at' => now(),
             ]));
+
+           // TRIGGER TERIMA
+           if ( ($request->publish == 1) && ($old_publish != 1) ) {
+            $id_penerima = $spd->id_penerima;
+            $user = User::where('id', $id_penerima)->first();
+            $chatId = $user->chat_id ?? null;
+            if ($chatId) {
+                $telegram->sendSpdDitekenBud($chatId);
+            }
+        }
     
             return response()->json([
                 'status' => true,
