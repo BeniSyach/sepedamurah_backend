@@ -682,7 +682,7 @@ class LaporanFungsionalController extends Controller
         }
     
         // Loop dari bulan 1 hingga bulan sebelum bulan sekarang
-        for ($bulan = 1; $bulan < $bulanSekarang; $bulan++) {
+        for ($bulan = 1; $bulan <= $bulanSekarang; $bulan++) {
             // Cek data pengeluaran
             $pengeluaranExists = DB::table('fungsional')
                 ->where('kd_opd1', $kd_opd1)
@@ -723,7 +723,6 @@ class LaporanFungsionalController extends Controller
                     $result['status'] = false;
                     $result['missing_penerimaan'][] = $bulan;
                 }
-                var_dump($penerimaanExists);
             }
         }
     
