@@ -719,11 +719,10 @@ class LaporanFungsionalController extends Controller
                     ->whereNull('deleted_at')
                     ->exists();
     
-                if (!$penerimaanExists) {
+                if ($penerimaanExists) {
                     $result['status'] = false;
                     $result['missing_penerimaan'][] = $bulan;
                 }
-                var_dump($penerimaanExists);
             }
         }
     
