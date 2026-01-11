@@ -723,6 +723,7 @@ class LaporanFungsionalController extends Controller
                     $result['status'] = false;
                     $result['missing_penerimaan'][] = $bulan;
                 }
+                var_dump($penerimaanExists);
             }
         }
     
