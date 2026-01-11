@@ -64,7 +64,12 @@ class SP2DController extends Controller
 
             if($menu == 'permohonan_sp2d'){
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_user', $userId);
+                    // $query->where('id_user', $userId);
+                    $query->where('sp2d.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('sp2d.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('sp2d.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('sp2d.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('sp2d.kd_opd5', $request->get('kd_opd5'));
                     // $query->whereNull('proses');
                 }
                 // ambil data yg belum diperiksa operator
@@ -248,7 +253,12 @@ class SP2DController extends Controller
             // ✅ SP2D Diterima
             if ($menu === 'sp2d_diterima') {
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_user', $userId);
+                    // $query->where('id_user', $userId);
+                    $query->where('sp2d.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('sp2d.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('sp2d.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('sp2d.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('sp2d.kd_opd5', $request->get('kd_opd5'));
                 }
                 $query->where('proses', '2');
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
@@ -263,7 +273,12 @@ class SP2DController extends Controller
             // (opsional) kalau kamu juga punya 'sp2d_ditolak'
             if ($menu === 'sp2d_ditolak') {
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_user', $userId);
+                    // $query->where('id_user', $userId);
+                    $query->where('sp2d.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('sp2d.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('sp2d.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('sp2d.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('sp2d.kd_opd5', $request->get('kd_opd5'));
                 }
                 $query->whereNotNull('ditolak'); // hanya yang ditolak
                 $query->whereNot(function ($q) {
@@ -320,7 +335,12 @@ class SP2DController extends Controller
             // (opsional) kalau kamu juga punya 'sp2d_publish_kuasa_bud'
             if ($menu === 'sp2d_publish_kuasa_bud') {
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_user', $userId);
+                    // $query->where('id_user', $userId);
+                    $query->where('sp2d.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('sp2d.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('sp2d.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('sp2d.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('sp2d.kd_opd5', $request->get('kd_opd5'));
                 }
                 $query->whereHas('sp2dkirim', function ($q) {
                     $q->whereNotNull('publish')

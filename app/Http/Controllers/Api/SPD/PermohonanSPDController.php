@@ -44,7 +44,12 @@ class PermohonanSPDController extends Controller
             if($menu == 'permohonan_spd'){
                 
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_pengirim', $userId);
+                    // $query->where('id_pengirim', $userId);
+                    $query->where('kd_opd1', $request->get('kd_opd1'));
+                    $query->where('kd_opd2', $request->get('kd_opd2'));
+                    $query->where('kd_opd3', $request->get('kd_opd3'));
+                    $query->where('kd_opd4', $request->get('kd_opd4'));
+                    $query->where('kd_opd5', $request->get('kd_opd5'));
                 }
                     // ambil data yg belum diperiksa operator
                     $query->where('id_operator', '0');
@@ -164,7 +169,12 @@ class PermohonanSPDController extends Controller
             if ($menu === 'spd_diterima') {
                 
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_pengirim', $userId);
+                    // $query->where('id_pengirim', $userId);
+                    $query->where('kd_opd1', $request->get('kd_opd1'));
+                    $query->where('kd_opd2', $request->get('kd_opd2'));
+                    $query->where('kd_opd3', $request->get('kd_opd3'));
+                    $query->where('kd_opd4', $request->get('kd_opd4'));
+                    $query->where('kd_opd5', $request->get('kd_opd5'));
                 }
                 $query->where('proses', '2');
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
@@ -198,7 +208,12 @@ class PermohonanSPDController extends Controller
             if ($menu === 'spd_ditolak') {
                 
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_pengirim', $userId);
+                    // $query->where('id_pengirim', $userId);
+                    $query->where('kd_opd1', $request->get('kd_opd1'));
+                    $query->where('kd_opd2', $request->get('kd_opd2'));
+                    $query->where('kd_opd3', $request->get('kd_opd3'));
+                    $query->where('kd_opd4', $request->get('kd_opd4'));
+                    $query->where('kd_opd5', $request->get('kd_opd5'));
                 }
                 $query->whereNotNull('ditolak'); // hanya yang ditolak
                 $FilterTanggal = 'ditolak';

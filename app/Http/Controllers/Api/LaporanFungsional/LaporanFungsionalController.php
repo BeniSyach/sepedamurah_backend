@@ -52,11 +52,19 @@ class LaporanFungsionalController extends Controller
                 // PENGELUARAN
                 if ($jenis === 'Pengeluaran') {
                     if ($menu === 'pengeluaran') {
-                        $query->when($userId, function ($q) use ($userId) {
-                            $q->where('id_pengirim', $userId);
-                        })
-                        ->whereNull('diterima')
-                        ->whereNull('ditolak');
+                        if ($userId = $request->get('user_id')) {
+                            // $q->where('id_pengirim', $userId);
+                            $query->where('fungsional.kd_opd1', $request->get('kd_opd1'));
+                            $query->where('fungsional.kd_opd2', $request->get('kd_opd2'));
+                            $query->where('fungsional.kd_opd3', $request->get('kd_opd3'));
+                            $query->where('fungsional.kd_opd4', $request->get('kd_opd4'));
+                            $query->where('fungsional.kd_opd5', $request->get('kd_opd5'));
+                        }
+                        // $query->when($userId, function ($q) use ($userId) {
+                        //     $q->where('id_pengirim', $userId);
+                        // })
+                        $query->whereNull('diterima');
+                        $query->whereNull('ditolak');
                     }
     
                     if ($menu === 'berkas_masuk_pengeluaran') {
@@ -120,18 +128,34 @@ class LaporanFungsionalController extends Controller
                     }
     
                     if ($menu === 'fungsional_pengeluaran_diterima') {
-                        $query->when($userId, function ($q) use ($userId) {
-                            $q->where('id_pengirim', $userId);
-                        })
-                        ->whereNotNull('diterima');
+                        if ($userId = $request->get('user_id')) {
+                            // $q->where('id_pengirim', $userId);
+                            $query->where('fungsional.kd_opd1', $request->get('kd_opd1'));
+                            $query->where('fungsional.kd_opd2', $request->get('kd_opd2'));
+                            $query->where('fungsional.kd_opd3', $request->get('kd_opd3'));
+                            $query->where('fungsional.kd_opd4', $request->get('kd_opd4'));
+                            $query->where('fungsional.kd_opd5', $request->get('kd_opd5'));
+                        }
+                        // $query->when($userId, function ($q) use ($userId) {
+                        //     $q->where('id_pengirim', $userId);
+                        // })
+                        $query->whereNotNull('diterima');
                     }
                     
     
                     if ($menu === 'fungsional_pengeluaran_ditolak') {
-                        $query->when($userId, function ($q) use ($userId) {
-                            $q->where('id_pengirim', $userId);
-                        })
-                        ->whereNotNull('ditolak');
+                        if ($userId = $request->get('user_id')) {
+                            // $q->where('id_pengirim', $userId);
+                            $query->where('fungsional.kd_opd1', $request->get('kd_opd1'));
+                            $query->where('fungsional.kd_opd2', $request->get('kd_opd2'));
+                            $query->where('fungsional.kd_opd3', $request->get('kd_opd3'));
+                            $query->where('fungsional.kd_opd4', $request->get('kd_opd4'));
+                            $query->where('fungsional.kd_opd5', $request->get('kd_opd5'));
+                        }
+                        // $query->when($userId, function ($q) use ($userId) {
+                        //     $q->where('id_pengirim', $userId);
+                        // })
+                        $query->whereNotNull('ditolak');
                     }
                     
                 }
@@ -139,11 +163,16 @@ class LaporanFungsionalController extends Controller
                 // PENERIMAAN
                 if ($jenis === 'Penerimaan') {
                     if ($menu === 'penerimaan') {
-                        $query->when($userId, function ($q) use ($userId) {
-                            $q->where('id_pengirim', $userId);
-                        })
-                        ->whereNull('diterima')
-                        ->whereNull('ditolak');
+                        if ($userId = $request->get('user_id')) {
+                            // $q->where('id_pengirim', $userId);
+                            $query->where('fungsional.kd_opd1', $request->get('kd_opd1'));
+                            $query->where('fungsional.kd_opd2', $request->get('kd_opd2'));
+                            $query->where('fungsional.kd_opd3', $request->get('kd_opd3'));
+                            $query->where('fungsional.kd_opd4', $request->get('kd_opd4'));
+                            $query->where('fungsional.kd_opd5', $request->get('kd_opd5'));
+                        }
+                         $query->whereNull('diterima');
+                         $query->whereNull('ditolak');
                     }
     
                     if ($menu === 'berkas_masuk_penerimaan') {
@@ -207,17 +236,33 @@ class LaporanFungsionalController extends Controller
                     }
     
                     if ($menu === 'fungsional_penerimaan_diterima') {
-                        $query->when($userId, function ($q) use ($userId) {
-                            $q->where('id_pengirim', $userId);
-                        })
-                        ->whereNotNull('diterima');
+                        if ($userId = $request->get('user_id')) {
+                            // $q->where('id_pengirim', $userId);
+                            $query->where('fungsional.kd_opd1', $request->get('kd_opd1'));
+                            $query->where('fungsional.kd_opd2', $request->get('kd_opd2'));
+                            $query->where('fungsional.kd_opd3', $request->get('kd_opd3'));
+                            $query->where('fungsional.kd_opd4', $request->get('kd_opd4'));
+                            $query->where('fungsional.kd_opd5', $request->get('kd_opd5'));
+                        }
+                        // $query->when($userId, function ($q) use ($userId) {
+                        //     $q->where('id_pengirim', $userId);
+                        // })
+                        $query->whereNotNull('diterima');
                     }
     
                     if ($menu === 'fungsional_penerimaan_ditolak') {
-                        $query->when($userId, function ($q) use ($userId) {
-                            $q->where('id_pengirim', $userId);
-                        })
-                        ->whereNotNull('ditolak');
+                        if ($userId = $request->get('user_id')) {
+                            // $q->where('id_pengirim', $userId);
+                            $query->where('fungsional.kd_opd1', $request->get('kd_opd1'));
+                            $query->where('fungsional.kd_opd2', $request->get('kd_opd2'));
+                            $query->where('fungsional.kd_opd3', $request->get('kd_opd3'));
+                            $query->where('fungsional.kd_opd4', $request->get('kd_opd4'));
+                            $query->where('fungsional.kd_opd5', $request->get('kd_opd5'));
+                        }
+                        // $query->when($userId, function ($q) use ($userId) {
+                        //     $q->where('id_pengirim', $userId);
+                        // })
+                        $query->whereNotNull('ditolak');
                     }
                 }
             }

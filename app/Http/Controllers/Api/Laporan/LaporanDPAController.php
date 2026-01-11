@@ -38,11 +38,19 @@ class LaporanDPAController extends Controller
 
         if ($menu) {
             if ($menu === 'laporan_dpa') {
-                $query->when($userId, function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                ->whereNull('diterima')
-                ->whereNull('ditolak');
+                if ($userId = $request->get('user_id')) {
+                    // $q->where('id_pengirim', $userId);
+                    $query->where('laporan_dpa.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('laporan_dpa.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('laporan_dpa.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('laporan_dpa.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('laporan_dpa.kd_opd5', $request->get('kd_opd5'));
+                }
+                // $query->when($userId, function ($q) use ($userId) {
+                //     $q->where('user_id', $userId);
+                // })
+                $query->whereNull('diterima');
+                $query->whereNull('ditolak');
             }
 
             if ($menu === 'operator_laporan_dpa') {
@@ -106,17 +114,33 @@ class LaporanDPAController extends Controller
             }
 
             if ($menu === 'laporan_DPA_diterima') {
-                $query->when($userId, function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                ->whereNotNull('diterima');
+                if ($userId = $request->get('user_id')) {
+                    // $q->where('id_pengirim', $userId);
+                    $query->where('laporan_dpa.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('laporan_dpa.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('laporan_dpa.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('laporan_dpa.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('laporan_dpa.kd_opd5', $request->get('kd_opd5'));
+                }
+                // $query->when($userId, function ($q) use ($userId) {
+                //     $q->where('user_id', $userId);
+                // })
+                $query->whereNotNull('diterima');
             }
 
             if ($menu === 'laporan_DPA_ditolak') {
-                $query->when($userId, function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                ->whereNotNull('ditolak');
+                if ($userId = $request->get('user_id')) {
+                    // $q->where('id_pengirim', $userId);
+                    $query->where('laporan_dpa.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('laporan_dpa.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('laporan_dpa.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('laporan_dpa.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('laporan_dpa.kd_opd5', $request->get('kd_opd5'));
+                }
+                // $query->when($userId, function ($q) use ($userId) {
+                //     $q->where('user_id', $userId);
+                // })
+                $query->whereNotNull('ditolak');
             }
         }
     

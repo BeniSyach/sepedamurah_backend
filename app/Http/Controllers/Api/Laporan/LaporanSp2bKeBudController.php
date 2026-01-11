@@ -43,11 +43,19 @@ class LaporanSp2bKeBudController extends Controller
 
             // 📌 Bendahara - draft
             if ($menu === 'laporan_sp2b_ke_bud') {
-                $query->when($userId, function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                      ->whereNull('diterima')
-                      ->whereNull('ditolak');
+                if ($userId = $request->get('user_id')) {
+                    // $q->where('id_pengirim', $userId);
+                    $query->where('laporan_sp2b_ke_bud.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd5', $request->get('kd_opd5'));
+                }
+                // $query->when($userId, function ($q) use ($userId) {
+                //     $q->where('user_id', $userId);
+                // })
+                      $query->whereNull('diterima');
+                      $query->whereNull('ditolak');
             }
 
             // 📌 Operator - berkas masuk
@@ -119,18 +127,34 @@ class LaporanSp2bKeBudController extends Controller
 
             // 📌 Bendahara - diterima
             if ($menu === 'laporan_sp2b_diterima') {
-                $query->when($userId, function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                      ->whereNotNull('diterima');
+                if ($userId = $request->get('user_id')) {
+                    // $q->where('id_pengirim', $userId);
+                    $query->where('laporan_sp2b_ke_bud.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd5', $request->get('kd_opd5'));
+                }
+                // $query->when($userId, function ($q) use ($userId) {
+                //     $q->where('user_id', $userId);
+                // })
+                $query->whereNotNull('diterima');
             }
 
             // 📌 Bendahara - ditolak
             if ($menu === 'laporan_sp2b_ditolak') {
-                $query->when($userId, function ($q) use ($userId) {
-                    $q->where('user_id', $userId);
-                })
-                      ->whereNotNull('ditolak');
+                if ($userId = $request->get('user_id')) {
+                    // $q->where('id_pengirim', $userId);
+                    $query->where('laporan_sp2b_ke_bud.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('laporan_sp2b_ke_bud.kd_opd5', $request->get('kd_opd5'));
+                }
+                // $query->when($userId, function ($q) use ($userId) {
+                //     $q->where('user_id', $userId);
+                // })
+                $query->whereNotNull('ditolak');
             }
         }
 
