@@ -658,7 +658,8 @@ class LaporanFungsionalController extends Controller
         // Ambil tahun dan bulan sekarang
         // $tahun = date('Y');
         $tahun = 2025;
-        $bulanSekarang = date('n'); // bulan tanpa leading zero (1-12)
+        // $bulanSekarang = date('n'); // bulan tanpa leading zero (1-12)
+        $bulanSekarang = 12; // bulan tanpa leading zero (1-12)
     
         // Ambil informasi penerimaan dari tabel ref_opd
         $opd = DB::table('ref_opd')
