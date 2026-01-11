@@ -669,7 +669,7 @@ class LaporanFungsionalController extends Controller
             ->where('kd_opd3', $kd_opd3)
             ->where('kd_opd4', $kd_opd4)
             ->where('kd_opd5', $kd_opd5)
-            ->where('hidden', 0)
+            ->where('hidden', '0')
             ->first();
     
         if (!$opd) {
@@ -703,7 +703,7 @@ class LaporanFungsionalController extends Controller
             }
     
             // Jika penerimaan = 1, cek juga jenis berkas penerimaan
-            if ($opd->status_penerimaan == 1) {
+            if ($opd->status_penerimaan == '1') {
                 $penerimaanExists = DB::table('fungsional')
                     ->where('kd_opd1', $kd_opd1)
                     ->where('kd_opd2', $kd_opd2)
