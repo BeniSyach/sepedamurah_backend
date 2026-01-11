@@ -81,11 +81,11 @@ class SPDTerkirimController extends Controller
 
                 if ($userId = $request->get('user_id')) {
                     // $query->where('id_penerima', $userId);
-                    $query->where('kd_opd1', $request->get('kd_opd1'));
-                    $query->where('kd_opd2', $request->get('kd_opd2'));
-                    $query->where('kd_opd3', $request->get('kd_opd3'));
-                    $query->where('kd_opd4', $request->get('kd_opd4'));
-                    $query->where('kd_opd5', $request->get('kd_opd5'));
+                    $query->where('spd_terkirim.kd_opd1', $request->get('kd_opd1'));
+                    $query->where('spd_terkirim.kd_opd2', $request->get('kd_opd2'));
+                    $query->where('spd_terkirim.kd_opd3', $request->get('kd_opd3'));
+                    $query->where('spd_terkirim.kd_opd4', $request->get('kd_opd4'));
+                    $query->where('spd_terkirim.kd_opd5', $request->get('kd_opd5'));
 
                 }
             
