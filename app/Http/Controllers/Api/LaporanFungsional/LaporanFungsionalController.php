@@ -697,12 +697,12 @@ class LaporanFungsionalController extends Controller
                 ->whereNull('deleted_at')
                 ->exists();
     
-            if (!$pengeluaranExists) {
+            if ($pengeluaranExists) {
                 $result['status'] = false;
                 $result['missing_pengeluaran'][] = $bulan;
             }
 
-            var_dump($pengeluaranExists);
+            
     
             // Jika penerimaan = 1, cek juga jenis berkas penerimaan
             if ($opd->status_penerimaan == '1') {
@@ -723,6 +723,7 @@ class LaporanFungsionalController extends Controller
                     $result['status'] = false;
                     $result['missing_penerimaan'][] = $bulan;
                 }
+                var_dump($penerimaanExists);
             }
         }
     
