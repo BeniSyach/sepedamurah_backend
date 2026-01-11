@@ -701,6 +701,8 @@ class LaporanFungsionalController extends Controller
                 $result['status'] = false;
                 $result['missing_pengeluaran'][] = $bulan;
             }
+
+            var_dump($pengeluaranExists);
     
             // Jika penerimaan = 1, cek juga jenis berkas penerimaan
             if ($opd->status_penerimaan == '1') {
