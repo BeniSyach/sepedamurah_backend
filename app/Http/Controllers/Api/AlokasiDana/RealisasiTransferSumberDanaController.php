@@ -62,70 +62,189 @@ class RealisasiTransferSumberDanaController extends Controller
 
     public function index(Request $request)
     {
-        // === FILTER TANGGAL (DEFAULT: AWAL–AKHIR BULAN) ===
-        $tglAwal = $request->get(
-            'tgl_awal',
-            date('Y-m-01') // awal bulan
-        );
-
-        $tglAkhir = $request->get(
-            'tgl_akhir',
-            date('Y-m-t') // akhir bulan
-        );
-
+        // === FILTER TANGGAL ===
+        $tglAwal  = $request->get('tgl_awal', date('Y-m-01'));
+        $tglAkhir = $request->get('tgl_akhir', date('Y-m-t'));
+        $tahun = $request->get('tahun');
+    
         $query = RealisasiSumberDanaModel::select([
-            'kd_ref1', 'kd_ref2', 'kd_ref3', 'kd_ref4', 'kd_ref5', 'kd_ref6',
+            'kd_ref1', 'kd_ref2', 'kd_ref3',
+            'kd_ref4', 'kd_ref5', 'kd_ref6',
+    
             DB::raw('MAX(nm_sumber) AS nm_sumber'),
-
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 1 THEN jumlah_sumber ELSE 0 END) AS total_jan"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 2 THEN jumlah_sumber ELSE 0 END) AS total_feb"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 3 THEN jumlah_sumber ELSE 0 END) AS total_mar"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 4 THEN jumlah_sumber ELSE 0 END) AS total_apr"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 5 THEN jumlah_sumber ELSE 0 END) AS total_may"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 6 THEN jumlah_sumber ELSE 0 END) AS total_jun"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 7 THEN jumlah_sumber ELSE 0 END) AS total_jul"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 8 THEN jumlah_sumber ELSE 0 END) AS total_aug"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 9 THEN jumlah_sumber ELSE 0 END) AS total_sep"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 10 THEN jumlah_sumber ELSE 0 END) AS total_oct"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 11 THEN jumlah_sumber ELSE 0 END) AS total_nov"),
-            DB::raw("SUM(CASE WHEN EXTRACT(MONTH FROM tgl_diterima) = 12 THEN jumlah_sumber ELSE 0 END) AS total_dec"),
+    
+            // ================= BULAN JANUARI =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 1
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_jan
+            "),
+    
+            // ================= FEBRUARI =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 2
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_feb
+            "),
+    
+            // ================= MARET =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 3
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_mar
+            "),
+    
+            // ================= APRIL =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 4
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_apr
+            "),
+    
+            // ================= MEI =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 5
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_may
+            "),
+    
+            // ================= JUNI =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 6
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_jun
+            "),
+    
+            // ================= JULI =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 7
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_jul
+            "),
+    
+            // ================= AGUSTUS =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 8
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_aug
+            "),
+    
+            // ================= SEPTEMBER =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 9
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_sep
+            "),
+    
+            // ================= OKTOBER =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 10
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_oct
+            "),
+    
+            // ================= NOVEMBER =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 11
+                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_nov
+            "),
+    
+            // ================= DESEMBER (PAKAI RENTANG) =================
+            DB::raw("
+                SUM(
+                    CASE
+                        WHEN EXTRACT(MONTH FROM tgl_diterima) = 12
+                         AND tgl_diterima BETWEEN
+                             TO_DATE('$tglAwal','YYYY-MM-DD')
+                             AND TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        THEN jumlah_sumber ELSE 0
+                    END
+                ) AS total_dec
+            "),
         ])
-            ->whereNull('deleted_at')
-
-            // 🔥 FILTER PERTANGGAL
-            ->whereBetween(DB::raw('TRUNC(tgl_diterima)'), [
-                DB::raw("TO_DATE('$tglAwal','YYYY-MM-DD')"),
-                DB::raw("TO_DATE('$tglAkhir','YYYY-MM-DD')")
-            ])
-
-            ->groupBy(
-                'kd_ref1', 'kd_ref2', 'kd_ref3',
-                'kd_ref4', 'kd_ref5', 'kd_ref6'
-            )
-            ->orderBy('kd_ref1')
-            ->orderBy('kd_ref2')
-            ->orderBy('kd_ref3')
-            ->orderBy('kd_ref4')
-            ->orderBy('kd_ref5')
-            ->orderBy('kd_ref6');
-
-        // === SEARCH (aggregate) ===
+    
+        // 🔥 BATAS DATA GLOBAL
+        ->whereNull('deleted_at')
+        ->whereRaw("tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')")
+        ->where('tahun', $tahun)
+    
+        // GROUPING
+        ->groupBy(
+            'kd_ref1', 'kd_ref2', 'kd_ref3',
+            'kd_ref4', 'kd_ref5', 'kd_ref6'
+        )
+    
+        // ORDER
+        ->orderBy('kd_ref1')
+        ->orderBy('kd_ref2')
+        ->orderBy('kd_ref3')
+        ->orderBy('kd_ref4')
+        ->orderBy('kd_ref5')
+        ->orderBy('kd_ref6');
+    
+        // ================= SEARCH =================
         if ($search = $request->get('search')) {
             $query->havingRaw(
                 "LOWER(MAX(nm_sumber)) LIKE ?",
                 ['%' . strtolower($search) . '%']
             );
         }
-
+    
         $data = $query->get();
-
+    
         return response()->json([
-            'total' => $data->count(),
-            'tgl_awal' => $tglAwal,
+            'total'     => $data->count(),
+            'tgl_awal'  => $tglAwal,
             'tgl_akhir' => $tglAkhir,
-            'data' => $data,
+            'data'      => $data,
         ]);
     }
+    
 
 
     public function detailTFSD(Request $request)
