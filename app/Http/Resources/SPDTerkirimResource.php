@@ -40,6 +40,7 @@ class SPDTerkirimResource extends JsonResource
             'deleted_at' => $this->deleted_at,
             'skpd' => new SKPDResource($this->whenLoaded('skpd')),
             'permohonan' => new PermohonanSPDResource($this->whenLoaded('permohonan')),
+            'nm_opd' =>  $this->nm_opd
         ];
     }
 }

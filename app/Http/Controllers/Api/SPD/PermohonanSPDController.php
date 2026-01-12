@@ -185,20 +185,31 @@ class PermohonanSPDController extends Controller
             if ($menu === 'spd_diterima_bud') {
 
                 $query = SPDTerkirimModel::with('permohonan')
-                    ->whereNull('deleted_at');
+                ->select([
+                    'spd_terkirim.*',              // 🔥 semua kolom SPD
+                    'ref_opd.nm_opd AS nm_opd',     // 🔥 hanya nm_opd
+                ])
+                    ->whereNull('spd_terkirim.deleted_at')
+                    ->join('ref_opd', function ($join) {
+                        $join->on('spd_terkirim.kd_opd1', '=', 'ref_opd.kd_opd1')
+                             ->on('spd_terkirim.kd_opd2', '=', 'ref_opd.kd_opd2')
+                             ->on('spd_terkirim.kd_opd3', '=', 'ref_opd.kd_opd3')
+                             ->on('spd_terkirim.kd_opd4', '=', 'ref_opd.kd_opd4')
+                             ->on('spd_terkirim.kd_opd5', '=', 'ref_opd.kd_opd5');
+                    });
 
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_penerima', $userId);
+                    $query->where('spd_terkirim.id_penerima', $userId);
                 }
 
                 if ($request->filled('tahun')) {
-                    $query->whereYear('tanggal_upload', $request->tahun);
+                    $query->whereYear('spd_terkirim.tanggal_upload', $request->tahun);
                 }
 
-                $query->where('TTE', 'Yes');
+                $query->where('spd_terkirim.TTE', 'Yes');
 
                 return SPDTerkirimResource::collection(
-                    $query->orderBy('created_at', 'desc')
+                    $query->orderBy('spd_terkirim.created_at', 'desc')
                         ->paginate($request->get('per_page', 10))
                 );
             }

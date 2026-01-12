@@ -36,6 +36,7 @@ class PermohonanSPDResource extends JsonResource
             'pengirim' => new UserResource($this->whenLoaded('pengirim')),
             'operator' => new UserResource($this->whenLoaded('operator')),
             'skpd' => new SKPDResource($this->whenLoaded('skpd')),
+            'nm_opd' => $this->nm_opd
         ];
     }
 }
