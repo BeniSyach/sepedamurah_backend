@@ -649,6 +649,19 @@ class LaporanFungsionalController extends Controller
 
     public function cekDataPerBulan($kd_opd1, $kd_opd2, $kd_opd3, $kd_opd4, $kd_opd5)
     {
+        $opdKhusus = [
+            '02.09.01.00.01',
+            '01.04.01.00.01',
+        ];
+
+        $kodeOpd = implode('.', [
+            $kd_opd1,
+            $kd_opd2,
+            $kd_opd3,
+            $kd_opd4,
+            $kd_opd5,
+        ]);
+
         $result = [
             'status' => true,
             'missing_pengeluaran' => [],
@@ -660,6 +673,12 @@ class LaporanFungsionalController extends Controller
         $tahun = '2025';
         // $bulanSekarang = date('n'); // bulan tanpa leading zero (1-12)
         $bulanSekarang = '12'; // bulan tanpa leading zero (1-12)
+
+        
+        $bulanMulai = 1;
+        if (in_array($kodeOpd, $opdKhusus)) {
+            $bulanMulai = $bulanSekarang;
+        }
     
         // Ambil informasi penerimaan dari tabel ref_opd
         $opd = DB::table('ref_opd')
@@ -682,7 +701,7 @@ class LaporanFungsionalController extends Controller
         }
     
         // Loop dari bulan 1 hingga bulan sebelum bulan sekarang
-        for ($bulan = 1; $bulan <= $bulanSekarang; $bulan++) {
+        for ($bulan = $bulanMulai; $bulan <= $bulanSekarang; $bulan++) {
             // Cek data pengeluaran
             $pengeluaranExists = DB::table('fungsional')
                 ->where('kd_opd1', $kd_opd1)
