@@ -125,6 +125,7 @@ class LaporanRealisasiBelanjaController extends Controller
             ON p.KD_REKENING1 = x.KD_REF1
             AND p.KD_REKENING2 = x.KD_REF2
             AND p.KD_REKENING3 = x.KD_REF3
+        WHERE p.tahun = :tahun
 
         ORDER BY x.KD_REF1, x.KD_REF2, x.KD_REF3
         ", ['tahun' => $tahun]);
