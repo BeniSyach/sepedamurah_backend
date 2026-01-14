@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\HakAkses\AksesDPAController;
 use App\Http\Controllers\Api\HakAkses\AksesKuasaBudController;
 use App\Http\Controllers\Api\HakAkses\AksesOperatorController;
 use App\Http\Controllers\Api\HakAkses\AksesPajakBendaharaController;
+use App\Http\Controllers\Api\HakAkses\AksesRekGajiSkpdController;
 use App\Http\Controllers\Api\HakAkses\AksesSp2bKeBudController;
 use App\Http\Controllers\Api\HakAkses\BatasWaktuController;
 use App\Http\Controllers\Api\HakAkses\UsersRoleController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Api\Laporan\LaporanDPAController;
 use App\Http\Controllers\Api\Laporan\LaporanPajakBendaharaController;
 use App\Http\Controllers\Api\Laporan\LaporanRealisasiBelanjaController;
 use App\Http\Controllers\Api\Laporan\LaporanRealisasiSumberDanaController;
+use App\Http\Controllers\Api\Laporan\LaporanRekGajiSkpdController;
 use App\Http\Controllers\Api\Laporan\LaporanSp2bKeBudController;
 use App\Http\Controllers\Api\LaporanFungsional\LaporanFungsionalController;
 use App\Http\Controllers\Api\MasterData\BidangUrusanController;
@@ -37,6 +39,7 @@ use App\Http\Controllers\Api\MasterData\ProgramController;
 use App\Http\Controllers\Api\MasterData\RefAssetBendaharaController;
 use App\Http\Controllers\Api\MasterData\RefDpaController;
 use App\Http\Controllers\Api\MasterData\RefPajakBendaharaController;
+use App\Http\Controllers\Api\MasterData\RefRekonsiliasiGajiSkpdController;
 use App\Http\Controllers\Api\MasterData\RefSp2bKeBudController;
 use App\Http\Controllers\Api\MasterData\RekAkunController;
 use App\Http\Controllers\Api\MasterData\RekeningController;
@@ -217,6 +220,12 @@ Route::middleware('auth:api')->group(function () {
 
         // Ref SP2B Ke BUD
         Route::apiResource('/ref-sp2b-to-bud', RefSp2bKeBudController::class);
+
+        // Ref Rekonsiliasi Gaji SKPD
+        Route::apiResource(
+            'ref-rekonsiliasi-gaji-skpd',
+            RefRekonsiliasiGajiSkpdController::class
+        ); 
     });
 
     // alokasi Dana
@@ -306,6 +315,17 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/cek-akses-sp2b-ke-bud', [AksesSp2bKeBudController::class, 'cek']);
         Route::apiResource('/akses-sp2b-ke-bud', AksesSp2bKeBudController::class)
         ->except(['update']);
+
+        // Akses Rekonsiliasi Gaji SKPD
+        Route::put('/akses-rekonsiliasi-gaji-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesRekGajiSkpdController::class, 'update']);
+            // hilangkan update bawaan
+        Route::delete(
+            '/akses-rekonsiliasi-gaji-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
+            [AksesRekGajiSkpdController::class, 'destroy']
+        );
+        Route::get('/cek-akses-rekonsiliasi-gaji-skpd', [AksesRekGajiSkpdController::class, 'cek']);
+        Route::apiResource('/akses-rekonsiliasi-gaji-skpd', AksesRekGajiSkpdController::class)
+        ->except(['update']);
     });
 
     // History
@@ -389,6 +409,12 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/laporan-sp2b-to-bud-tolak-multi', [LaporanSp2bKeBudController::class, 'tolakMulti']);
         Route::get('/laporan-sp2b-to-bud/download/{id}', [LaporanSp2bKeBudController::class, 'downloadBerkas'])->name('laporan-sp2b-to-bud.download');
         Route::apiResource('/laporan-sp2b-to-bud', LaporanSp2bKeBudController::class);
+
+        // Laporan Rekonsiliasi Gaji SKPD
+        Route::post('/laporan-rekonsiliasi-gaji-skpd-terima-multi', [LaporanRekGajiSkpdController::class, 'terimaMulti']);
+        Route::post('/laporan-rekonsiliasi-gaji-skpd-tolak-multi', [LaporanRekGajiSkpdController::class, 'tolakMulti']);
+        Route::get('/laporan-rekonsiliasi-gaji-skpd/download/{id}', [LaporanRekGajiSkpdController::class, 'downloadBerkas'])->name('laporan-rekonsiliasi-gaji-skpd.download');
+        Route::apiResource('/laporan-rekonsiliasi-gaji-skpd', LaporanRekGajiSkpdController::class);
 
         // Laporan Realisasi Sumber Dana 
         Route::get('/realisasi-sumber-dana', [LaporanRealisasiSumberDanaController::class, 'index']);
