@@ -245,7 +245,10 @@ class AksesRekGajiSkpdController extends Controller
         if ($akses->isEmpty()) {
             return response()->json([
                 'status' => true,
-                'message' => 'Akses Rekonsiliasi Gaji SKPD tidak ditemukan'
+                'status_laporan_memenuhi' => true,
+                'message' => 'Akses Rekonsiliasi Gaji SKPD tidak ditemukan',
+                'data' => [],
+                'kurang_upload' => [],
             ]);
         }
 
