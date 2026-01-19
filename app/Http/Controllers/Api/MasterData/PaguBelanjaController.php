@@ -18,30 +18,36 @@ class PaguBelanjaController extends Controller
      */
     public function index(Request $request)
     {
-        $search = $request->input('search');
-      
-        // Mulai query pagubelanaja
-        $query = PaguBelanjaModel::with('urusan');
-        
-        // Join tabel untuk pencarian
-        $query->leftJoin('ref_urusan', 'pagu_belanja.kd_urusan', '=', 'ref_urusan.kd_urusan')
-            ->leftJoin('ref_bidang_urusan', function($join) {
+        $search  = $request->input('search');
+        $sortBy  = $request->input('sort_by');
+        $sortDir = strtolower($request->input('sort_dir')) === 'asc' ? 'asc' : 'desc';
+    
+        $query = DB::table('pagu_belanja')
+            ->where('pagu_belanja.is_deleted', 0)
+    
+            // ================= JOIN =================
+            ->leftJoin('ref_urusan', 'pagu_belanja.kd_urusan', '=', 'ref_urusan.kd_urusan')
+    
+            ->leftJoin('ref_bidang_urusan', function ($join) {
                 $join->on('pagu_belanja.kd_bu1', '=', 'ref_bidang_urusan.kd_bu1')
                      ->on('pagu_belanja.kd_bu2', '=', 'ref_bidang_urusan.kd_bu2');
             })
-            ->leftJoin('ref_program', function($join) {
+    
+            ->leftJoin('ref_program', function ($join) {
                 $join->on('pagu_belanja.kd_prog1', '=', 'ref_program.kd_prog1')
                      ->on('pagu_belanja.kd_prog2', '=', 'ref_program.kd_prog2')
                      ->on('pagu_belanja.kd_prog3', '=', 'ref_program.kd_prog3');
             })
-            ->leftJoin('ref_kegiatan', function($join) {
+    
+            ->leftJoin('ref_kegiatan', function ($join) {
                 $join->on('pagu_belanja.kd_keg1', '=', 'ref_kegiatan.kd_keg1')
                      ->on('pagu_belanja.kd_keg2', '=', 'ref_kegiatan.kd_keg2')
                      ->on('pagu_belanja.kd_keg3', '=', 'ref_kegiatan.kd_keg3')
                      ->on('pagu_belanja.kd_keg4', '=', 'ref_kegiatan.kd_keg4')
                      ->on('pagu_belanja.kd_keg5', '=', 'ref_kegiatan.kd_keg5');
             })
-            ->leftJoin('ref_subkegiatan', function($join) {
+    
+            ->leftJoin('ref_subkegiatan', function ($join) {
                 $join->on('pagu_belanja.kd_subkeg1', '=', 'ref_subkegiatan.kd_subkeg1')
                      ->on('pagu_belanja.kd_subkeg2', '=', 'ref_subkegiatan.kd_subkeg2')
                      ->on('pagu_belanja.kd_subkeg3', '=', 'ref_subkegiatan.kd_subkeg3')
@@ -49,7 +55,8 @@ class PaguBelanjaController extends Controller
                      ->on('pagu_belanja.kd_subkeg5', '=', 'ref_subkegiatan.kd_subkeg5')
                      ->on('pagu_belanja.kd_subkeg6', '=', 'ref_subkegiatan.kd_subkeg6');
             })
-            ->leftJoin('ref_rekening', function($join) {
+    
+            ->leftJoin('ref_rekening', function ($join) {
                 $join->on('pagu_belanja.kd_rekening1', '=', 'ref_rekening.kd_rekening1')
                      ->on('pagu_belanja.kd_rekening2', '=', 'ref_rekening.kd_rekening2')
                      ->on('pagu_belanja.kd_rekening3', '=', 'ref_rekening.kd_rekening3')
@@ -57,52 +64,67 @@ class PaguBelanjaController extends Controller
                      ->on('pagu_belanja.kd_rekening5', '=', 'ref_rekening.kd_rekening5')
                      ->on('pagu_belanja.kd_rekening6', '=', 'ref_rekening.kd_rekening6');
             })
-            ->leftJoin('ref_opd as skpd', function($join) {
-                $join->on(DB::raw("TRIM(REPLACE(pagu_belanja.kd_opd1 || '.' || 
-                                                     pagu_belanja.kd_opd2 || '.' || 
-                                                     pagu_belanja.kd_opd3 || '.' || 
-                                                     pagu_belanja.kd_opd4 || '.' || 
-                                                     pagu_belanja.kd_opd5 || '.' || 
-                                                     pagu_belanja.kd_opd6 || '.' || 
-                                                     pagu_belanja.kd_opd7 || '.' || 
-                                                     pagu_belanja.kd_opd8, ' ', ''))"), 
-                            '=', DB::raw('skpd.kode_opd'));
+    
+            ->leftJoin('ref_opd as skpd', function ($join) {
+                $join->on(DB::raw("
+                    LOWER(REPLACE(skpd.kode_opd, ' ', ''))
+                "), '=', DB::raw("
+                    LOWER(REPLACE(
+                        pagu_belanja.kd_opd1||'.'||pagu_belanja.kd_opd2||'.'||pagu_belanja.kd_opd3||'.'||
+                        pagu_belanja.kd_opd4||'.'||pagu_belanja.kd_opd5||'.'||pagu_belanja.kd_opd6||'.'||
+                        pagu_belanja.kd_opd7||'.'||pagu_belanja.kd_opd8,
+                    ' ', ''))
+                "));
             });
     
-        // Filter search jika ada
+        // ================= SEARCH =================
         if ($search) {
-            $searchLower = strtolower($search);
-    
-            $query->where(function($q) use ($searchLower) {
-                $q->whereRaw('LOWER(ref_urusan.nm_urusan) like ?', ["%{$searchLower}%"])
-                  ->orWhereRaw('LOWER(ref_bidang_urusan.nm_bu) like ?', ["%{$searchLower}%"])
-                  ->orWhereRaw('LOWER(ref_program.nm_program) like ?', ["%{$searchLower}%"])
-                  ->orWhereRaw('LOWER(ref_kegiatan.nm_kegiatan) like ?', ["%{$searchLower}%"])
-                  ->orWhereRaw('LOWER(ref_subkegiatan.nm_subkegiatan) like ?', ["%{$searchLower}%"])
-                  ->orWhereRaw('LOWER(ref_rekening.nm_rekening) like ?', ["%{$searchLower}%"])
-                  ->orWhereRaw('LOWER(skpd.nm_opd) like ?', ["%{$searchLower}%"]);
+            $s = strtolower($search);
+            $query->where(function ($q) use ($s) {
+                $q->orWhereRaw('LOWER(skpd.nm_opd) LIKE ?', ["%$s%"])
+                  ->orWhereRaw('LOWER(ref_urusan.nm_urusan) LIKE ?', ["%$s%"])
+                  ->orWhereRaw('LOWER(ref_bidang_urusan.nm_bu) LIKE ?', ["%$s%"])
+                  ->orWhereRaw('LOWER(ref_program.nm_program) LIKE ?', ["%$s%"])
+                  ->orWhereRaw('LOWER(ref_kegiatan.nm_kegiatan) LIKE ?', ["%$s%"])
+                  ->orWhereRaw('LOWER(ref_subkegiatan.nm_subkegiatan) LIKE ?', ["%$s%"])
+                  ->orWhereRaw('LOWER(ref_rekening.nm_rekening) LIKE ?', ["%$s%"]);
             });
         }
     
-        // Pilih field dari PaguBelanja
-        $data = $query->selectRaw('DISTINCT pagu_belanja.*')
-                    ->where('is_deleted',0)
-                    ->orderBy('pagu_belanja.tahun_rek', 'desc')
-                    ->paginate(10);
+        // ================= SELECT =================
+        $query->select([
+            'pagu_belanja.*',
+            'ref_urusan.nm_urusan',
+            'ref_bidang_urusan.nm_bu',
+            'ref_program.nm_program',
+            'ref_kegiatan.nm_kegiatan',
+            'ref_subkegiatan.nm_subkegiatan',
+            'ref_rekening.nm_rekening',
+            'skpd.nm_opd',
+        ]);
     
-        // Transform relasi Eloquent jika perlu
-        $data->getCollection()->transform(function ($item) {
-            $item->program      = $item->program;
-            $item->kegiatan     = $item->kegiatan;
-            $item->subkegiatan  = $item->subkegiatan;
-            $item->rekening     = $item->rekening;
-            $item->bu           = $item->bu;
-            $item->skpd         = $item->skpd;
-            return $item;
-        });
+        // ================= SORT (NO ALIAS!) =================
+        $sortMap = [
+            'NM_OPD'         => 'skpd.nm_opd',
+            'NM_URUSAN'      => 'ref_urusan.nm_urusan',
+            'NM_BU'          => 'ref_bidang_urusan.nm_bu',
+            'NM_PROGRAM'     => 'ref_program.nm_program',
+            'NM_KEGIATAN'    => 'ref_kegiatan.nm_kegiatan',
+            'NM_SUBKEGIATAN' => 'ref_subkegiatan.nm_subkegiatan',
+            'NM_REKENING'    => 'ref_rekening.nm_rekening',
+            'JUMLAH_PAGU'    => 'pagu_belanja.jumlah_pagu',
+        ];
     
-        return PaguBelanjaResource::collection($data);
+        $query->orderBy(
+            $sortMap[$sortBy] ?? 'pagu_belanja.id_pb',
+            $sortDir
+        );
+    
+        return response()->json(
+            $query->paginate(10)
+        );
     }
+    
     
     /**
      * Simpan data Pagu Belanja baru.

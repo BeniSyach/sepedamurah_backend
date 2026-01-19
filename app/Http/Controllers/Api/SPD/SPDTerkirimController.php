@@ -22,7 +22,14 @@ class SPDTerkirimController extends Controller
     public function index(Request $request)
     {
         $query = SPDTerkirimModel::with('permohonan')
-            ->whereNull('deleted_at');
+        ->whereNull('spd_terkirim.deleted_at')
+        ->join('ref_opd', function ($join) {
+            $join->on('spd_terkirim.kd_opd1', '=', 'ref_opd.kd_opd1')
+                 ->on('spd_terkirim.kd_opd2', '=', 'ref_opd.kd_opd2')
+                 ->on('spd_terkirim.kd_opd3', '=', 'ref_opd.kd_opd3')
+                 ->on('spd_terkirim.kd_opd4', '=', 'ref_opd.kd_opd4')
+                 ->on('spd_terkirim.kd_opd5', '=', 'ref_opd.kd_opd5');
+        });
     
         // Filter menu
         if ($menu = $request->get('menu')) {
@@ -74,7 +81,7 @@ class SPDTerkirimController extends Controller
                       ->orWhere('tte', '=', '0')
                       ->orWhere('tte', '=', '');
                 });
-                $query->where('paraf_kbud', '1');
+                $query->where('spd_terkirim.paraf_kbud', '1');
             }
 
             if ($menu === 'spd_ditandatangani_bud') {
@@ -103,15 +110,19 @@ class SPDTerkirimController extends Controller
     
         // Filter search
         if ($search = $request->get('search')) {
+            $search = strtolower($search);
+        
             $query->where(function ($q) use ($search) {
-                $q->where('nama_penerima', 'like', "%{$search}%")
-                  ->orWhere('nama_operator', 'like', "%{$search}%")
-                  ->orWhere('namafile', 'like', "%{$search}%");
+                $q->whereRaw('LOWER(spd_terkirim.nama_penerima) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(spd_terkirim.nama_operator) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(spd_terkirim.namafile) LIKE ?', ["%{$search}%"]);
             });
         }
+        
     
         // Pagination
-        $data = $query->orderBy('created_at', 'desc')
+        $data = $query->orderBy('spd_terkirim.created_at', 'desc')
                       ->paginate($request->get('per_page', 10));
     
         // Attach skpd secara manual
