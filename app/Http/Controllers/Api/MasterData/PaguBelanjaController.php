@@ -74,7 +74,7 @@ class PaguBelanjaController extends Controller
                         pagu_belanja.kd_opd4||'.'||pagu_belanja.kd_opd5||'.'||pagu_belanja.kd_opd6||'.'||
                         pagu_belanja.kd_opd7||'.'||pagu_belanja.kd_opd8,
                     ' ', ''))
-                "));
+                "))->where('skpd.hidden', 0);
             });
     
         // ================= SEARCH =================
