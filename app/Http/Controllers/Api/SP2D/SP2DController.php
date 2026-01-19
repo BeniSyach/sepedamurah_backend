@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Resources\SP2DResource;
 use App\Models\AksesKuasaBUDModel;
 use App\Models\AksesOperatorModel;
+use App\Models\BesaranUPSKPDModel;
 use App\Models\PaguBelanjaModel;
 use App\Models\SKPDModel;
 use App\Models\SP2DRekeningModel;
@@ -825,6 +826,7 @@ class SP2DController extends Controller
      */
     public function store(Request $request, TelegramService $telegram)
     {
+        $tahunSekarang = date('Y');
         if ($request->has('id_berkas') && is_string($request->id_berkas)) {
             $decoded = json_decode($request->id_berkas, true);
         
@@ -909,6 +911,50 @@ class SP2DController extends Controller
                 'status' => false,
                 'message' => 'SKPD tidak ditemukan berdasarkan kode OPD'
             ], 422);
+        }
+
+        if ($request->jenis_berkas == 'UP') {
+            $paguUp = BesaranUPSKPDModel::where('kd_opd1', $opdRequest['kd_opd1'])
+                    ->where('kd_opd2', $opdRequest['kd_opd2'])
+                    ->where('kd_opd3', $opdRequest['kd_opd3'])
+                    ->where('kd_opd4', $opdRequest['kd_opd4'])
+                    ->where('kd_opd5', $opdRequest['kd_opd5'])
+                    ->where('tahun', $tahunSekarang)
+                    ->first();
+
+            /**
+             * 3. Jika pagu UP tidak ada
+             */
+            if (!$paguUp) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Pagu UP tidak tersedia untuk tahun ' . $tahunSekarang
+                ], 422);
+            }
+            $totalUpTerpakai = SP2DModel::where('kd_opd1', $opdRequest['kd_opd1'])
+                ->where('kd_opd2', $opdRequest['kd_opd2'])
+                ->where('kd_opd3', $opdRequest['kd_opd3'])
+                ->where('kd_opd4', $opdRequest['kd_opd4'])
+                ->where('kd_opd5', $opdRequest['kd_opd5'])
+                ->where('tahun', $tahunSekarang)
+                ->where('jenis_berkas', 'UP')
+                ->sum('nilai_belanja');
+
+                $sisaPagu = (float) $paguUp->pagu - (float) $totalUpTerpakai;
+                $nilaiSp2d = (float) $request->nilai_belanja;
+
+                if ($nilaiSp2d > $sisaPagu) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Pagu UP tidak mencukupi',
+                        'data'    => [
+                            'pagu_up'        => $paguUp->pagu,
+                            'terpakai'       => $totalUpTerpakai,
+                            'sisa_pagu'      => $sisaPagu,
+                            'nilai_sp2d'     => $nilaiSp2d,
+                        ]
+                    ], 422);
+                }
         }
 
         $kodeOpd = $skpd->kode_opd;
