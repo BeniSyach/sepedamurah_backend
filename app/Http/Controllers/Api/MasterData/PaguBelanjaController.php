@@ -120,7 +120,7 @@ class PaguBelanjaController extends Controller
             $sortDir
         );
     
-        return response()->json(
+        return PaguBelanjaResource::collection(
             $query->paginate(10)
         );
     }
