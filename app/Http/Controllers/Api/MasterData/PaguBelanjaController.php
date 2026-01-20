@@ -18,6 +18,7 @@ class PaguBelanjaController extends Controller
      */
     public function index(Request $request)
     {
+        $perPage = $request->get('per_page', 10);
         $search  = $request->input('search');
         $sortBy  = $request->input('sort_by');
         $sortDir = strtolower($request->input('sort_dir')) === 'asc' ? 'asc' : 'desc';
@@ -121,7 +122,7 @@ class PaguBelanjaController extends Controller
         );
     
         return PaguBelanjaResource::collection(
-            $query->paginate(10)
+            $query->paginate($perPage)
         );
     }
     
