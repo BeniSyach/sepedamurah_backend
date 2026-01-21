@@ -424,18 +424,18 @@ class DashboardController extends Controller
     {
         $tahun = $request->input('tahun', date('Y'));
         $dpaId = $request->input('dpa_id', null);
-    
-        // Query akses DPA dengan filter
+
+        // ================= QUERY AKSES DPA =================
         $aksesQuery = AksesDPAModel::with('dpa')
             ->where('tahun', $tahun);
-    
+
         if ($dpaId && $dpaId !== 'all') {
             $aksesQuery->where('dpa_id', $dpaId);
         }
-    
+
         $aksesData = $aksesQuery->get();
-    
-        // Mapping data monitoring
+
+        // ================= INIT =================
         $monitoring = [];
         $summary = [
             'total' => 0,
@@ -443,32 +443,49 @@ class DashboardController extends Controller
             'notUploaded' => 0,
             'percentage' => 0,
         ];
-    
+
+        // ================= LOOP DATA =================
         foreach ($aksesData as $akses) {
-    
-            // 🔍 Cek apakah sudah ada laporan
-            $laporan = LaporanDPAModel::where('kd_opd1', $akses->kd_opd1)
-                ->where('kd_opd2', $akses->kd_opd2)
-                ->where('kd_opd3', $akses->kd_opd3)
-                ->where('kd_opd4', $akses->kd_opd4)
-                ->where('kd_opd5', $akses->kd_opd5)
-                ->where('dpa_id', $akses->dpa_id)
-                ->where('tahun', $tahun)
+
+            // 🔍 CEK LAPORAN
+            $laporan = LaporanDPAModel::where([
+                    'kd_opd1' => $akses->kd_opd1,
+                    'kd_opd2' => $akses->kd_opd2,
+                    'kd_opd3' => $akses->kd_opd3,
+                    'kd_opd4' => $akses->kd_opd4,
+                    'kd_opd5' => $akses->kd_opd5,
+                    'dpa_id'  => $akses->dpa_id,
+                    'tahun'   => $tahun,
+                ])
                 ->whereNull('deleted_at')
-                ->orderBy('id', 'desc')
+                ->latest('id')
                 ->first();
-    
-            // 🏢 Ambil data SKPD
-            $skpd = SKPDModel::where('kd_opd1', $akses->kd_opd1)
-                ->where('kd_opd2', $akses->kd_opd2)
-                ->where('kd_opd3', $akses->kd_opd3)
-                ->where('kd_opd4', $akses->kd_opd4)
-                ->where('kd_opd5', $akses->kd_opd5)
-                ->first();
-    
+
+            // 🏢 KEY SKPD
+            $kdOpd = "{$akses->kd_opd1}.{$akses->kd_opd2}.{$akses->kd_opd3}.{$akses->kd_opd4}.{$akses->kd_opd5}";
+
+            // 🏢 INIT SKPD JIKA BELUM ADA
+            if (!isset($monitoring[$kdOpd])) {
+
+                $skpd = SKPDModel::where([
+                    'kd_opd1' => $akses->kd_opd1,
+                    'kd_opd2' => $akses->kd_opd2,
+                    'kd_opd3' => $akses->kd_opd3,
+                    'kd_opd4' => $akses->kd_opd4,
+                    'kd_opd5' => $akses->kd_opd5,
+                ])->first();
+
+                $monitoring[$kdOpd] = [
+                    'kd_opd'    => $kdOpd,
+                    'nama_skpd'=> $skpd->nm_opd ?? 'SKPD Tidak Ditemukan',
+                    'items'    => [],
+                ];
+            }
+
+            // 📌 STATUS UPLOAD
             $status = $laporan ? 'Sudah Upload' : 'Belum Upload';
-    
-            // 📌 Tentukan status proses
+
+            // 📌 STATUS PROSES
             $prosesStatus = null;
             if ($laporan) {
                 if ($laporan->diterima) {
@@ -481,26 +498,20 @@ class DashboardController extends Controller
                     $prosesStatus = 'Berkas terkirim';
                 }
             }
-    
-            $monitoring[] = [
-                'id' => $laporan ? $laporan->id : null,
-                'kd_opd' => "{$akses->kd_opd1}.{$akses->kd_opd2}.{$akses->kd_opd3}.{$akses->kd_opd4}.{$akses->kd_opd5}",
-                'kd_opd1' => $akses->kd_opd1,
-                'kd_opd2' => $akses->kd_opd2,
-                'kd_opd3' => $akses->kd_opd3,
-                'kd_opd4' => $akses->kd_opd4,
-                'kd_opd5' => $akses->kd_opd5,
-                'nama_skpd' => $skpd->nm_opd ?? 'SKPD Tidak Ditemukan',
-                'dpa_id' => $akses->dpa_id,
-                'nama_dpa' => $akses->dpa->nm_dpa ?? '-',
-                'status' => $status,
-                'tanggal_upload' => $laporan ? $laporan->created_at : null,
-                'proses_status' => $prosesStatus,
-                'operator' => $laporan ? $laporan->nama_operator : null,
-                'user_id' => $laporan ? $laporan->user_id : null,
+
+            // 📥 PUSH ITEM DPA
+            $monitoring[$kdOpd]['items'][] = [
+                'id'             => $laporan?->id,
+                'dpa_id'         => $akses->dpa_id,
+                'nama_dpa'       => $akses->dpa->nm_dpa ?? '-',
+                'status'         => $status,
+                'tanggal_upload' => $laporan?->created_at,
+                'proses_status'  => $prosesStatus,
+                'operator'       => $laporan?->nama_operator,
+                'user_id'        => $laporan?->user_id,
             ];
-    
-            // 📊 Update summary
+
+            // 📊 SUMMARY
             $summary['total']++;
             if ($status === 'Sudah Upload') {
                 $summary['uploaded']++;
@@ -508,24 +519,26 @@ class DashboardController extends Controller
                 $summary['notUploaded']++;
             }
         }
-    
-        // 🔽 SORTING BERDASARKAN created_at (tanggal_upload)
-        // Sudah Upload terbaru di atas, Belum Upload di bawah
-        $monitoring = collect($monitoring)
-            ->sortByDesc(function ($item) {
-                return $item['tanggal_upload'] ?? '1900-01-01';
-            })
-            ->values()
-            ->toArray();
-    
-        // 📈 Hitung persentase
+
+        // ================= SORTING =================
+        foreach ($monitoring as &$skpd) {
+            usort($skpd['items'], function ($a, $b) {
+                return strtotime($b['tanggal_upload'] ?? '1900-01-01')
+                    <=> strtotime($a['tanggal_upload'] ?? '1900-01-01');
+            });
+        }
+
+        $monitoring = array_values($monitoring);
+
+        // ================= PERCENTAGE =================
         if ($summary['total'] > 0) {
             $summary['percentage'] = round(
                 ($summary['uploaded'] / $summary['total']) * 100,
                 2
             );
         }
-    
+
+        // ================= RESPONSE =================
         return response()->json([
             'success' => true,
             'data' => [
@@ -535,8 +548,6 @@ class DashboardController extends Controller
             ]
         ]);
     }
-    
-
 
     public function getAvailableYears()
     {

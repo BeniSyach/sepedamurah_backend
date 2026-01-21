@@ -155,7 +155,7 @@ class UsersController extends Controller
                 'image' => $pathImage,
                 'visualisasi_tte' => $pathTte,
                 'password' => bcrypt($validated['password']),
-                'is_active' => 0,
+                'is_active' => 1,
                 'chat_id' => $validated['chat_id'] ?? null,
                 'deleted' => 0,
             ]);
@@ -248,6 +248,7 @@ class UsersController extends Controller
             'chat_id' => 'nullable|string|max:225',
             'role' => 'nullable|array|min:1', // pastikan array role dikirim
             'role.*' => 'nullable|string',
+            'is_active' => 'nullable|string|max:20'
         ]);
     
         // Password validation jika diisi
