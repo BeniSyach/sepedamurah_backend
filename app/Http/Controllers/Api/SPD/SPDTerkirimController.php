@@ -119,6 +119,10 @@ class SPDTerkirimController extends Controller
                   ->orWhereRaw('LOWER(spd_terkirim.namafile) LIKE ?', ["%{$search}%"]);
             });
         }
+
+        if ($request->filled('tahun')) {
+            $query->whereYear('spd_terkirim.tanggal_upload', $request->tahun);
+        }
         
     
         // Pagination
