@@ -10,6 +10,7 @@ use App\Models\LogTTEModel;
 use App\Services\TTE_BSRE;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class SP2DKirimController extends Controller
 {
@@ -311,7 +312,13 @@ class SP2DKirimController extends Controller
 
         // Upload PDF sebelum sign
         $uploaded = $request->file('file');
-        $saveName = $request->nama_file . ".pdf";
+        $rawName = $request->nama_file;
+        // Bersihkan karakter aneh
+        $cleanName = preg_replace('/[^A-Za-z0-9\-_]/', '_', $rawName);
+        // Potong maksimal 50 karakter
+        $shortName = Str::limit($cleanName, 50, '');
+        // Tambahkan timestamp agar unik
+        $saveName = $shortName . '_' . time() . '.pdf';
         $originalFilePath = $uploaded->storeAs("sp2d_original", $saveName, "public");
         $fullPath = storage_path("app/public/" . $originalFilePath);
 
