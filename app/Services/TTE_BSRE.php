@@ -16,7 +16,9 @@ class TTE_BSRE
         $url = "http://10.114.253.33/api/sign/pdf";
 
         try {
-
+            if (!file_exists($filePath) || is_dir($filePath)) {
+                throw new \Exception("File PDF tidak valid: $filePath");
+            }
             // Request ke BSRE
             $response = Http::withBasicAuth('esign','qwerty')
                 ->timeout(60)
