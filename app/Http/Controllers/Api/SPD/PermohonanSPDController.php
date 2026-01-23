@@ -233,14 +233,17 @@ class PermohonanSPDController extends Controller
 
         // 🔍 Filter pencarian
         if ($search = $request->get('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->orWhereRaw("LOWER(nama_pengirim) LIKE ?", ["%$search%"])
-                ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%$search%"])
-                ->orWhereRaw("LOWER(jenis_berkas) LIKE ?", ["%$search%"])
-                ->orWhereRaw("LOWER(nama_operator) LIKE ?", ["%$search%"])
-                ->orWhereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"]);
+            $searchlow = strtolower($search);
+        
+            $query->where(function ($q) use ($searchlow) {
+                $q->whereRaw("LOWER(nama_pengirim) LIKE ?", ["%{$searchlow}%"])
+                  ->orWhereRaw("LOWER(nama_file) LIKE ?", ["%{$searchlow}%"])
+                  ->orWhereRaw("LOWER(jenis_berkas) LIKE ?", ["%{$searchlow}%"])
+                  ->orWhereRaw("LOWER(nama_operator) LIKE ?", ["%{$searchlow}%"])
+                  ->orWhereRaw("LOWER(nm_opd) LIKE ?", ["%{$searchlow}%"]);
             });
         }
+        
 
         if ($dateFrom) {
             $query->whereDate($FilterTanggal, '>=', $dateFrom);

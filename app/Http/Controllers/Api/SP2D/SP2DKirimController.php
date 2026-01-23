@@ -22,10 +22,15 @@ class SP2DKirimController extends Controller
         $query = SP2DKirimModel::query()->whereNull('deleted_at');
 
         if ($search = $request->get('search')) {
-            $query->where('nama_penerima', 'like', "%{$search}%")
-                  ->orWhere('nama_operator', 'like', "%{$search}%")
-                  ->orWhere('namafile', 'like', "%{$search}%");
+            $search = strtolower(trim($search));
+        
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw("LOWER(nama_penerima) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(nama_operator) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(namafile) LIKE ?", ["%{$search}%"]);
+            });
         }
+        
 
         $data = $query->orderBy('tanggal_upload', 'asc')
                       ->paginate($request->get('per_page', 10));

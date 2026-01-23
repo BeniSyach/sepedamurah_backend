@@ -29,12 +29,15 @@ class BatasWaktuController extends Controller
     
         // --- SEARCH ---
         if ($search = $request->get('search')) {
+            $search = strtolower(trim($search));
+        
             $query->where(function ($q) use ($search) {
-                $q->where('batas_waktu.hari', 'like', "%{$search}%")
-                  ->orWhere('batas_waktu.keterangan', 'like', "%{$search}%")
-                  ->orWhere('opd.nm_opd', 'like', "%{$search}%");
+                $q->whereRaw("LOWER(batas_waktu.hari) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(batas_waktu.keterangan) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(opd.nm_opd) LIKE ?", ["%{$search}%"]);
             });
         }
+        
     
         // --- FILTER OPD ---
         for ($i = 1; $i <= 5; $i++) {

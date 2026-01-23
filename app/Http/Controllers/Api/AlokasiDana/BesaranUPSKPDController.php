@@ -26,10 +26,13 @@ class BesaranUPSKPDController extends Controller
 
         // 🔍 Filter pencarian jika ada parameter "search"
         if ($search = $request->get('search')) {
+            $search = strtolower(trim($search));
+        
             $query->where(function ($q) use ($search) {
-                $q->orWhereRaw("LOWER(nm_opd) LIKE ?", ["%$search%"]);
+                $q->whereRaw("LOWER(nm_opd) LIKE ?", ["%{$search}%"]);
             });
         }
+        
 
         // 🔍 Filter tahun jika ada parameter "tahun"
         if ($tahun = $request->get('tahun')) {

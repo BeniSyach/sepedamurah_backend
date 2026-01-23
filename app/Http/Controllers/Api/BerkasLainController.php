@@ -23,11 +23,14 @@ class BerkasLainController extends Controller
 
         // Filter pencarian
         if ($search = $request->get('search')) {
+            $search = strtolower($search);
+        
             $query->where(function ($q) use ($search) {
-                $q->where('nama_dokumen', 'like', "%{$search}%")
-                ->orWhere('nama_file_asli', 'like', "%{$search}%");
+                $q->whereRaw("LOWER(nama_dokumen) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(nama_file_asli) LIKE ?", ["%{$search}%"]);
             });
         }
+        
 
         // Filter berdasarkan user_id jika ada
         if ($userId = $request->get('user_id')) {

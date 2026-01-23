@@ -18,10 +18,14 @@ class UrusanController extends Controller
         $query = UrusanModel::query();
 
         if ($search = $request->get('search')) {
-            $query->where('nm_urusan', 'like', "%{$search}%")
-                  ->orWhere('kd_urusan', 'like', "%{$search}%");
+            $search = strtolower(trim($search));
+        
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw("LOWER(nm_urusan) LIKE ?", ["%{$search}%"])
+                  ->orWhereRaw("LOWER(kd_urusan) LIKE ?", ["%{$search}%"]);
+            });
         }
-
+        
         $data = $query->orderBy('kd_urusan', 'asc')->paginate(10);
 
         return UrusanResource::collection($data);
