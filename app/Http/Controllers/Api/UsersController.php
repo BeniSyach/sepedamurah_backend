@@ -295,6 +295,7 @@ class UsersController extends Controller
         $user->kd_opd4 = $validated['kd_opd4'] ?? $user->kd_opd4;
         $user->kd_opd5 = $validated['kd_opd5'] ?? $user->kd_opd5;
         $user->chat_id = $validated['chat_id'] ?? $user->chat_id;
+        $user->is_active = $validated['is_active'] ?? $user->is_active;
     
         $user->save();
     
