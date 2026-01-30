@@ -115,6 +115,7 @@ class AuthController extends Controller
             })
             ->where('users.nip', $request->nip)
             ->where('users.deleted', '0')
+            ->where('users.is_active', '1')
             ->first();
     
         if (!$user) {
