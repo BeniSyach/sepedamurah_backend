@@ -669,10 +669,10 @@ class LaporanFungsionalController extends Controller
         ];
     
         // Ambil tahun dan bulan sekarang
-        // $tahun = date('Y');
-        $tahun = '2025';
-        // $bulanSekarang = date('n'); // bulan tanpa leading zero (1-12)
-        $bulanSekarang = '12'; // bulan tanpa leading zero (1-12)
+        $tahun = date('Y');
+        // $tahun = '2025';
+        $bulanSekarang = date('n'); // bulan tanpa leading zero (1-12)
+        // $bulanSekarang = '12'; // bulan tanpa leading zero (1-12)
 
         
         $bulanMulai = 1;

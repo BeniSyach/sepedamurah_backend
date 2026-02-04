@@ -93,30 +93,54 @@ class AuthController extends Controller
         // AMBIL USER + STATUS PENERIMAAN
         // ================================
         $user = User::select(
-                'users.*',
-                'ref_opd.nm_opd',
-                'ref_opd.status_penerimaan',
-                'ref_opd.kd_opd1 as skpd_kd_opd1',
-                'ref_opd.kd_opd2 as skpd_kd_opd2',
-                'ref_opd.kd_opd3 as skpd_kd_opd3',
-                'ref_opd.kd_opd4 as skpd_kd_opd4',
-                'ref_opd.kd_opd5 as skpd_kd_opd5',
-                'ref_opd.kode_opd',
-                'ref_opd.hidden',
-                'ref_opd.created_at as skpd_created_at',
-                'ref_opd.updated_at as skpd_updated_at'
-            )
-            ->join('ref_opd', function ($join) {
-                $join->on('users.kd_opd1', '=', 'ref_opd.kd_opd1')
-                    ->on('users.kd_opd2', '=', 'ref_opd.kd_opd2')
-                    ->on('users.kd_opd3', '=', 'ref_opd.kd_opd3')
-                    ->on('users.kd_opd4', '=', 'ref_opd.kd_opd4')
-                    ->on('users.kd_opd5', '=', 'ref_opd.kd_opd5');
-            })
-            ->where('users.nip', $request->nip)
-            ->where('users.deleted', '0')
-            ->where('users.is_active', '1')
-            ->first();
+            'users.*',
+            'ref_opd.nm_opd',
+            'ref_opd.status_penerimaan',
+            'ref_opd.kd_opd1 as skpd_kd_opd1',
+            'ref_opd.kd_opd2 as skpd_kd_opd2',
+            'ref_opd.kd_opd3 as skpd_kd_opd3',
+            'ref_opd.kd_opd4 as skpd_kd_opd4',
+            'ref_opd.kd_opd5 as skpd_kd_opd5',
+            'ref_opd.kode_opd',
+            'ref_opd.hidden',
+            'ref_opd.created_at as skpd_created_at',
+            'ref_opd.updated_at as skpd_updated_at'
+        )
+        ->join('ref_opd', function ($join) {
+            $join->on('users.kd_opd1', '=', 'ref_opd.kd_opd1')
+                ->on('users.kd_opd2', '=', 'ref_opd.kd_opd2')
+                ->on('users.kd_opd3', '=', 'ref_opd.kd_opd3')
+                ->on('users.kd_opd4', '=', 'ref_opd.kd_opd4')
+                ->on('users.kd_opd5', '=', 'ref_opd.kd_opd5');
+        })
+        ->where('users.nip', $request->nip)
+        ->where('users.deleted', '0')
+        ->where('users.is_active', '1')
+        ->first();
+
+        $skpds = User::join('ref_opd', function ($join) {
+            $join->on('users.kd_opd1', '=', 'ref_opd.kd_opd1')
+                 ->on('users.kd_opd2', '=', 'ref_opd.kd_opd2')
+                 ->on('users.kd_opd3', '=', 'ref_opd.kd_opd3')
+                 ->on('users.kd_opd4', '=', 'ref_opd.kd_opd4')
+                 ->on('users.kd_opd5', '=', 'ref_opd.kd_opd5');
+        })
+        ->where('users.nip', $request->nip)
+        ->where('users.deleted', '0')
+        ->where('users.is_active', '1')
+        ->select(
+            'ref_opd.kd_opd1',
+            'ref_opd.kd_opd2',
+            'ref_opd.kd_opd3',
+            'ref_opd.kd_opd4',
+            'ref_opd.kd_opd5',
+            'ref_opd.nm_opd',
+            'ref_opd.kode_opd',
+            'ref_opd.status_penerimaan'
+        )
+        ->distinct()
+        ->get();   // ⬅️ INI KUNCI UTAMA
+    
     
         if (!$user) {
             return response()->json([
@@ -154,33 +178,38 @@ class AuthController extends Controller
         // =================================
         // BUILD SKPD OBJECT UNTUK RESPONSE
         // =================================
-        $user->skpd = [
-            'kd_opd1' => $user->skpd_kd_opd1,
-            'kd_opd2' => $user->skpd_kd_opd2,
-            'kd_opd3' => $user->skpd_kd_opd3,
-            'kd_opd4' => $user->skpd_kd_opd4,
-            'kd_opd5' => $user->skpd_kd_opd5,
-            'nm_opd' => $user->nm_opd,
-            'status_penerimaan' => (int) $statusPenerimaan,
-            'kode_opd' => $user->kode_opd,
-            'hidden' => (int) $user->hidden,
-            'created_at' => $user->skpd_created_at,
-            'updated_at' => $user->skpd_updated_at,
-            'deleted_at' => null
-        ];
+        
+        $user->skpds = $skpds;
+
+        // $user->skpd = $skpds->map(function ($s) {
+        //     return [
+        //         'kd_opd1' => $s->kd_opd1,
+        //         'kd_opd2' => $s->kd_opd2,
+        //         'kd_opd3' => $s->kd_opd3,
+        //         'kd_opd4' => $s->kd_opd4,
+        //         'kd_opd5' => $s->kd_opd5,
+        //         'nm_opd' => $s->nm_opd,
+        //         'kode_opd' => $s->kode_opd,
+        //         'status_penerimaan' => (int) $s->status_penerimaan,
+        //         'hidden' => (int) $s->hidden,
+        //         'created_at' => $s->created_at,
+        //         'updated_at' => $s->updated_at,
+        //     ];
+        // });
+        
     
         // Hapus kolom duplikat dari user level
-        unset(
-            $user->skpd_kd_opd1, 
-            $user->skpd_kd_opd2, 
-            $user->skpd_kd_opd3, 
-            $user->skpd_kd_opd4, 
-            $user->skpd_kd_opd5, 
-            $user->skpd_created_at, 
-            $user->skpd_updated_at, 
-            $user->kode_opd, 
-            $user->hidden
-        );
+        // unset(
+        //     $user->skpd_kd_opd1, 
+        //     $user->skpd_kd_opd2, 
+        //     $user->skpd_kd_opd3, 
+        //     $user->skpd_kd_opd4, 
+        //     $user->skpd_kd_opd5, 
+        //     $user->skpd_created_at, 
+        //     $user->skpd_updated_at, 
+        //     $user->kode_opd, 
+        //     $user->hidden
+        // );
     
         // =================================
         // RETURN RESPONSE
