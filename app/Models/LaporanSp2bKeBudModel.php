@@ -34,6 +34,7 @@ class LaporanSp2bKeBudModel extends Model
         'diterima',
         'ditolak',
         'alasan_tolak',
+        'created_at'
     ];
 
     // === Mapping kolom timestamp (huruf kecil) ===
