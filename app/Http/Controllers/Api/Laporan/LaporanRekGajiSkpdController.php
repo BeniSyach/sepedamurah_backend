@@ -12,6 +12,7 @@ use App\Models\UsersPermissionModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Services\TelegramService;
+use Carbon\Carbon;
 
 class LaporanRekGajiSkpdController extends Controller
 {
@@ -189,6 +190,7 @@ class LaporanRekGajiSkpdController extends Controller
             'rek_gaji_id' => 'required|integer',
             'user_id' => 'required|integer',
             'tahun' => 'required|integer',
+            'bulan' => 'required|string',
             'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:20480',
         ]);
 
@@ -216,6 +218,15 @@ class LaporanRekGajiSkpdController extends Controller
             $validated['file'] = $request->file('file')
                 ->store('laporan_rek_gaji', 'public');
         }
+
+        $now = Carbon::now();
+
+        $tanggal_upload = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            "{$validated['tahun']}-{$validated['bulan']}-01 " . $now->format('H:i:s')
+        );
+
+        $validated['created_at'] = $tanggal_upload;
 
         $data = LaporanRekGajiSkpdModel::create($validated);
 

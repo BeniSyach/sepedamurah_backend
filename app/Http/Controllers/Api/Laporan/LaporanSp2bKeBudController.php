@@ -12,6 +12,7 @@ use App\Models\UsersPermissionModel;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class LaporanSp2bKeBudController extends Controller
 {
@@ -200,6 +201,7 @@ class LaporanSp2bKeBudController extends Controller
             'ref_sp2b_ke_bud_id'    => 'required|integer',
             'user_id'               => 'required|integer',
             'tahun'                 => 'required|integer',
+            'bulan'                 => 'required|string',
             'file'                  => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:20480',
         ]);
 
@@ -208,6 +210,15 @@ class LaporanSp2bKeBudController extends Controller
             $validated['file'] = $request->file('file')
                 ->store('laporan_sp2b_ke_bud', 'public');
         }
+
+        $now = Carbon::now();
+
+        $tanggal_upload = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            "{$validated['tahun']}-{$validated['bulan']}-01 " . $now->format('H:i:s')
+        );
+
+        $validated['created_at'] = $tanggal_upload;
 
         $data = LaporanSp2bKeBudModel::create($validated);
         if ($data) {

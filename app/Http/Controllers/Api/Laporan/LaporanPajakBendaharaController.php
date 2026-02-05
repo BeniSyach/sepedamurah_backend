@@ -12,6 +12,7 @@ use App\Models\UsersPermissionModel;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class LaporanPajakBendaharaController extends Controller
 {
@@ -197,6 +198,7 @@ class LaporanPajakBendaharaController extends Controller
             'ref_pajak_id'   => 'required|integer',
             'user_id'        => 'required|integer',
             'tahun'          => 'required|integer',
+            'bulan'          => 'required|string',
             'file'           => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:20480',
         ]);
 
@@ -205,6 +207,15 @@ class LaporanPajakBendaharaController extends Controller
             $validated['file'] = $request->file('file')
                 ->store('laporan_pajak_bendahara', 'public');
         }
+
+        $now = Carbon::now();
+
+        $tanggal_upload = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            "{$validated['tahun']}-{$validated['bulan']}-01 " . $now->format('H:i:s')
+        );
+
+        $validated['created_at'] = $tanggal_upload;
 
         $data = LaporanPajakBendaharaModel::create($validated);
         if ($data) {
