@@ -201,7 +201,7 @@ class LaporanSp2bKeBudController extends Controller
             'ref_sp2b_ke_bud_id'    => 'required|integer',
             'user_id'               => 'required|integer',
             'tahun'                 => 'required|integer',
-            'bulan'                 => 'required|string',
+            'bulan'                 => 'nullable|string',
             'file'                  => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:20480',
         ]);
 
@@ -213,11 +213,15 @@ class LaporanSp2bKeBudController extends Controller
 
         $now = Carbon::now();
 
+        if (empty($validated['bulan'])) {
+            // 🔥 Jika bulan tidak ada → pakai waktu sekarang
+            $tanggal_upload = $now;
+        } else {
         $tanggal_upload = Carbon::createFromFormat(
             'Y-m-d H:i:s',
             "{$validated['tahun']}-{$validated['bulan']}-01 " . $now->format('H:i:s')
         );
-
+        }
         $validated['created_at'] = $tanggal_upload;
 
         $data = LaporanSp2bKeBudModel::create($validated);
