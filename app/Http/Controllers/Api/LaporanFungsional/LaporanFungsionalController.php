@@ -673,7 +673,18 @@ class LaporanFungsionalController extends Controller
         // $tahun = '2025';
         $bulanSekarang = date('n'); // bulan tanpa leading zero (1-12)
         // $bulanSekarang = '12'; // bulan tanpa leading zero (1-12)
+        $tanggalSekarang = date('j'); // tanggal tanpa leading zero
+        // 🔥 Tentukan bulan terakhir yang dicek
+        if ($tanggalSekarang <= 10) {
+            $bulanAkhir = $bulanSekarang - 1;
+        } else {
+            $bulanAkhir = $bulanSekarang;
+        }
 
+        // Jika masih Januari & belum lewat tgl 10 → tidak cek apa pun
+        if ($bulanAkhir < 1) {
+            return $result;
+        }
         
         $bulanMulai = 1;
         if (in_array($kodeOpd, $opdKhusus)) {
@@ -701,7 +712,7 @@ class LaporanFungsionalController extends Controller
         }
     
         // Loop dari bulan 1 hingga bulan sebelum bulan sekarang
-        for ($bulan = $bulanMulai; $bulan <= $bulanSekarang; $bulan++) {
+        for ($bulan = $bulanMulai; $bulan <= $bulanAkhir; $bulan++) {
             // Cek data pengeluaran
             $pengeluaranExists = DB::table('fungsional')
                 ->where('kd_opd1', $kd_opd1)
