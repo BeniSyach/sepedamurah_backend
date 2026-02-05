@@ -682,7 +682,7 @@ class LaporanFungsionalController extends Controller
         }
 
         // Jika masih Januari & belum lewat tgl 10 → tidak cek apa pun
-        if ($bulanAkhir < 1) {
+        if ($bulanSekarang == 2 && $tanggalSekarang <= 10) {
             return $result;
         }
         
