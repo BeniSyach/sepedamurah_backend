@@ -137,7 +137,7 @@ class AuthController extends Controller
             'ref_opd.status_penerimaan',
             'users.is_active'
         )
-        ->distinct()
+        ->get()
         ->map(function ($row) {
             return [
                 'kd_opd1' => (string) $row->kd_opd1,
