@@ -134,7 +134,8 @@ class AuthController extends Controller
             'ref_opd.kd_opd5',
             'ref_opd.nm_opd',
             'ref_opd.kode_opd',
-            'ref_opd.status_penerimaan'
+            'ref_opd.status_penerimaan',
+            'users.is_active'
         )
         ->distinct()
         ->map(function ($row) {
