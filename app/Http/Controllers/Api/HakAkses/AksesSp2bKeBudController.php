@@ -7,6 +7,7 @@ use App\Models\AksesSp2bKeBudModel;
 use App\Models\LaporanSp2bKeBudModel;
 use App\Models\SKPDModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AksesSp2bKeBudController extends Controller
 {
@@ -109,36 +110,69 @@ class AksesSp2bKeBudController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kd_opd1'   => 'required|string',
-            'kd_opd2'   => 'required|string',
-            'kd_opd3'   => 'required|string',
-            'kd_opd4'   => 'required|string',
-            'kd_opd5'   => 'required|string',
-            'tahun'     => 'required|string',
+            'tahun' => 'required|string',
+    
             'sp2bIds'   => 'required|array|min:1',
             'sp2bIds.*' => 'exists:ref_sp2b_ke_bud,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
-
+    
         $inserted = [];
-
-        foreach ($validated['sp2bIds'] as $sp2bId) {
-            $inserted[] = AksesSp2bKeBudModel::create([
-                'kd_opd1'              => $validated['kd_opd1'],
-                'kd_opd2'              => $validated['kd_opd2'],
-                'kd_opd3'              => $validated['kd_opd3'],
-                'kd_opd4'              => $validated['kd_opd4'],
-                'kd_opd5'              => $validated['kd_opd5'],
-                'tahun'                => $validated['tahun'],
-                'ref_sp2b_ke_bud_id'   => $sp2bId,
-            ]);
-        }
-
+    
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['sp2bIds'] as $sp2bId) {
+    
+                    $query = [
+                        'kd_opd1' => $opd['kd_opd1'],
+                        'kd_opd2' => $opd['kd_opd2'],
+                        'kd_opd3' => $opd['kd_opd3'],
+                        'kd_opd4' => $opd['kd_opd4'],
+                        'kd_opd5' => $opd['kd_opd5'],
+                        'tahun'   => $validated['tahun'],
+                        'ref_sp2b_ke_bud_id' => $sp2bId,
+                    ];
+    
+                    // ⛔ sudah ada & aktif → skip
+                    $exists = AksesSp2bKeBudModel::where($query)
+                        ->whereNull('deleted_at')
+                        ->exists();
+    
+                    if ($exists) {
+                        continue;
+                    }
+    
+                    // ♻️ pernah soft delete → restore
+                    $softDeleted = AksesSp2bKeBudModel::where($query)
+                        ->whereNotNull('deleted_at')
+                        ->first();
+    
+                    if ($softDeleted) {
+                        $softDeleted->update(['deleted_at' => null]);
+                        $inserted[] = $softDeleted;
+                        continue;
+                    }
+    
+                    // ➕ benar-benar baru
+                    $inserted[] = AksesSp2bKeBudModel::create($query);
+                }
+            }
+        });
+    
         return response()->json([
             'status'  => true,
             'message' => 'Akses SP2B ke BUD berhasil ditambahkan',
             'data'    => $inserted,
         ]);
     }
+    
 
     /**
      * Detail satu akses
@@ -167,59 +201,75 @@ class AksesSp2bKeBudController extends Controller
     /**
      * Update akses SP2B ke BUD (hapus lama, insert ulang)
      */
-    public function update(Request $request, $kd1, $kd2, $kd3, $kd4, $kd5, $tahun)
+    public function update(Request $request)
     {
-        $aksesLama = AksesSp2bKeBudModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->whereNull('deleted_at')->get();
-
-        if ($aksesLama->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Data tidak ditemukan',
-            ], 404);
-        }
-
         $validated = $request->validate([
+            'tahun' => 'required|string',
+    
             'sp2bIds'   => 'required|array|min:1',
             'sp2bIds.*' => 'exists:ref_sp2b_ke_bud,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
-
-        // Soft delete lama
-        AksesSp2bKeBudModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->update(['deleted_at' => now()]);
-
-        // Insert ulang
+    
         $inserted = [];
-        foreach ($validated['sp2bIds'] as $sp2bId) {
-            $inserted[] = AksesSp2bKeBudModel::create([
-                'kd_opd1'            => $kd1,
-                'kd_opd2'            => $kd2,
-                'kd_opd3'            => $kd3,
-                'kd_opd4'            => $kd4,
-                'kd_opd5'            => $kd5,
-                'tahun'              => $tahun,
-                'ref_sp2b_ke_bud_id' => $sp2bId,
-            ]);
-        }
-
+    
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+    
+                // Ambil data lama per OPD
+                $aksesLama = AksesSp2bKeBudModel::where([
+                    'kd_opd1' => $opd['kd_opd1'],
+                    'kd_opd2' => $opd['kd_opd2'],
+                    'kd_opd3' => $opd['kd_opd3'],
+                    'kd_opd4' => $opd['kd_opd4'],
+                    'kd_opd5' => $opd['kd_opd5'],
+                    'tahun'   => $validated['tahun'],
+                ])->whereNull('deleted_at')->exists();
+    
+                if (!$aksesLama) {
+                    // kalau mau strict → throw exception
+                    continue;
+                }
+    
+                // 🔥 soft delete lama
+                AksesSp2bKeBudModel::where([
+                    'kd_opd1' => $opd['kd_opd1'],
+                    'kd_opd2' => $opd['kd_opd2'],
+                    'kd_opd3' => $opd['kd_opd3'],
+                    'kd_opd4' => $opd['kd_opd4'],
+                    'kd_opd5' => $opd['kd_opd5'],
+                    'tahun'   => $validated['tahun'],
+                ])->update(['deleted_at' => now()]);
+    
+                // ➕ insert ulang
+                foreach ($validated['sp2bIds'] as $sp2bId) {
+                    $inserted[] = AksesSp2bKeBudModel::create([
+                        'kd_opd1'            => $opd['kd_opd1'],
+                        'kd_opd2'            => $opd['kd_opd2'],
+                        'kd_opd3'            => $opd['kd_opd3'],
+                        'kd_opd4'            => $opd['kd_opd4'],
+                        'kd_opd5'            => $opd['kd_opd5'],
+                        'tahun'              => $validated['tahun'],
+                        'ref_sp2b_ke_bud_id' => $sp2bId,
+                    ]);
+                }
+            }
+        });
+    
         return response()->json([
             'status'  => true,
             'message' => 'Akses SP2B ke BUD berhasil diperbarui',
             'data'    => $inserted,
         ]);
     }
+    
 
     /**
      * Soft delete akses

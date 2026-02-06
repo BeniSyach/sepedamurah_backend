@@ -7,6 +7,7 @@ use App\Models\AksesPajakBendaharaModel;
 use App\Models\LaporanPajakBendaharaModel;
 use App\Models\SKPDModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AksesPajakBendaharaController extends Controller
 {
@@ -113,79 +114,131 @@ class AksesPajakBendaharaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kd_opd1' => 'required|string',
-            'kd_opd2' => 'required|string',
-            'kd_opd3' => 'required|string',
-            'kd_opd4' => 'required|string',
-            'kd_opd5' => 'required|string',
-            'tahun'   => 'required|string',
+            'tahun' => 'required|string',
+    
             'pajakIds'   => 'required|array|min:1',
             'pajakIds.*' => 'exists:ref_pajak_bendahara,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
-
+    
         $inserted = [];
-
-        foreach ($validated['pajakIds'] as $pajakId) {
-            $inserted[] = AksesPajakBendaharaModel::create([
-                'kd_opd1'      => $validated['kd_opd1'],
-                'kd_opd2'      => $validated['kd_opd2'],
-                'kd_opd3'      => $validated['kd_opd3'],
-                'kd_opd4'      => $validated['kd_opd4'],
-                'kd_opd5'      => $validated['kd_opd5'],
-                'tahun'        => $validated['tahun'],
-                'ref_pajak_id' => $pajakId,
-            ]);
-        }
-
+        $skipped  = [];
+    
+        DB::transaction(function () use ($validated, &$inserted, &$skipped) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['pajakIds'] as $pajakId) {
+    
+                    $exists = AksesPajakBendaharaModel::where([
+                        'kd_opd1'      => $opd['kd_opd1'],
+                        'kd_opd2'      => $opd['kd_opd2'],
+                        'kd_opd3'      => $opd['kd_opd3'],
+                        'kd_opd4'      => $opd['kd_opd4'],
+                        'kd_opd5'      => $opd['kd_opd5'],
+                        'tahun'        => $validated['tahun'],
+                        'ref_pajak_id' => $pajakId,
+                    ])->whereNull('deleted_at')->exists();
+    
+                    // ⛔ SUDAH ADA → SKIP
+                    if ($exists) {
+                        $skipped[] = [
+                            'opd' => $opd,
+                            'ref_pajak_id' => $pajakId,
+                        ];
+                        continue;
+                    }
+    
+                    $inserted[] = AksesPajakBendaharaModel::create([
+                        'kd_opd1'      => $opd['kd_opd1'],
+                        'kd_opd2'      => $opd['kd_opd2'],
+                        'kd_opd3'      => $opd['kd_opd3'],
+                        'kd_opd4'      => $opd['kd_opd4'],
+                        'kd_opd5'      => $opd['kd_opd5'],
+                        'tahun'        => $validated['tahun'],
+                        'ref_pajak_id' => $pajakId,
+                    ]);
+                }
+            }
+        });
+    
         return response()->json([
             'status'  => true,
-            'message' => 'Akses pajak bendahara berhasil ditambahkan',
-            'data'    => $inserted
+            'message' => 'Akses pajak bendahara berhasil diproses',
+            'data'    => [
+                'inserted' => $inserted,
+                'skipped'  => $skipped,
+            ],
         ]);
     }
+    
 
     /**
      * Update akses pajak bendahara (hapus lama, insert ulang)
      */
-    public function update(
-        Request $request,
-        $kd1, $kd2, $kd3, $kd4, $kd5, $tahun
-    ) {
+    public function update(Request $request)
+    {
         $validated = $request->validate([
+            'tahun' => 'required|string',
+    
             'pajakIds'   => 'required|array|min:1',
             'pajakIds.*' => 'exists:ref_pajak_bendahara,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
-
-        // Soft delete lama
-        AksesPajakBendaharaModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->update(['deleted_at' => now()]);
-
-        // Insert ulang
+    
         $inserted = [];
-        foreach ($validated['pajakIds'] as $pajakId) {
-            $inserted[] = AksesPajakBendaharaModel::create([
-                'kd_opd1'      => $kd1,
-                'kd_opd2'      => $kd2,
-                'kd_opd3'      => $kd3,
-                'kd_opd4'      => $kd4,
-                'kd_opd5'      => $kd5,
-                'tahun'        => $tahun,
-                'ref_pajak_id' => $pajakId,
-            ]);
-        }
-
+    
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['pajakIds'] as $pajakId) {
+    
+                    $exists = AksesPajakBendaharaModel::where([
+                        'kd_opd1'      => $opd['kd_opd1'],
+                        'kd_opd2'      => $opd['kd_opd2'],
+                        'kd_opd3'      => $opd['kd_opd3'],
+                        'kd_opd4'      => $opd['kd_opd4'],
+                        'kd_opd5'      => $opd['kd_opd5'],
+                        'tahun'        => $validated['tahun'],
+                        'ref_pajak_id' => $pajakId,
+                    ])->whereNull('deleted_at')->exists();
+    
+                    // ⛔ SUDAH ADA → LEWATI
+                    if ($exists) {
+                        continue;
+                    }
+    
+                    $inserted[] = AksesPajakBendaharaModel::create([
+                        'kd_opd1'      => $opd['kd_opd1'],
+                        'kd_opd2'      => $opd['kd_opd2'],
+                        'kd_opd3'      => $opd['kd_opd3'],
+                        'kd_opd4'      => $opd['kd_opd4'],
+                        'kd_opd5'      => $opd['kd_opd5'],
+                        'tahun'        => $validated['tahun'],
+                        'ref_pajak_id' => $pajakId,
+                    ]);
+                }
+            }
+        });
+    
         return response()->json([
             'status'  => true,
             'message' => 'Akses pajak bendahara berhasil diperbarui',
-            'data'    => $inserted
+            'data'    => $inserted,
         ]);
     }
+    
 
     /**
      * Soft delete satu akses

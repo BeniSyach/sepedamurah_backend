@@ -7,6 +7,7 @@ use App\Models\AksesAssetBendaharaModel;
 use App\Models\LaporanAssetBendaharaModel;
 use App\Models\SKPDModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AksesAssetBendaharaController extends Controller
 {
@@ -108,36 +109,61 @@ class AksesAssetBendaharaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kd_opd1'   => 'required|string',
-            'kd_opd2'   => 'required|string',
-            'kd_opd3'   => 'required|string',
-            'kd_opd4'   => 'required|string',
-            'kd_opd5'   => 'required|string',
-            'tahun'     => 'required|string',
+            'tahun' => 'required|string',
+    
             'assetIds'   => 'required|array|min:1',
             'assetIds.*' => 'exists:ref_asset_bendahara,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
-
+    
         $inserted = [];
-
-        foreach ($validated['assetIds'] as $assetId) {
-            $inserted[] = AksesAssetBendaharaModel::create([
-                'kd_opd1'      => $validated['kd_opd1'],
-                'kd_opd2'      => $validated['kd_opd2'],
-                'kd_opd3'      => $validated['kd_opd3'],
-                'kd_opd4'      => $validated['kd_opd4'],
-                'kd_opd5'      => $validated['kd_opd5'],
-                'tahun'        => $validated['tahun'],
-                'ref_asset_id' => $assetId,
-            ]);
-        }
-
+    
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['assetIds'] as $assetId) {
+    
+                    $exists = AksesAssetBendaharaModel::where([
+                        'kd_opd1'      => $opd['kd_opd1'],
+                        'kd_opd2'      => $opd['kd_opd2'],
+                        'kd_opd3'      => $opd['kd_opd3'],
+                        'kd_opd4'      => $opd['kd_opd4'],
+                        'kd_opd5'      => $opd['kd_opd5'],
+                        'tahun'        => $validated['tahun'],
+                        'ref_asset_id' => $assetId,
+                    ])->whereNull('deleted_at')->exists();
+    
+                    // ⛔ SUDAH ADA → LEWATI
+                    if ($exists) {
+                        continue;
+                    }
+    
+                    $inserted[] = AksesAssetBendaharaModel::create([
+                        'kd_opd1'      => $opd['kd_opd1'],
+                        'kd_opd2'      => $opd['kd_opd2'],
+                        'kd_opd3'      => $opd['kd_opd3'],
+                        'kd_opd4'      => $opd['kd_opd4'],
+                        'kd_opd5'      => $opd['kd_opd5'],
+                        'tahun'        => $validated['tahun'],
+                        'ref_asset_id' => $assetId,
+                    ]);
+                }
+            }
+        });
+    
         return response()->json([
             'status'  => true,
             'message' => 'Akses asset bendahara berhasil ditambahkan',
             'data'    => $inserted,
         ]);
     }
+    
 
     /**
      * Detail satu akses
@@ -166,59 +192,64 @@ class AksesAssetBendaharaController extends Controller
     /**
      * Update akses Asset Bendahara (hapus lama, insert ulang)
      */
-    public function update(Request $request, $kd1, $kd2, $kd3, $kd4, $kd5, $tahun)
+    public function update(Request $request)
     {
-        $aksesLama = AksesAssetBendaharaModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->whereNull('deleted_at')->get();
-
-        if ($aksesLama->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Data tidak ditemukan',
-            ], 404);
-        }
-
         $validated = $request->validate([
+            'tahun' => 'required|string',
+    
             'assetIds'   => 'required|array|min:1',
             'assetIds.*' => 'exists:ref_asset_bendahara,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
-
-        // soft delete lama
-        AksesAssetBendaharaModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->update(['deleted_at' => now()]);
-
-        // insert ulang
+    
         $inserted = [];
-        foreach ($validated['assetIds'] as $assetId) {
-            $inserted[] = AksesAssetBendaharaModel::create([
-                'kd_opd1'      => $kd1,
-                'kd_opd2'      => $kd2,
-                'kd_opd3'      => $kd3,
-                'kd_opd4'      => $kd4,
-                'kd_opd5'      => $kd5,
-                'tahun'        => $tahun,
-                'ref_asset_id' => $assetId,
-            ]);
-        }
-
+    
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['assetIds'] as $assetId) {
+    
+                    $exists = AksesAssetBendaharaModel::where([
+                        'kd_opd1'      => $opd['kd_opd1'],
+                        'kd_opd2'      => $opd['kd_opd2'],
+                        'kd_opd3'      => $opd['kd_opd3'],
+                        'kd_opd4'      => $opd['kd_opd4'],
+                        'kd_opd5'      => $opd['kd_opd5'],
+                        'tahun'        => $validated['tahun'],
+                        'ref_asset_id' => $assetId,
+                    ])->whereNull('deleted_at')->exists();
+    
+                    // ⛔ SUDAH ADA → LEWATI
+                    if ($exists) {
+                        continue;
+                    }
+    
+                    $inserted[] = AksesAssetBendaharaModel::create([
+                        'kd_opd1'      => $opd['kd_opd1'],
+                        'kd_opd2'      => $opd['kd_opd2'],
+                        'kd_opd3'      => $opd['kd_opd3'],
+                        'kd_opd4'      => $opd['kd_opd4'],
+                        'kd_opd5'      => $opd['kd_opd5'],
+                        'tahun'        => $validated['tahun'],
+                        'ref_asset_id' => $assetId,
+                    ]);
+                }
+            }
+        });
+    
         return response()->json([
             'status'  => true,
             'message' => 'Akses asset bendahara berhasil diperbarui',
             'data'    => $inserted,
         ]);
     }
+    
 
     /**
      * Soft delete akses

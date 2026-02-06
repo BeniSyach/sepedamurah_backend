@@ -7,6 +7,7 @@ use App\Models\AksesRekGajiSkpdModel;
 use App\Models\LaporanRekGajiSkpdModel;
 use App\Models\SKPDModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AksesRekGajiSkpdController extends Controller
 {
@@ -110,93 +111,139 @@ class AksesRekGajiSkpdController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kd_opd1' => 'required|string',
-            'kd_opd2' => 'required|string',
-            'kd_opd3' => 'required|string',
-            'kd_opd4' => 'required|string',
-            'kd_opd5' => 'required|string',
-            'tahun'   => 'required|numeric',
-
-            'rekGajiIds' => 'required|array|min:1',
+            'tahun' => 'required|numeric',
+    
+            'rekGajiIds'   => 'required|array|min:1',
             'rekGajiIds.*' => 'exists:ref_rekonsiliasi_gaji_skpd,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
-
+    
         $inserted = [];
-
-        foreach ($validated['rekGajiIds'] as $rekId) {
-            $inserted[] = AksesRekGajiSkpdModel::create([
-                'kd_opd1' => $validated['kd_opd1'],
-                'kd_opd2' => $validated['kd_opd2'],
-                'kd_opd3' => $validated['kd_opd3'],
-                'kd_opd4' => $validated['kd_opd4'],
-                'kd_opd5' => $validated['kd_opd5'],
-                'tahun' => $validated['tahun'],
-                'rek_gaji_id' => $rekId,
-            ]);
-        }
-
+    
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['rekGajiIds'] as $rekId) {
+    
+                    $query = [
+                        'kd_opd1'     => $opd['kd_opd1'],
+                        'kd_opd2'     => $opd['kd_opd2'],
+                        'kd_opd3'     => $opd['kd_opd3'],
+                        'kd_opd4'     => $opd['kd_opd4'],
+                        'kd_opd5'     => $opd['kd_opd5'],
+                        'tahun'       => $validated['tahun'],
+                        'rek_gaji_id' => $rekId,
+                    ];
+    
+                    // ⛔ sudah ada & aktif → skip
+                    $exists = AksesRekGajiSkpdModel::where($query)
+                        ->whereNull('deleted_at')
+                        ->exists();
+    
+                    if ($exists) {
+                        continue;
+                    }
+    
+                    // ♻️ pernah soft delete → restore
+                    $softDeleted = AksesRekGajiSkpdModel::where($query)
+                        ->whereNotNull('deleted_at')
+                        ->first();
+    
+                    if ($softDeleted) {
+                        $softDeleted->update(['deleted_at' => null]);
+                        $inserted[] = $softDeleted;
+                        continue;
+                    }
+    
+                    // ➕ benar-benar baru
+                    $inserted[] = AksesRekGajiSkpdModel::create($query);
+                }
+            }
+        });
+    
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Akses Rekonsiliasi Gaji SKPD berhasil ditambahkan',
-            'data' => $inserted,
+            'data'    => $inserted,
         ]);
     }
+    
 
     /**
      * Update akses Rekonsiliasi Gaji SKPD
      */
-    public function update(Request $request, $kd1, $kd2, $kd3, $kd4, $kd5, $tahun)
+    public function update(Request $request)
     {
-        $aksesLama = AksesRekGajiSkpdModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->whereNull('deleted_at')->get();
-
-        if ($aksesLama->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Data tidak ditemukan',
-            ], 404);
-        }
-
         $validated = $request->validate([
-            'rekGajiIds' => 'required|array|min:1',
+            'tahun' => 'required|string',
+    
+            'rekGajiIds'   => 'required|array|min:1',
             'rekGajiIds.*' => 'exists:ref_rekonsiliasi_gaji_skpd,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
-
-        // soft delete lama
-        AksesRekGajiSkpdModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->update(['deleted_at' => now()]);
-
+    
         $inserted = [];
-        foreach ($validated['rekGajiIds'] as $rekId) {
-            $inserted[] = AksesRekGajiSkpdModel::create([
-                'kd_opd1' => $kd1,
-                'kd_opd2' => $kd2,
-                'kd_opd3' => $kd3,
-                'kd_opd4' => $kd4,
-                'kd_opd5' => $kd5,
-                'tahun' => $tahun,
-                'rek_gaji_id' => $rekId,
-            ]);
-        }
-
+    
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['rekGajiIds'] as $rekId) {
+    
+                    $query = [
+                        'kd_opd1' => $opd['kd_opd1'],
+                        'kd_opd2' => $opd['kd_opd2'],
+                        'kd_opd3' => $opd['kd_opd3'],
+                        'kd_opd4' => $opd['kd_opd4'],
+                        'kd_opd5' => $opd['kd_opd5'],
+                        'tahun'   => $validated['tahun'],
+                        'rek_gaji_id' => $rekId,
+                    ];
+    
+                    // ⛔ sudah ada & aktif → skip
+                    $exists = AksesRekGajiSkpdModel::where($query)
+                        ->whereNull('deleted_at')
+                        ->exists();
+    
+                    if ($exists) {
+                        continue;
+                    }
+    
+                    // ♻️ pernah soft delete → restore
+                    $softDeleted = AksesRekGajiSkpdModel::where($query)
+                        ->whereNotNull('deleted_at')
+                        ->first();
+    
+                    if ($softDeleted) {
+                        $softDeleted->update(['deleted_at' => null]);
+                        $inserted[] = $softDeleted;
+                        continue;
+                    }
+    
+                    // ➕ baru
+                    $inserted[] = AksesRekGajiSkpdModel::create($query);
+                }
+            }
+        });
+    
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Akses Rekonsiliasi Gaji SKPD berhasil diperbarui',
-            'data' => $inserted,
+            'data'    => $inserted,
         ]);
     }
+    
 
     /**
      * Soft delete akses Rekonsiliasi Gaji SKPD

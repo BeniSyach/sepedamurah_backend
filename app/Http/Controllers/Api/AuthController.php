@@ -115,7 +115,6 @@ class AuthController extends Controller
         })
         ->where('users.nip', $request->nip)
         ->where('users.deleted', '0')
-        ->where('users.is_active', '1')
         ->first();
 
         $skpds = User::join('ref_opd', function ($join) {
@@ -127,7 +126,6 @@ class AuthController extends Controller
         })
         ->where('users.nip', $request->nip)
         ->where('users.deleted', '0')
-        ->where('users.is_active', '1')
         ->select(
             'ref_opd.kd_opd1',
             'ref_opd.kd_opd2',

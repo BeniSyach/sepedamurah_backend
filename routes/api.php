@@ -273,7 +273,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('/batas-waktu', BatasWaktuController::class);
 
          // Akses DPA
-         Route::put('/akses-dpa-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesDPAController::class, 'update']);
+         Route::put('/akses-dpa-skpd', [AksesDPAController::class, 'update']);
          // hilangkan update bawaan
          Route::delete(
             '/akses-dpa-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
@@ -284,7 +284,7 @@ Route::middleware('auth:api')->group(function () {
         ->except(['update']);
 
         // Akses Pajak Bendahara
-        Route::put('/akses-pajak-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesPajakBendaharaController::class, 'update']);
+        Route::put('/akses-pajak-bendahara', [AksesPajakBendaharaController::class, 'update']);
         // hilangkan update bawaan
         Route::delete(
             '/akses-pajak-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
@@ -295,7 +295,7 @@ Route::middleware('auth:api')->group(function () {
        ->except(['update']);
 
         // Akses Asset Bendahara
-        Route::put('/akses-asset-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesAssetBendaharaController::class, 'update']);
+        Route::put('/akses-asset-bendahara', [AksesAssetBendaharaController::class, 'update']);
         // hilangkan update bawaan
         Route::delete(
             '/akses-asset-bendahara/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
@@ -306,7 +306,7 @@ Route::middleware('auth:api')->group(function () {
         ->except(['update']);
 
         // Akses SP2B Ke BUD
-        Route::put('/akses-sp2b-ke-bud/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesSp2bKeBudController::class, 'update']);
+        Route::put('/akses-sp2b-ke-bud', [AksesSp2bKeBudController::class, 'update']);
         // hilangkan update bawaan
         Route::delete(
             '/akses-sp2b-ke-bud/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',
@@ -317,7 +317,7 @@ Route::middleware('auth:api')->group(function () {
         ->except(['update']);
 
         // Akses Rekonsiliasi Gaji SKPD
-        Route::put('/akses-rekonsiliasi-gaji-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}', [AksesRekGajiSkpdController::class, 'update']);
+        Route::put('/akses-rekonsiliasi-gaji-skpd', [AksesRekGajiSkpdController::class, 'update']);
             // hilangkan update bawaan
         Route::delete(
             '/akses-rekonsiliasi-gaji-skpd/{kd1}/{kd2}/{kd3}/{kd4}/{kd5}/{tahun}',

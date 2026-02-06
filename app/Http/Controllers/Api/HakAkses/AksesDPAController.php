@@ -7,6 +7,7 @@ use App\Models\AksesDPAModel;
 use App\Models\LaporanDPAModel;
 use App\Models\SKPDModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AksesDPAController extends Controller
 {
@@ -117,36 +118,58 @@ class AksesDPAController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'kd_opd1' => 'required|string',
-            'kd_opd2' => 'required|string',
-            'kd_opd3' => 'required|string',
-            'kd_opd4' => 'required|string',
-            'kd_opd5' => 'required|string',
-            'tahun'   => 'required|string',
+            'tahun' => 'required|string',
     
-            // TERIMA ARRAY
-            'dpaIds'  => 'required|array|min:1',
+            'dpaIds' => 'required|array|min:1',
             'dpaIds.*' => 'string|exists:ref_dpa,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
     
         $inserted = [];
     
-        foreach ($validated['dpaIds'] as $dpaId) {
-            $inserted[] = AksesDPAModel::create([
-                'kd_opd1' => $validated['kd_opd1'],
-                'kd_opd2' => $validated['kd_opd2'],
-                'kd_opd3' => $validated['kd_opd3'],
-                'kd_opd4' => $validated['kd_opd4'],
-                'kd_opd5' => $validated['kd_opd5'],
-                'tahun'   => $validated['tahun'],
-                'dpa_id'  => $dpaId, // ambil dari looping
-            ]);
-        }
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['dpaIds'] as $dpaId) {
+    
+                    $exists = AksesDPAModel::where([
+                        'kd_opd1' => $opd['kd_opd1'],
+                        'kd_opd2' => $opd['kd_opd2'],
+                        'kd_opd3' => $opd['kd_opd3'],
+                        'kd_opd4' => $opd['kd_opd4'],
+                        'kd_opd5' => $opd['kd_opd5'],
+                        'tahun'   => $validated['tahun'],
+                        'dpa_id'  => $dpaId,
+                    ])->whereNull('deleted_at')->exists();
+    
+                    // ⛔ SKIP kalau sudah ada
+                    if ($exists) {
+                        continue;
+                    }
+    
+                    $inserted[] = AksesDPAModel::create([
+                        'kd_opd1' => $opd['kd_opd1'],
+                        'kd_opd2' => $opd['kd_opd2'],
+                        'kd_opd3' => $opd['kd_opd3'],
+                        'kd_opd4' => $opd['kd_opd4'],
+                        'kd_opd5' => $opd['kd_opd5'],
+                        'tahun'   => $validated['tahun'],
+                        'dpa_id'  => $dpaId,
+                    ]);
+                }
+            }
+        });
     
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Akses DPA berhasil ditambahkan',
-            'data' => $inserted
+            'data'    => $inserted,
         ]);
     }
     
@@ -178,65 +201,61 @@ class AksesDPAController extends Controller
     /**
      * Update akses DPA.
      */
-    public function update(Request $request, $kd1, $kd2, $kd3, $kd4, $kd5, $tahun)
+    public function update(Request $request)
     {
-        // Ambil semua akses lama berdasarkan SKPD + Tahun
-        $aksesLama = AksesDPAModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->whereNull('deleted_at')->get();
-    
-        if ($aksesLama->isEmpty()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Data tidak ditemukan',
-            ], 404);
-        }
-    
-        // VALIDASI REQUEST
         $validated = $request->validate([
-            'kd_opd1' => 'required|string',
-            'kd_opd2' => 'required|string',
-            'kd_opd3' => 'required|string',
-            'kd_opd4' => 'required|string',
-            'kd_opd5' => 'required|string',
-            'tahun'   => 'required|string',
-            'dpaIds'  => 'required|array|min:1',
+            'tahun' => 'required|string',
+    
+            'dpaIds' => 'required|array|min:1',
             'dpaIds.*' => 'string|exists:ref_dpa,id',
+    
+            'opd' => 'required|array|min:1',
+            'opd.*.kd_opd1' => 'required|string',
+            'opd.*.kd_opd2' => 'required|string',
+            'opd.*.kd_opd3' => 'required|string',
+            'opd.*.kd_opd4' => 'required|string',
+            'opd.*.kd_opd5' => 'required|string',
         ]);
     
-        // Soft delete semua akses lama
-        AksesDPAModel::where([
-            'kd_opd1' => $kd1,
-            'kd_opd2' => $kd2,
-            'kd_opd3' => $kd3,
-            'kd_opd4' => $kd4,
-            'kd_opd5' => $kd5,
-            'tahun'   => $tahun,
-        ])->update(['deleted_at' => now()]);
-    
-        // Insert ulang
         $inserted = [];
-        foreach ($validated['dpaIds'] as $dpa) {
-            $inserted[] = AksesDPAModel::create([
-                'kd_opd1' => $validated['kd_opd1'],
-                'kd_opd2' => $validated['kd_opd2'],
-                'kd_opd3' => $validated['kd_opd3'],
-                'kd_opd4' => $validated['kd_opd4'],
-                'kd_opd5' => $validated['kd_opd5'],
-                'tahun'   => $validated['tahun'],
-                'dpa_id'  => $dpa,
-            ]);
-        }
+    
+        DB::transaction(function () use ($validated, &$inserted) {
+    
+            foreach ($validated['opd'] as $opd) {
+                foreach ($validated['dpaIds'] as $dpaId) {
+    
+                    $exists = AksesDPAModel::where([
+                        'kd_opd1' => $opd['kd_opd1'],
+                        'kd_opd2' => $opd['kd_opd2'],
+                        'kd_opd3' => $opd['kd_opd3'],
+                        'kd_opd4' => $opd['kd_opd4'],
+                        'kd_opd5' => $opd['kd_opd5'],
+                        'tahun'   => $validated['tahun'],
+                        'dpa_id'  => $dpaId,
+                    ])->whereNull('deleted_at')->exists();
+    
+                    // ⛔ SUDAH ADA → LEWAT
+                    if ($exists) {
+                        continue;
+                    }
+    
+                    $inserted[] = AksesDPAModel::create([
+                        'kd_opd1' => $opd['kd_opd1'],
+                        'kd_opd2' => $opd['kd_opd2'],
+                        'kd_opd3' => $opd['kd_opd3'],
+                        'kd_opd4' => $opd['kd_opd4'],
+                        'kd_opd5' => $opd['kd_opd5'],
+                        'tahun'   => $validated['tahun'],
+                        'dpa_id'  => $dpaId,
+                    ]);
+                }
+            }
+        });
     
         return response()->json([
             'status'  => true,
             'message' => 'Akses DPA berhasil diperbarui',
-            'data'    => $inserted
+            'data'    => $inserted,
         ]);
     }
     
