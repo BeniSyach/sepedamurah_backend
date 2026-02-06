@@ -137,7 +137,17 @@ class AuthController extends Controller
             'ref_opd.status_penerimaan'
         )
         ->distinct()
-        ->get();   // ⬅️ INI KUNCI UTAMA
+        ->map(function ($row) {
+            return [
+                'kd_opd1' => (string) $row->kd_opd1,
+                'kd_opd2' => (string) $row->kd_opd2,
+                'kd_opd3' => (string) $row->kd_opd3,
+                'kd_opd4' => (string) $row->kd_opd4,
+                'kd_opd5' => (string) $row->kd_opd5,
+                'nm_opd'  => $row->nm_opd,
+                'is_active' => (string) $row->is_active,
+            ];
+        });
     
     
         if (!$user) {
