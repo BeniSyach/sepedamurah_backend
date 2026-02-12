@@ -13,10 +13,6 @@ class LaporanSp2bKeBudModel extends Model
     protected $table = 'laporan_sp2b_ke_bud';
     protected $primaryKey = 'id';
 
-    // ID di-generate oleh sequence + trigger Oracle
-    public $incrementing = true;
-    protected $keyType = 'int';
-
     protected $fillable = [
         'kd_opd1',
         'kd_opd2',
@@ -35,17 +31,6 @@ class LaporanSp2bKeBudModel extends Model
         'ditolak',
         'alasan_tolak',
         'created_at'
-    ];
-
-    // === Mapping kolom timestamp (huruf kecil) ===
-    const CREATED_AT = 'created_at';
-    const UPDATED_AT = 'updated_at';
-    const DELETED_AT = 'deleted_at';
-
-    protected $dates = [
-        'deleted_at',
-        'diterima',
-        'ditolak',
     ];
 
     /**
