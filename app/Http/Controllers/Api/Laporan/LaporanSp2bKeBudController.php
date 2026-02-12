@@ -445,13 +445,14 @@ class LaporanSp2bKeBudController extends Controller
     {
         $lap = LaporanSp2bKeBudModel::findOrFail($id);
 
-        if (!$lap->file || !Storage::disk('public')->exists($lap->file)) {
-            abort(404, 'File tidak ditemukan');
+        $filePath = $lap->file;
+
+        // Cek apakah file ada di disk public
+        $disk = Storage::disk('public');
+        if (!$disk->exists($filePath)) {
+            abort(404, "File tidak ditemukan");
         }
 
-        return response()->download(
-            Storage::disk('public')->path($lap->file),
-            basename($lap->file)
-        );
+        return response()->download($disk->path($filePath), basename($filePath));
     }
 }
