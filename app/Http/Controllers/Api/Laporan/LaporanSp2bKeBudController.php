@@ -441,7 +441,7 @@ class LaporanSp2bKeBudController extends Controller
     /* ======================
      |  DOWNLOAD FILE
      ======================*/
-    public function downloadBerkas($id)
+    public function downloadBerkas(int $id)
     {
         $lap = LaporanSp2bKeBudModel::findOrFail($id);
 
