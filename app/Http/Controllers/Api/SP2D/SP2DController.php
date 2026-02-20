@@ -413,8 +413,13 @@ class SP2DController extends Controller
             // LPJ UPNIHIL
             if($menu == 'permohonan_lpj_up_nihil'){
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_user', $userId);
+                    // $query->where('id_user', $userId);
                     // $query->whereNull('proses');
+                      $query->where('sp2d.kd_opd1', $request->get('kd_opd1'));
+                      $query->where('sp2d.kd_opd2', $request->get('kd_opd2'));
+                      $query->where('sp2d.kd_opd3', $request->get('kd_opd3'));
+                      $query->where('sp2d.kd_opd4', $request->get('kd_opd4'));
+                      $query->where('sp2d.kd_opd5', $request->get('kd_opd5'));
                 }
                 // ambil data yg belum diperiksa operator
                 $query->where('id_operator', '0');
@@ -515,7 +520,12 @@ class SP2DController extends Controller
             // ✅ lpj_up_nihil Diterima
             if ($menu === 'lpj_up_nihil_diterima') {
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_user', $userId);
+                    // $query->where('id_user', $userId);
+                      $query->where('sp2d.kd_opd1', $request->get('kd_opd1'));
+                      $query->where('sp2d.kd_opd2', $request->get('kd_opd2'));
+                      $query->where('sp2d.kd_opd3', $request->get('kd_opd3'));
+                      $query->where('sp2d.kd_opd4', $request->get('kd_opd4'));
+                      $query->where('sp2d.kd_opd5', $request->get('kd_opd5'));
                 }
                 $query->where('proses', '2');
                 $query->whereNotNull('diterima'); // hanya yang sudah diterima
@@ -564,7 +574,12 @@ class SP2DController extends Controller
             // (opsional) kalau kamu juga punya 'lpj_up_nihil_ditolak'
             if ($menu === 'lpj_up_nihil_ditolak') {
                 if ($userId = $request->get('user_id')) {
-                    $query->where('id_user', $userId);
+                    // $query->where('id_user', $userId);
+                      $query->where('sp2d.kd_opd1', $request->get('kd_opd1'));
+                      $query->where('sp2d.kd_opd2', $request->get('kd_opd2'));
+                      $query->where('sp2d.kd_opd3', $request->get('kd_opd3'));
+                      $query->where('sp2d.kd_opd4', $request->get('kd_opd4'));
+                      $query->where('sp2d.kd_opd5', $request->get('kd_opd5'));
                 }
                 $query->whereNotNull('ditolak'); // hanya yang ditolak
                 $query->where('jenis_berkas', 'GU')->whereRaw("LOWER(nama_file) LIKE ?", ["%nihil%"]);
