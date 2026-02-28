@@ -78,7 +78,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 1
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                        AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_jan
@@ -89,7 +91,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 2
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_feb
@@ -100,7 +104,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 3
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_mar
@@ -111,7 +117,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 4
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_apr
@@ -122,7 +130,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 5
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_may
@@ -133,7 +143,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 6
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_jun
@@ -144,7 +156,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 7
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_jul
@@ -155,7 +169,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 8
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_aug
@@ -166,7 +182,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 9
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_sep
@@ -177,7 +195,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 10
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_oct
@@ -188,7 +208,9 @@ class RealisasiTransferSumberDanaController extends Controller
                 SUM(
                     CASE
                         WHEN EXTRACT(MONTH FROM tgl_diterima) = 11
-                         AND tgl_diterima <= TO_DATE('$tglAkhir','YYYY-MM-DD')
+                           AND tgl_diterima BETWEEN
+                        TO_DATE('$tglAwal','YYYY-MM-DD')
+                        AND TO_DATE('$tglAkhir','YYYY-MM-DD')
                         THEN jumlah_sumber ELSE 0
                     END
                 ) AS total_nov
