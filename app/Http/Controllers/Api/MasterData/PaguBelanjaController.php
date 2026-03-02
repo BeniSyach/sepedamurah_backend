@@ -282,20 +282,32 @@ class PaguBelanjaController extends Controller
             'file' => 'required|mimes:xlsx,xls'
         ]);
     
-        // 1️⃣ Ambil versi terakhir
-        $lastBerapax = PaguBelanjaModel::max('kd_berapax') ?? 0;
-        $newBerapax  = $lastBerapax + 1;
-    
         try {
-            // 2️⃣ Import dulu (JANGAN sentuh versi lama)
+    
+            // 1️⃣ Ambil tahun terbaru dulu
+            $lastYear = PaguBelanjaModel::max('tahun_rek');
+    
+            // Jika belum ada data sama sekali
+            if (!$lastYear) {
+                $lastYear = date('Y');
+            }
+    
+            // 2️⃣ Ambil versi terakhir berdasarkan tahun_rek tersebut
+            $lastBerapax = PaguBelanjaModel::where('tahun_rek', $lastYear)
+                            ->max('kd_berapax') ?? 0;
+    
+            $newBerapax = $lastBerapax + 1;
+    
+            // 3️⃣ Import dulu (jangan sentuh versi lama)
             Excel::import(
-                new PaguBelanjaImport($newBerapax),
+                new PaguBelanjaImport($newBerapax, $lastYear),
                 $request->file('file')
             );
     
-            // 3️⃣ Jika sukses → nonaktifkan versi lama
+            // 4️⃣ Jika sukses → nonaktifkan versi lama HANYA di tahun tersebut
             if ($lastBerapax > 0) {
-                PaguBelanjaModel::where('kd_berapax', $lastBerapax)
+                PaguBelanjaModel::where('tahun', $lastYear)
+                    ->where('kd_berapax', $lastBerapax)
                     ->update(['is_deleted' => 1]);
             }
     
@@ -305,9 +317,6 @@ class PaguBelanjaController extends Controller
             ]);
     
         } catch (\Throwable $e) {
-    
-            // 4️⃣ Jika gagal → HAPUS PERMANENT versi baru
-            PaguBelanjaModel::where('kd_berapax', $newBerapax)->delete();
     
             return response()->json([
                 'status' => false,
