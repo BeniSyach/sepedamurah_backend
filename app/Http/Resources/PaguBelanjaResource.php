@@ -7,24 +7,25 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class PaguBelanjaResource extends JsonResource
 {
     /**
-     * Ambil properti dengan fallback ke versi uppercase jika null
-     * Aman untuk stdClass juga
+     * Ambil properti dengan fallback, aman untuk stdClass atau model
      */
     private function attr($lower, $upper)
     {
-        // data_get akan mengembalikan null jika properti tidak ada
-        return data_get($this, $lower) ?? data_get($this, $upper);
+        if (is_object($this)) {
+            return $this->$lower ?? ($this->$upper ?? null);
+        }
+        return null;
     }
 
     public function toArray($request)
     {
         return [
-            'id_pb'         => data_get($this, 'id_pb'),
-            'tahun_rek'     => data_get($this, 'tahun_rek'),
-            'kd_berapax'    => data_get($this, 'kd_berapax'),
-            'jumlah_pagu'   => data_get($this, 'jumlah_pagu'),
+            'id_pb'         => $this->id_pb ?? null,
+            'tahun_rek'     => $this->tahun_rek ?? null,
+            'kd_berapax'    => $this->kd_berapax ?? null,
+            'jumlah_pagu'   => $this->jumlah_pagu ?? null,
 
-            'nm_opd'        => data_get($this, 'nm_opd'),
+            'nm_opd'        => $this->nm_opd ?? null,
             'kd_opd1'       => $this->attr('kd_opd1', 'KD_OPD1'),
             'kd_opd2'       => $this->attr('kd_opd2', 'KD_OPD2'),
             'kd_opd3'       => $this->attr('kd_opd3', 'KD_OPD3'),
@@ -34,26 +35,26 @@ class PaguBelanjaResource extends JsonResource
             'kd_opd7'       => $this->attr('kd_opd7', 'KD_OPD7'),
             'kd_opd8'       => $this->attr('kd_opd8', 'KD_OPD8'),
 
-            'nm_urusan'     => data_get($this, 'nm_urusan'),
+            'nm_urusan'     => $this->nm_urusan ?? null,
             'kd_urusan'     => $this->attr('kd_urusan', 'KD_URUSAN'),
 
-            'nm_bu'         => data_get($this, 'nm_bu'),
+            'nm_bu'         => $this->nm_bu ?? null,
             'kd_bu1'        => $this->attr('kd_bu1', 'KD_BU1'),
             'kd_bu2'        => $this->attr('kd_bu2', 'KD_BU2'),
 
-            'nm_program'    => data_get($this, 'nm_program'),
+            'nm_program'    => $this->nm_program ?? null,
             'kd_prog1'      => $this->attr('kd_prog1', 'KD_PROG1'),
             'kd_prog2'      => $this->attr('kd_prog2', 'KD_PROG2'),
             'kd_prog3'      => $this->attr('kd_prog3', 'KD_PROG3'),
 
-            'nm_kegiatan'   => data_get($this, 'nm_kegiatan'),
+            'nm_kegiatan'   => $this->nm_kegiatan ?? null,
             'kd_keg1'       => $this->attr('kd_keg1', 'KD_KEG1'),
             'kd_keg2'       => $this->attr('kd_keg2', 'KD_KEG2'),
             'kd_keg3'       => $this->attr('kd_keg3', 'KD_KEG3'),
             'kd_keg4'       => $this->attr('kd_keg4', 'KD_KEG4'),
             'kd_keg5'       => $this->attr('kd_keg5', 'KD_KEG5'),
 
-            'nm_subkegiatan'=> data_get($this, 'nm_subkegiatan'),
+            'nm_subkegiatan'=> $this->nm_subkegiatan ?? null,
             'kd_subkeg1'    => $this->attr('kd_subkeg1', 'KD_SUBKEG1'),
             'kd_subkeg2'    => $this->attr('kd_subkeg2', 'KD_SUBKEG2'),
             'kd_subkeg3'    => $this->attr('kd_subkeg3', 'KD_SUBKEG3'),
@@ -61,7 +62,7 @@ class PaguBelanjaResource extends JsonResource
             'kd_subkeg5'    => $this->attr('kd_subkeg5', 'KD_SUBKEG5'),
             'kd_subkeg6'    => $this->attr('kd_subkeg6', 'KD_SUBKEG6'),
 
-            'nm_rekening'   => data_get($this, 'nm_rekening'),
+            'nm_rekening'   => $this->nm_rekening ?? null,
             'kd_rekening1'  => $this->attr('kd_rekening1', 'KD_REKENING1'),
             'kd_rekening2'  => $this->attr('kd_rekening2', 'KD_REKENING2'),
             'kd_rekening3'  => $this->attr('kd_rekening3', 'KD_REKENING3'),
@@ -69,7 +70,7 @@ class PaguBelanjaResource extends JsonResource
             'kd_rekening5'  => $this->attr('kd_rekening5', 'KD_REKENING5'),
             'kd_rekening6'  => $this->attr('kd_rekening6', 'KD_REKENING6'),
 
-            'created_at'    => optional(data_get($this, 'created_at'))->format('Y-m-d H:i:s'),
+            'created_at'    => isset($this->created_at) ? $this->created_at : null,
         ];
     }
 }
