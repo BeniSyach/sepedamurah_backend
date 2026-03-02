@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Imports\HeadingRowFormatter;
 
 class PaguBelanjaImport implements
     ToCollection,
@@ -18,6 +19,9 @@ class PaguBelanjaImport implements
     public function __construct(int $kdBerapax)
     {
         $this->kdBerapax = $kdBerapax;
+
+        // 🔥 MATIKAN AUTO FORMAT HEADER
+        HeadingRowFormatter::default('none');
     }
 
     public function collection(Collection $rows)
@@ -67,8 +71,9 @@ class PaguBelanjaImport implements
             ];
         }
 
-        // 🔥 BULK INSERT (CEPAT BANGET)
-        PaguBelanjaModel::insert($data);
+        if (!empty($data)) {
+            PaguBelanjaModel::insert($data);
+        }
     }
 
     public function chunkSize(): int
