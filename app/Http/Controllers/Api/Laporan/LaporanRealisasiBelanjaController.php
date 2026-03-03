@@ -121,11 +121,19 @@ class LaporanRealisasiBelanjaController extends Controller
             GROUP BY KD_REF1, KD_REF2, KD_REF3, NM_BELANJA
         ) x
 
-        LEFT JOIN PENGEMBALIAN.VW_PAGU_REKENING_3LEVEL p
-            ON p.KD_REKENING1 = x.KD_REF1
-            AND p.KD_REKENING2 = x.KD_REF2
-            AND p.KD_REKENING3 = x.KD_REF3
-        WHERE p.tahun = :tahun
+LEFT JOIN (
+    SELECT v.*
+    FROM (
+        SELECT v.*,
+               MAX(KD_BERAPAX) OVER (PARTITION BY TAHUN) AS MAX_KD
+        FROM PENGEMBALIAN.VW_PAGU_REKENING_3LEVEL v
+        WHERE v.TAHUN = :tahun
+    ) v
+    WHERE v.KD_BERAPAX = v.MAX_KD
+) p
+    ON p.KD_REKENING1 = x.KD_REF1
+    AND p.KD_REKENING2 = x.KD_REF2
+    AND p.KD_REKENING3 = x.KD_REF3
 
         ORDER BY x.KD_REF1, x.KD_REF2, x.KD_REF3
         ", ['tahun' => $tahun]);
