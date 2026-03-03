@@ -57,7 +57,7 @@ REALISASI AS (
         x.KD_REF1,
         x.KD_REF2,
         x.KD_REF3,
-        x.NM_BELANJA,
+        x.JENIS_BELANJA,
 
         SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),1,x.TOTAL_NILAI,0)) AS BELANJA_JAN,
         SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),2,x.TOTAL_NILAI,0)) AS BELANJA_FEB,
@@ -77,7 +77,7 @@ REALISASI AS (
         x.KD_REF1,
         x.KD_REF2,
         x.KD_REF3,
-        x.NM_BELANJA
+        x.JENIS_BELANJA
 )
 SELECT 
     r.*,
