@@ -336,6 +336,7 @@ class PengembalianController extends Controller
         $keterangan  = $request->query('keterangan');
         $jumlah      = (int) $request->query('jumlah');
         $no_billing  = $request->query('no_billing');
+        $status_bayar = $request->query('status_bayar');
 
         // gunakan helper Terbilang dan format tanggal
         $terbilang = app(Terbilang::class)->kalimat($jumlah);
@@ -353,6 +354,7 @@ class PengembalianController extends Controller
             'terbilang'  => $terbilang,
             'tanggal'    => $tanggal,
             'no_billing' => $no_billing,
+            'status_bayar' => $status_bayar
         ];
 
         // render ke Blade lalu jadikan PDF

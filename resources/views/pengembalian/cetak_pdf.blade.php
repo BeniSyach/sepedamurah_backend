@@ -98,6 +98,20 @@
             <td>{{ $jumlah }}</td>
         </tr>
         <tr>
+            <td>Status Bayar</td>
+            <td>:</td>
+            <td>
+                <b>
+                    {{-- @if ($status_bayar == '1')
+                        LUNAS
+                    @else
+                        BELUM LUNAS
+                    @endif --}}
+                    {{ $status_bayar }}
+                </b>
+            </td>
+        </tr>
+        <tr>
             <td>Terbilang</td>
             <td>:</td>
             <td><i>{{ ucfirst($terbilang) }} rupiah</i></td>
