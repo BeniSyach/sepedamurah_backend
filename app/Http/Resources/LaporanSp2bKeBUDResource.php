@@ -56,7 +56,7 @@ class LaporanSp2bKeBUDResource extends JsonResource
             // ======================
             // RELASI
             // ======================
-            'refSp2bKeBud' => new RefSp2bKeBUDResource(
+            'refSp2bKeBud' => new RefSp2bKeBudResource(
                 $this->whenLoaded('refSp2bKeBud')
             ),
 
