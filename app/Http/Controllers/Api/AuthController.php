@@ -147,6 +147,7 @@ class AuthController extends Controller
                 'kd_opd5' => (string) $row->kd_opd5,
                 'nm_opd'  => $row->nm_opd,
                 'is_active' => (string) $row->is_active,
+                'status_penerimaan' => (string) $row->status_penerimaan,
             ];
         });
     
