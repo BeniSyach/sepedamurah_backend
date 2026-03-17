@@ -18,6 +18,7 @@ use App\Models\UsersPermissionModel;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Services\TelegramService;
+use Illuminate\Support\Facades\DB;
 
 class SP2DController extends Controller
 {
@@ -713,7 +714,7 @@ class SP2DController extends Controller
 
     private function checkPaguBelanja(array $sp2dRekPayload, array $opd, string $tahun, array $opd5)
     {
-        $maxBerapax = PaguBelanjaModel::max('kd_berapax');
+        $maxBerapax = PaguBelanjaModel::where('tahun_rek', $tahun)->max('kd_berapax');
 
         foreach ($sp2dRekPayload as $urusan) {
             foreach ($urusan['bidangUrusan'] as $bidang) {
@@ -975,99 +976,123 @@ class SP2DController extends Controller
         $kodeOpd = $skpd->kode_opd;
         $opdFull = $this->parseKodeOpd($kodeOpd);
 
-        // if (!empty($validated['sp2d_rek'])) {
-        //     $sp2dRekPayload = json_decode($validated['sp2d_rek'], true);
+        if (!empty($validated['sp2d_rek'])) {
+            $sp2dRekPayload = json_decode($validated['sp2d_rek'], true);
         
-        //     try {
-        //         $this->checkPaguBelanja($sp2dRekPayload, $opdFull, $validated['tahun'], $opdRequest);
-        //     } catch (\Exception $e) {
-        //         return response()->json([
-        //             'status'  => false,
-        //             'message' => $e->getMessage(),
-        //         ], 422);
-        //     }
-        // }
+            try {
+                $this->checkPaguBelanja($sp2dRekPayload, $opdFull, $validated['tahun'], $opdRequest);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+        }
+
+        if (!empty($validated['sumber_dana'])) {
+            $sumberDanaPayload = json_decode($validated['sumber_dana'], true);
+            if (empty($sumberDanaPayload) || !is_array($sumberDanaPayload)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Format sumber dana tidak valid.'
+                ], 422);
+            }
+            
+            foreach ($sumberDanaPayload as $item) {
+                $nilai = $item['nilai'] ?? 0;
+                // 🔥 ambil sisa dari DB (bukan dari payload!)
+                $sisaDb = $this->getSisaSumberDana($item, $validated['tahun']);
+                if ($nilai > $sisaDb) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' =>  "Sumber dana tidak cukup. Sisa: {$sisaDb}, Input: {$nilai}",
+                    ], 422);
+                }
+            }
+        }
         
         try {
-            $folder = 'sp2d/' . date('Ymd');
-    
-            // Simpan file nama_file_asli jika ada
-            if ($request->hasFile('nama_file_asli')) {
-                $file = $request->file('nama_file_asli');
-                $path = $file->store($folder, 'public');
-                $validated['nama_file_asli'] = $path;
-            }
-    
-            // Simpan file file_tte jika ada
-            if ($request->hasFile('file_tte')) {
-                $fileTte = $request->file('file_tte');
-                $pathTte = $fileTte->store($folder, 'public');
-                $validated['file_tte'] = $pathTte;
-            }
             // Ubah array menjadi string (tanpa sort)
             if (!empty($validated['id_berkas'])) {
                 $validated['id_berkas'] = implode(',', $validated['id_berkas']);
             }
 
-
+            $uploadedFiles = [];
             $kodeFile = Str::random(10);
             // Simpan data ke database
-            $sp2d = SP2DModel::create(array_merge($validated, [
-                'created_at' => now(),
-                'kode_file' => $kodeFile,
-                'tanggal_upload' => now(),
-            ]));
-
-            // Pastikan data berhasil dibuat sebelum lanjut
-            if ($sp2d) {
-                // Ambil ulang data (jika perlu data lengkap dengan relasi)
-                $sp2d = SP2DModel::where('kode_file', $kodeFile)->first();
-
-                // Simpan data sp2d_rek jika ada
+            $sp2d = DB::transaction(function () use ($validated, $request, $kodeFile, &$uploadedFiles) {
+                $folder = 'sp2d/' . date('Ymd');
+                 // Simpan file nama_file_asli jika ada
+                 if ($request->hasFile('nama_file_asli')) {
+                    $path = $request->file('nama_file_asli')->store($folder, 'public');
+                    $validated['nama_file_asli'] = $path;
+                    $uploadedFiles[] = $path; // ← catat
+                }
+        
+                if ($request->hasFile('file_tte')) {
+                    $pathTte = $request->file('file_tte')->store($folder, 'public');
+                    $validated['file_tte'] = $pathTte;
+                    $uploadedFiles[] = $pathTte; // ← catat
+                }
+        
+                // 1. Simpan SP2D utama
+                $sp2d = SP2DModel::create(array_merge($validated, [
+                    'created_at'      => now(),
+                    'kode_file'       => $kodeFile,
+                    'tanggal_upload'  => now(),
+                ]));
+        
+                if (!$sp2d) {
+                    throw new \Exception('Gagal menyimpan data SP2D.');
+                }
+        
+                // Ambil ulang data lengkap
+                $sp2d = SP2DModel::where('kode_file', $kodeFile)->firstOrFail();
+        
+                // 2. Simpan SP2D Rekening jika ada
                 if (!empty($validated['sp2d_rek'])) {
                     $sp2dRekPayload = json_decode($validated['sp2d_rek'], true);
                     $this->saveSp2dRekening($sp2d->id_sp2d, $sp2dRekPayload);
                 }
-
-                // Simpan data sumber_dana jika ada
+        
+                // 3. Simpan Sumber Dana jika ada
                 if (!empty($validated['sumber_dana'])) {
                     $sumberDanaPayload = json_decode($validated['sumber_dana'], true);
                     $this->saveSumberDana($sp2d->id_sp2d, $sumberDanaPayload);
                 }
+        
+                return $sp2d;
+            });
+               // ✅ Notifikasi Telegram — di LUAR transaction (tidak perlu rollback jika gagal kirim)
                 $supervisors = UsersPermissionModel::with('user')
-                    ->where('users_rule_id', 4)
-                    ->get();
-
-                $noSpm = $request->no_spm;
-                $namaFile = $request->nama_file;
+                ->where('users_rule_id', 4)
+                ->get();
 
                 foreach ($supervisors as $supervisor) {
                     $chatId = $supervisor->user->chat_id ?? null;
 
                     if ($chatId) {
-                        $telegram->sendSp2dFromBendahara($chatId, $noSpm, $namaFile);
+                        $telegram->sendSp2dFromBendahara($chatId, $request->no_spm, $request->nama_file);
                     }
                 }
-            } else {
-                // Jika gagal create
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal menyimpan data SP2D.'
+                    'status'  => true,
+                    'message' => 'Data berhasil disimpan',
+                    'data'    => new SP2DResource($sp2d),
+                ]);
+
+            } catch (\Exception $e) {
+                // ✅ Hapus file yang sudah terupload jika transaction gagal
+                foreach ($uploadedFiles as $filePath) {
+                    Storage::disk('public')->delete($filePath);
+                }
+
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
                 ], 500);
             }
-        
-            return response()->json([
-                'status' => true,
-                'message' => 'Data berhasil disimpan',
-                'data' => new SP2DResource($sp2d),
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Terjadi kesalahan pada database',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
     }
     
     private function saveSp2dRekening($sp2d_id, $sp2d_rek_payload)
@@ -1143,10 +1168,23 @@ class SP2DController extends Controller
         }
     }
 
+    private function getSisaSumberDana($item, $tahun)
+    {
+        return DB::table('V_SISA_SUMBER_DANA')
+            ->where('kd_ref1', $item['kd_ref1'])
+            ->where('kd_ref2', $item['kd_ref2'])
+            ->where('kd_ref3', $item['kd_ref3'])
+            ->where('kd_ref4', $item['kd_ref4'])
+            ->where('kd_ref5', $item['kd_ref5'])
+            ->where('kd_ref6', $item['kd_ref6'])
+            ->where('tahun', $tahun)
+            ->value('sisa') ?? 0;
+    }
+
     private function saveSumberDana($sp2dId, $sumberDanaPayload)
     {
         if (empty($sumberDanaPayload) || !is_array($sumberDanaPayload)) {
-            return;
+            throw new \Exception('Format sumber dana tidak valid.'); // ✅ BENAR
         }
 
         foreach ($sumberDanaPayload as $item) {
