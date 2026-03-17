@@ -1159,7 +1159,7 @@ class SP2DController extends Controller
             $kd_ref6 = $item['kd_ref6'] ?? null;
 
             // "nilai" dan "sisa" bisa berupa string atau number, jadi ubah ke float
-            $nilai = isset($item['nilai']) ? floatval($item['nilai']) : 0;
+            $nilai = $item['nilai'] ?? 0;
             $sisa = isset($item['sisa']) ? floatval($item['sisa']) : 0;
 
             SP2DSumberDanaModel::create([
