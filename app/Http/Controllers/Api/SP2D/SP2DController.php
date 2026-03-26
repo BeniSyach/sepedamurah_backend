@@ -759,14 +759,14 @@ class SP2DController extends Controller
                                 ->where('kd_berapax', $maxBerapax);
                             
                             $pagu = $query->first();
-                                dd([
-                                    'opd' => $opd,
-                                    'rek' => $rek,
-                                    'sub' => $sub,
-                                    'tahun' => $tahun,
-                                    'kd_berapax' => $maxBerapax,
-                                    'pagu'=> $pagu,
-                                ]);
+                                // dd([
+                                //     'opd' => $opd,
+                                //     'rek' => $rek,
+                                //     'sub' => $sub,
+                                //     'tahun' => $tahun,
+                                //     'kd_berapax' => $maxBerapax,
+                                //     'pagu'=> $pagu,
+                                // ]);
                                 if (!$pagu || $pagu->jumlah_pagu <= 0) {
                                     throw new \Exception(
                                         'Pagu belanja kosong atau nol pada rekening ' .
