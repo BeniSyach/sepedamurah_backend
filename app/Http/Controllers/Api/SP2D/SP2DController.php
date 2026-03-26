@@ -724,49 +724,41 @@ class SP2DController extends Controller
                             foreach ($sub['rekening'] as $rek) {
 
                                 // 🔹 Ambil pagu belanja
-                                $pagu = PaguBelanjaModel::where([
-                                    'kd_urusan'    => $urusan['kd_urusan'],
-                                    'kd_bu1'       => $bidang['kd_bu1'],
-                                    'kd_bu2'       => $bidang['kd_bu2'],
-                                    'kd_prog1'     => $program['kd_prog1'],
-                                    'kd_prog2'     => $program['kd_prog2'],
-                                    'kd_prog3'     => $program['kd_prog3'],
-                                    'kd_keg1'      => $kegiatan['kd_keg1'],
-                                    'kd_keg2'      => $kegiatan['kd_keg2'],
-                                    'kd_keg3'      => $kegiatan['kd_keg3'],
-                                    'kd_keg4'      => $kegiatan['kd_keg4'],
-                                    'kd_keg5'      => $kegiatan['kd_keg5'],
-                                    'kd_subkeg1'   => $sub['kd_subkeg1'],
-                                    'kd_subkeg2'   => $sub['kd_subkeg2'],
-                                    'kd_subkeg3'   => $sub['kd_subkeg3'],
-                                    'kd_subkeg4'   => $sub['kd_subkeg4'],
-                                    'kd_subkeg5'   => $sub['kd_subkeg5'],
-                                    'kd_subkeg6'   => $sub['kd_subkeg6'],
-                                    'kd_rekening1' => $rek['kd_rekening1'],
-                                    'kd_rekening2' => $rek['kd_rekening2'],
-                                    'kd_rekening3' => $rek['kd_rekening3'],
-                                    'kd_rekening4' => $rek['kd_rekening4'],
-                                    'kd_rekening5' => $rek['kd_rekening5'],
-                                    'kd_rekening6' => $rek['kd_rekening6'],
-                                    // 'kd_opd1' => $opd[0],
-                                    // 'kd_opd2' => $opd[1],
-                                    // 'kd_opd3' => $opd[2],
-                                    // 'kd_opd4' => $opd[3],
-                                    // 'kd_opd5' => $opd[4],
-                                    // 'kd_opd6' => $opd[5],
-                                    // 'kd_opd7' => $opd[6],
-                                    // 'kd_opd8' => $opd[7],
-                                    'kd_opd1' => $opd['kd_opd1'],
-                                    'kd_opd2' => $opd['kd_opd2'],
-                                    'kd_opd3' => $opd['kd_opd3'],
-                                    'kd_opd4' => $opd['kd_opd4'],
-                                    'kd_opd5' => $opd['kd_opd5'],
-                                    'kd_opd6' => $opd['kd_opd6'],
-                                    'kd_opd7' => $opd['kd_opd7'],
-                                    'kd_opd8' => $opd['kd_opd8'],
-                                    'tahun_rek' => $tahun,
-                                    'kd_berapax' =>$maxBerapax
-                                ])->first();
+                                $query = PaguBelanjaModel::whereRaw('TRIM(kd_urusan) = ?', [trim($urusan['kd_urusan'])])
+                                ->whereRaw('TRIM(kd_bu1) = ?', [trim($bidang['kd_bu1'])])
+                                ->whereRaw('TRIM(kd_bu2) = ?', [trim($bidang['kd_bu2'])])
+                                ->whereRaw('TRIM(kd_prog1) = ?', [trim($program['kd_prog1'])])
+                                ->whereRaw('TRIM(kd_prog2) = ?', [trim($program['kd_prog2'])])
+                                ->whereRaw('TRIM(kd_prog3) = ?', [trim($program['kd_prog3'])])
+                                ->whereRaw('TRIM(kd_keg1) = ?', [trim($kegiatan['kd_keg1'])])
+                                ->whereRaw('TRIM(kd_keg2) = ?', [trim($kegiatan['kd_keg2'])])
+                                ->whereRaw('TRIM(kd_keg3) = ?', [trim($kegiatan['kd_keg3'])])
+                                ->whereRaw('TRIM(kd_keg4) = ?', [trim($kegiatan['kd_keg4'])])
+                                ->whereRaw('TRIM(kd_keg5) = ?', [trim($kegiatan['kd_keg5'])])
+                                ->whereRaw('TRIM(kd_subkeg1) = ?', [trim($sub['kd_subkeg1'])])
+                                ->whereRaw('TRIM(kd_subkeg2) = ?', [trim($sub['kd_subkeg2'])])
+                                ->whereRaw('TRIM(kd_subkeg3) = ?', [trim($sub['kd_subkeg3'])])
+                                ->whereRaw('TRIM(kd_subkeg4) = ?', [trim($sub['kd_subkeg4'])])
+                                ->whereRaw('TRIM(kd_subkeg5) = ?', [trim($sub['kd_subkeg5'])])
+                                ->whereRaw('TRIM(kd_subkeg6) = ?', [trim($sub['kd_subkeg6'])])
+                                ->whereRaw('TRIM(kd_rekening1) = ?', [trim($rek['kd_rekening1'])])
+                                ->whereRaw('TRIM(kd_rekening2) = ?', [trim($rek['kd_rekening2'])])
+                                ->whereRaw('TRIM(kd_rekening3) = ?', [trim($rek['kd_rekening3'])])
+                                ->whereRaw('TRIM(kd_rekening4) = ?', [trim($rek['kd_rekening4'])])
+                                ->whereRaw('TRIM(kd_rekening5) = ?', [trim($rek['kd_rekening5'])])
+                                ->whereRaw('TRIM(kd_rekening6) = ?', [trim($rek['kd_rekening6'])])
+                                ->whereRaw('TRIM(kd_opd1) = ?', [trim($opd['kd_opd1'])])
+                                ->whereRaw('TRIM(kd_opd2) = ?', [trim($opd['kd_opd2'])])
+                                ->whereRaw('TRIM(kd_opd3) = ?', [trim($opd['kd_opd3'])])
+                                ->whereRaw('TRIM(kd_opd4) = ?', [trim($opd['kd_opd4'])])
+                                ->whereRaw('TRIM(kd_opd5) = ?', [trim($opd['kd_opd5'])])
+                                ->whereRaw('TRIM(kd_opd6) = ?', [trim($opd['kd_opd6'])])
+                                ->whereRaw('TRIM(kd_opd7) = ?', [trim($opd['kd_opd7'])])
+                                ->whereRaw('TRIM(kd_opd8) = ?', [trim($opd['kd_opd8'])])
+                                ->where('tahun_rek', $tahun)
+                                ->where('kd_berapax', $maxBerapax);
+                            
+                            $pagu = $query->first();
                                 dd([
                                     'opd' => $opd,
                                     'rek' => $rek,
