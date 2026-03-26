@@ -791,32 +791,32 @@ class SP2DController extends Controller
                             ->pluck('id_sp2d');
 
                             // 🔹 Total SP2DRekening yang sudah terpakai
-                            $terpakai = SP2DRekeningModel::whereIn('sp2d_id', $sp2dIds)
-                                ->where([
-                                    'kd_urusan'    => $urusan['kd_urusan'],
-                                    'kd_bu1'       => $bidang['kd_bu1'],
-                                    'kd_bu2'       => $bidang['kd_bu2'],
-                                    'kd_prog1'     => $program['kd_prog1'],
-                                    'kd_prog2'     => $program['kd_prog2'],
-                                    'kd_prog3'     => $program['kd_prog3'],
-                                    'kd_keg1'      => $kegiatan['kd_keg1'],
-                                    'kd_keg2'      => $kegiatan['kd_keg2'],
-                                    'kd_keg3'      => $kegiatan['kd_keg3'],
-                                    'kd_keg4'      => $kegiatan['kd_keg4'],
-                                    'kd_keg5'      => $kegiatan['kd_keg5'],
-                                    'kd_subkeg1'   => $sub['kd_subkeg1'],
-                                    'kd_subkeg2'   => $sub['kd_subkeg2'],
-                                    'kd_subkeg3'   => $sub['kd_subkeg3'],
-                                    'kd_subkeg4'   => $sub['kd_subkeg4'],
-                                    'kd_subkeg5'   => $sub['kd_subkeg5'],
-                                    'kd_subkeg6'   => $sub['kd_subkeg6'],
-                                    'kd_rekening1' => $rek['kd_rekening1'],
-                                    'kd_rekening2' => $rek['kd_rekening2'],
-                                    'kd_rekening3' => $rek['kd_rekening3'],
-                                    'kd_rekening4' => $rek['kd_rekening4'],
-                                    'kd_rekening5' => $rek['kd_rekening5'],
-                                    'kd_rekening6' => $rek['kd_rekening6'],
-                                ])->sum('nilai');
+                            $queryTerpakai = SP2DRekeningModel::whereIn('sp2d_id', $sp2dIds)
+                            ->whereRaw('TRIM(kd_urusan) = ?', [trim($urusan['kd_urusan'])])
+                            ->whereRaw('TRIM(kd_bu1) = ?', [trim($bidang['kd_bu1'])])
+                            ->whereRaw('TRIM(kd_bu2) = ?', [trim($bidang['kd_bu2'])])
+                            ->whereRaw('TRIM(kd_prog1) = ?', [trim($program['kd_prog1'])])
+                            ->whereRaw('TRIM(kd_prog2) = ?', [trim($program['kd_prog2'])])
+                            ->whereRaw('TRIM(kd_prog3) = ?', [trim($program['kd_prog3'])])
+                            ->whereRaw('TRIM(kd_keg1) = ?', [trim($kegiatan['kd_keg1'])])
+                            ->whereRaw('TRIM(kd_keg2) = ?', [trim($kegiatan['kd_keg2'])])
+                            ->whereRaw('TRIM(kd_keg3) = ?', [trim($kegiatan['kd_keg3'])])
+                            ->whereRaw('TRIM(kd_keg4) = ?', [trim($kegiatan['kd_keg4'])])
+                            ->whereRaw('TRIM(kd_keg5) = ?', [trim($kegiatan['kd_keg5'])])
+                            ->whereRaw('TRIM(kd_subkeg1) = ?', [trim($sub['kd_subkeg1'])])
+                            ->whereRaw('TRIM(kd_subkeg2) = ?', [trim($sub['kd_subkeg2'])])
+                            ->whereRaw('TRIM(kd_subkeg3) = ?', [trim($sub['kd_subkeg3'])])
+                            ->whereRaw('TRIM(kd_subkeg4) = ?', [trim($sub['kd_subkeg4'])])
+                            ->whereRaw('TRIM(kd_subkeg5) = ?', [trim($sub['kd_subkeg5'])])
+                            ->whereRaw('TRIM(kd_subkeg6) = ?', [trim($sub['kd_subkeg6'])])
+                            ->whereRaw('TRIM(kd_rekening1) = ?', [trim($rek['kd_rekening1'])])
+                            ->whereRaw('TRIM(kd_rekening2) = ?', [trim($rek['kd_rekening2'])])
+                            ->whereRaw('TRIM(kd_rekening3) = ?', [trim($rek['kd_rekening3'])])
+                            ->whereRaw('TRIM(kd_rekening4) = ?', [trim($rek['kd_rekening4'])])
+                            ->whereRaw('TRIM(kd_rekening5) = ?', [trim($rek['kd_rekening5'])])
+                            ->whereRaw('TRIM(kd_rekening6) = ?', [trim($rek['kd_rekening6'])]);
+                        
+                        $terpakai = $queryTerpakai->sum('nilai');
 
                             $sisaPagu = $pagu->jumlah_pagu - $terpakai;
 
