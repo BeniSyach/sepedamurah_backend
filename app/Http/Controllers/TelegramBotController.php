@@ -84,79 +84,79 @@ class TelegramBotController extends Controller
     // }
     
     public function webhook(Request $request)
-{
-    $update = $request->all();
+    {
+        $update = $request->all();
 
-    if (!isset($update["message"])) {
-        return response()->json(['status' => 'no message']);
-    }
+        if (!isset($update["message"])) {
+            return response()->json(['status' => 'no message']);
+        }
 
-    $message = $update["message"];
-    $chatId  = $message["chat"]["id"];
-    $text    = $message["text"] ?? "";
+        $message = $update["message"];
+        $chatId  = $message["chat"]["id"];
+        $text    = $message["text"] ?? "";
 
-    // 🔹 Jika user baru / kirim /start → tampilkan welcome message
-    if ($text === '/start' || empty($text)) {
-        $reply = "👋 Halo! Selamat datang di *Bot Sepedamurah* 🚲  
-Kabupaten Serdang Bedagai.
+        // 🔹 Jika user baru / kirim /start → tampilkan welcome message
+        if ($text === '/start' || empty($text)) {
+            $reply = "👋 Halo! Selamat datang di *Bot Sepedamurah* 🚲  
+    Kabupaten Serdang Bedagai.
 
-Saya siap membantu Anda mendapatkan notifikasi:
-📄 SP2D  
-📑 Berkas lainnya  
+    Saya siap membantu Anda mendapatkan notifikasi:
+    📄 SP2D  
+    📑 Berkas lainnya  
 
-📲 Untuk mulai, silakan kirim nomor HP Anda  
-dengan format berikut:
+    📲 Untuk mulai, silakan kirim nomor HP Anda  
+    dengan format berikut:
 
-➡️ *628xxxxxxxxxx*  
-✨ Contoh: 6281234567890
+    ➡️ *628xxxxxxxxxx*  
+    ✨ Contoh: 6281234567890
 
-Terima kasih 🙏";
+    Terima kasih 🙏";
+
+            $this->sendMessage($chatId, $reply, 'Markdown');
+            return response()->json(['status' => 'ok']);
+        }
+
+        // 🔹 Deteksi nomor HP format 628xxxx
+        $phone = $this->extractPhoneNumber($text);
+
+        if ($phone) {
+            // Cari user
+            $user = User::withoutGlobalScopes()
+                ->where('no_hp', $phone)
+                ->first();
+
+            if ($user) {
+                // Simpan chat_id
+                $user->chat_id = $chatId;
+                $user->deleted = 0;
+                $user->save();
+
+                $reply = "✅ *Nomor berhasil didaftarkan!*  
+
+    🔔 Anda sekarang akan menerima notifikasi:
+    📄 SP2D  
+    📑 Berkas lainnya  
+
+    Terima kasih telah menggunakan layanan kami 🙏";
+            } else {
+                $reply = "❌ *Nomor tidak ditemukan*  
+
+    Pastikan nomor Anda sudah terdaftar di sistem.  
+    Silakan hubungi admin jika diperlukan 🙏";
+            }
+        } else {
+            $reply = "⚠️ Format nomor belum sesuai  
+
+    Silakan kirim nomor HP dengan format:  
+    ➡️ *628xxxxxxxxxx*  
+
+    ✨ Contoh: 6281234567890";
+        }
 
         $this->sendMessage($chatId, $reply, 'Markdown');
+
         return response()->json(['status' => 'ok']);
     }
-
-    // 🔹 Deteksi nomor HP format 628xxxx
-    $phone = $this->extractPhoneNumber($text);
-
-    if ($phone) {
-        // Cari user
-        $user = User::withoutGlobalScopes()
-            ->where('no_hp', $phone)
-            ->first();
-
-        if ($user) {
-            // Simpan chat_id
-            $user->chat_id = $chatId;
-            $user->deleted = 0;
-            $user->save();
-
-            $reply = "✅ *Nomor berhasil didaftarkan!*  
-
-🔔 Anda sekarang akan menerima notifikasi:
-📄 SP2D  
-📑 Berkas lainnya  
-
-Terima kasih telah menggunakan layanan kami 🙏";
-        } else {
-            $reply = "❌ *Nomor tidak ditemukan*  
-
-Pastikan nomor Anda sudah terdaftar di sistem.  
-Silakan hubungi admin jika diperlukan 🙏";
-        }
-    } else {
-        $reply = "⚠️ Format nomor belum sesuai  
-
-Silakan kirim nomor HP dengan format:  
-➡️ *628xxxxxxxxxx*  
-
-✨ Contoh: 6281234567890";
-    }
-
-    $this->sendMessage($chatId, $reply, 'Markdown');
-
-    return response()->json(['status' => 'ok']);
-}
 
     // Kirim pesan
     private function sendMessage($chatId, $text)

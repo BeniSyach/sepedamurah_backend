@@ -712,129 +712,129 @@ class SP2DController extends Controller
         ];
     }
 
-    private function checkPaguBelanja(array $sp2dRekPayload, array $opd, string $tahun, array $opd5)
-    {
-        $maxBerapax = PaguBelanjaModel::where('tahun_rek', $tahun)->max('kd_berapax');
+    // private function checkPaguBelanja(array $sp2dRekPayload, array $opd, string $tahun, array $opd5)
+    // {
+    //     $maxBerapax = PaguBelanjaModel::where('tahun_rek', $tahun)->max('kd_berapax');
 
-        foreach ($sp2dRekPayload as $urusan) {
-            foreach ($urusan['bidangUrusan'] as $bidang) {
-                foreach ($bidang['program'] as $program) {
-                    foreach ($program['kegiatan'] as $kegiatan) {
-                        foreach ($kegiatan['subKegiatan'] as $sub) {
-                            foreach ($sub['rekening'] as $rek) {
+    //     foreach ($sp2dRekPayload as $urusan) {
+    //         foreach ($urusan['bidangUrusan'] as $bidang) {
+    //             foreach ($bidang['program'] as $program) {
+    //                 foreach ($program['kegiatan'] as $kegiatan) {
+    //                     foreach ($kegiatan['subKegiatan'] as $sub) {
+    //                         foreach ($sub['rekening'] as $rek) {
 
-                                // 🔹 Ambil pagu belanja
-                                $query = PaguBelanjaModel::whereRaw('TRIM(kd_urusan) = ?', [trim($urusan['kd_urusan'])])
-                                ->whereRaw('TRIM(kd_bu1) = ?', [trim($bidang['kd_bu1'])])
-                                ->whereRaw('TRIM(kd_bu2) = ?', [trim($bidang['kd_bu2'])])
-                                ->whereRaw('TRIM(kd_prog1) = ?', [trim($program['kd_prog1'])])
-                                ->whereRaw('TRIM(kd_prog2) = ?', [trim($program['kd_prog2'])])
-                                ->whereRaw('TRIM(kd_prog3) = ?', [trim($program['kd_prog3'])])
-                                ->whereRaw('TRIM(kd_keg1) = ?', [trim($kegiatan['kd_keg1'])])
-                                ->whereRaw('TRIM(kd_keg2) = ?', [trim($kegiatan['kd_keg2'])])
-                                ->whereRaw('TRIM(kd_keg3) = ?', [trim($kegiatan['kd_keg3'])])
-                                ->whereRaw('TRIM(kd_keg4) = ?', [trim($kegiatan['kd_keg4'])])
-                                ->whereRaw('TRIM(kd_keg5) = ?', [trim($kegiatan['kd_keg5'])])
-                                ->whereRaw('TRIM(kd_subkeg1) = ?', [trim($sub['kd_subkeg1'])])
-                                ->whereRaw('TRIM(kd_subkeg2) = ?', [trim($sub['kd_subkeg2'])])
-                                ->whereRaw('TRIM(kd_subkeg3) = ?', [trim($sub['kd_subkeg3'])])
-                                ->whereRaw('TRIM(kd_subkeg4) = ?', [trim($sub['kd_subkeg4'])])
-                                ->whereRaw('TRIM(kd_subkeg5) = ?', [trim($sub['kd_subkeg5'])])
-                                ->whereRaw('TRIM(kd_subkeg6) = ?', [trim($sub['kd_subkeg6'])])
-                                ->whereRaw('TRIM(kd_rekening1) = ?', [trim($rek['kd_rekening1'])])
-                                ->whereRaw('TRIM(kd_rekening2) = ?', [trim($rek['kd_rekening2'])])
-                                ->whereRaw('TRIM(kd_rekening3) = ?', [trim($rek['kd_rekening3'])])
-                                ->whereRaw('TRIM(kd_rekening4) = ?', [trim($rek['kd_rekening4'])])
-                                ->whereRaw('TRIM(kd_rekening5) = ?', [trim($rek['kd_rekening5'])])
-                                ->whereRaw('TRIM(kd_rekening6) = ?', [trim($rek['kd_rekening6'])])
-                                ->whereRaw('TRIM(kd_opd1) = ?', [trim($opd['kd_opd1'])])
-                                ->whereRaw('TRIM(kd_opd2) = ?', [trim($opd['kd_opd2'])])
-                                ->whereRaw('TRIM(kd_opd3) = ?', [trim($opd['kd_opd3'])])
-                                ->whereRaw('TRIM(kd_opd4) = ?', [trim($opd['kd_opd4'])])
-                                ->whereRaw('TRIM(kd_opd5) = ?', [trim($opd['kd_opd5'])])
-                                ->whereRaw('TRIM(kd_opd6) = ?', [trim($opd['kd_opd6'])])
-                                ->whereRaw('TRIM(kd_opd7) = ?', [trim($opd['kd_opd7'])])
-                                ->whereRaw('TRIM(kd_opd8) = ?', [trim($opd['kd_opd8'])])
-                                ->where('tahun_rek', $tahun)
-                                ->where('kd_berapax', $maxBerapax);
+    //                             // 🔹 Ambil pagu belanja
+    //                             $query = PaguBelanjaModel::whereRaw('TRIM(kd_urusan) = ?', [trim($urusan['kd_urusan'])])
+    //                             ->whereRaw('TRIM(kd_bu1) = ?', [trim($bidang['kd_bu1'])])
+    //                             ->whereRaw('TRIM(kd_bu2) = ?', [trim($bidang['kd_bu2'])])
+    //                             ->whereRaw('TRIM(kd_prog1) = ?', [trim($program['kd_prog1'])])
+    //                             ->whereRaw('TRIM(kd_prog2) = ?', [trim($program['kd_prog2'])])
+    //                             ->whereRaw('TRIM(kd_prog3) = ?', [trim($program['kd_prog3'])])
+    //                             ->whereRaw('TRIM(kd_keg1) = ?', [trim($kegiatan['kd_keg1'])])
+    //                             ->whereRaw('TRIM(kd_keg2) = ?', [trim($kegiatan['kd_keg2'])])
+    //                             ->whereRaw('TRIM(kd_keg3) = ?', [trim($kegiatan['kd_keg3'])])
+    //                             ->whereRaw('TRIM(kd_keg4) = ?', [trim($kegiatan['kd_keg4'])])
+    //                             ->whereRaw('TRIM(kd_keg5) = ?', [trim($kegiatan['kd_keg5'])])
+    //                             ->whereRaw('TRIM(kd_subkeg1) = ?', [trim($sub['kd_subkeg1'])])
+    //                             ->whereRaw('TRIM(kd_subkeg2) = ?', [trim($sub['kd_subkeg2'])])
+    //                             ->whereRaw('TRIM(kd_subkeg3) = ?', [trim($sub['kd_subkeg3'])])
+    //                             ->whereRaw('TRIM(kd_subkeg4) = ?', [trim($sub['kd_subkeg4'])])
+    //                             ->whereRaw('TRIM(kd_subkeg5) = ?', [trim($sub['kd_subkeg5'])])
+    //                             ->whereRaw('TRIM(kd_subkeg6) = ?', [trim($sub['kd_subkeg6'])])
+    //                             ->whereRaw('TRIM(kd_rekening1) = ?', [trim($rek['kd_rekening1'])])
+    //                             ->whereRaw('TRIM(kd_rekening2) = ?', [trim($rek['kd_rekening2'])])
+    //                             ->whereRaw('TRIM(kd_rekening3) = ?', [trim($rek['kd_rekening3'])])
+    //                             ->whereRaw('TRIM(kd_rekening4) = ?', [trim($rek['kd_rekening4'])])
+    //                             ->whereRaw('TRIM(kd_rekening5) = ?', [trim($rek['kd_rekening5'])])
+    //                             ->whereRaw('TRIM(kd_rekening6) = ?', [trim($rek['kd_rekening6'])])
+    //                             ->whereRaw('TRIM(kd_opd1) = ?', [trim($opd['kd_opd1'])])
+    //                             ->whereRaw('TRIM(kd_opd2) = ?', [trim($opd['kd_opd2'])])
+    //                             ->whereRaw('TRIM(kd_opd3) = ?', [trim($opd['kd_opd3'])])
+    //                             ->whereRaw('TRIM(kd_opd4) = ?', [trim($opd['kd_opd4'])])
+    //                             ->whereRaw('TRIM(kd_opd5) = ?', [trim($opd['kd_opd5'])])
+    //                             ->whereRaw('TRIM(kd_opd6) = ?', [trim($opd['kd_opd6'])])
+    //                             ->whereRaw('TRIM(kd_opd7) = ?', [trim($opd['kd_opd7'])])
+    //                             ->whereRaw('TRIM(kd_opd8) = ?', [trim($opd['kd_opd8'])])
+    //                             ->where('tahun_rek', $tahun)
+    //                             ->where('kd_berapax', $maxBerapax);
                             
-                            $pagu = $query->first();
-                                // dd([
-                                //     'opd' => $opd,
-                                //     'rek' => $rek,
-                                //     'sub' => $sub,
-                                //     'tahun' => $tahun,
-                                //     'kd_berapax' => $maxBerapax,
-                                //     'pagu'=> $pagu,
-                                // ]);
-                                if (!$pagu || $pagu->jumlah_pagu <= 0) {
-                                    throw new \Exception(
-                                        'Pagu belanja kosong atau nol pada rekening ' .
-                                        implode('.', [
-                                            $rek['kd_rekening1'],
-                                            $rek['kd_rekening2'],
-                                            $rek['kd_rekening3'],
-                                            $rek['kd_rekening4'],
-                                            $rek['kd_rekening5'],
-                                            $rek['kd_rekening6'],
-                                        ])
-                                    );
-                                }
+    //                         $pagu = $query->first();
+    //                             // dd([
+    //                             //     'opd' => $opd,
+    //                             //     'rek' => $rek,
+    //                             //     'sub' => $sub,
+    //                             //     'tahun' => $tahun,
+    //                             //     'kd_berapax' => $maxBerapax,
+    //                             //     'pagu'=> $pagu,
+    //                             // ]);
+    //                             if (!$pagu || $pagu->jumlah_pagu <= 0) {
+    //                                 throw new \Exception(
+    //                                     'Pagu belanja kosong atau nol pada rekening ' .
+    //                                     implode('.', [
+    //                                         $rek['kd_rekening1'],
+    //                                         $rek['kd_rekening2'],
+    //                                         $rek['kd_rekening3'],
+    //                                         $rek['kd_rekening4'],
+    //                                         $rek['kd_rekening5'],
+    //                                         $rek['kd_rekening6'],
+    //                                     ])
+    //                                 );
+    //                             }
 
-                                // 🔹 Ambil SP2D yang sesuai OPD dan tahun
-                            $sp2dIds = SP2DModel::where('tahun', $tahun)
-                            ->where('kd_opd1', $opd5['kd_opd1'])
-                            ->where('kd_opd2', $opd5['kd_opd2'])
-                            ->where('kd_opd3', $opd5['kd_opd3'])
-                            ->where('kd_opd4', $opd5['kd_opd4'])
-                            ->where('kd_opd5', $opd5['kd_opd5'])
-                            ->pluck('id_sp2d');
+    //                             // 🔹 Ambil SP2D yang sesuai OPD dan tahun
+    //                         $sp2dIds = SP2DModel::where('tahun', $tahun)
+    //                         ->where('kd_opd1', $opd5['kd_opd1'])
+    //                         ->where('kd_opd2', $opd5['kd_opd2'])
+    //                         ->where('kd_opd3', $opd5['kd_opd3'])
+    //                         ->where('kd_opd4', $opd5['kd_opd4'])
+    //                         ->where('kd_opd5', $opd5['kd_opd5'])
+    //                         ->pluck('id_sp2d');
 
-                            // 🔹 Total SP2DRekening yang sudah terpakai
-                            $queryTerpakai = SP2DRekeningModel::whereIn('sp2d_id', $sp2dIds)
-                            ->whereRaw('TRIM(kd_urusan) = ?', [trim($urusan['kd_urusan'])])
-                            ->whereRaw('TRIM(kd_bu1) = ?', [trim($bidang['kd_bu1'])])
-                            ->whereRaw('TRIM(kd_bu2) = ?', [trim($bidang['kd_bu2'])])
-                            ->whereRaw('TRIM(kd_prog1) = ?', [trim($program['kd_prog1'])])
-                            ->whereRaw('TRIM(kd_prog2) = ?', [trim($program['kd_prog2'])])
-                            ->whereRaw('TRIM(kd_prog3) = ?', [trim($program['kd_prog3'])])
-                            ->whereRaw('TRIM(kd_keg1) = ?', [trim($kegiatan['kd_keg1'])])
-                            ->whereRaw('TRIM(kd_keg2) = ?', [trim($kegiatan['kd_keg2'])])
-                            ->whereRaw('TRIM(kd_keg3) = ?', [trim($kegiatan['kd_keg3'])])
-                            ->whereRaw('TRIM(kd_keg4) = ?', [trim($kegiatan['kd_keg4'])])
-                            ->whereRaw('TRIM(kd_keg5) = ?', [trim($kegiatan['kd_keg5'])])
-                            ->whereRaw('TRIM(kd_subkeg1) = ?', [trim($sub['kd_subkeg1'])])
-                            ->whereRaw('TRIM(kd_subkeg2) = ?', [trim($sub['kd_subkeg2'])])
-                            ->whereRaw('TRIM(kd_subkeg3) = ?', [trim($sub['kd_subkeg3'])])
-                            ->whereRaw('TRIM(kd_subkeg4) = ?', [trim($sub['kd_subkeg4'])])
-                            ->whereRaw('TRIM(kd_subkeg5) = ?', [trim($sub['kd_subkeg5'])])
-                            ->whereRaw('TRIM(kd_subkeg6) = ?', [trim($sub['kd_subkeg6'])])
-                            ->whereRaw('TRIM(kd_rekening1) = ?', [trim($rek['kd_rekening1'])])
-                            ->whereRaw('TRIM(kd_rekening2) = ?', [trim($rek['kd_rekening2'])])
-                            ->whereRaw('TRIM(kd_rekening3) = ?', [trim($rek['kd_rekening3'])])
-                            ->whereRaw('TRIM(kd_rekening4) = ?', [trim($rek['kd_rekening4'])])
-                            ->whereRaw('TRIM(kd_rekening5) = ?', [trim($rek['kd_rekening5'])])
-                            ->whereRaw('TRIM(kd_rekening6) = ?', [trim($rek['kd_rekening6'])]);
+    //                         // 🔹 Total SP2DRekening yang sudah terpakai
+    //                         $queryTerpakai = SP2DRekeningModel::whereIn('sp2d_id', $sp2dIds)
+    //                         ->whereRaw('TRIM(kd_urusan) = ?', [trim($urusan['kd_urusan'])])
+    //                         ->whereRaw('TRIM(kd_bu1) = ?', [trim($bidang['kd_bu1'])])
+    //                         ->whereRaw('TRIM(kd_bu2) = ?', [trim($bidang['kd_bu2'])])
+    //                         ->whereRaw('TRIM(kd_prog1) = ?', [trim($program['kd_prog1'])])
+    //                         ->whereRaw('TRIM(kd_prog2) = ?', [trim($program['kd_prog2'])])
+    //                         ->whereRaw('TRIM(kd_prog3) = ?', [trim($program['kd_prog3'])])
+    //                         ->whereRaw('TRIM(kd_keg1) = ?', [trim($kegiatan['kd_keg1'])])
+    //                         ->whereRaw('TRIM(kd_keg2) = ?', [trim($kegiatan['kd_keg2'])])
+    //                         ->whereRaw('TRIM(kd_keg3) = ?', [trim($kegiatan['kd_keg3'])])
+    //                         ->whereRaw('TRIM(kd_keg4) = ?', [trim($kegiatan['kd_keg4'])])
+    //                         ->whereRaw('TRIM(kd_keg5) = ?', [trim($kegiatan['kd_keg5'])])
+    //                         ->whereRaw('TRIM(kd_subkeg1) = ?', [trim($sub['kd_subkeg1'])])
+    //                         ->whereRaw('TRIM(kd_subkeg2) = ?', [trim($sub['kd_subkeg2'])])
+    //                         ->whereRaw('TRIM(kd_subkeg3) = ?', [trim($sub['kd_subkeg3'])])
+    //                         ->whereRaw('TRIM(kd_subkeg4) = ?', [trim($sub['kd_subkeg4'])])
+    //                         ->whereRaw('TRIM(kd_subkeg5) = ?', [trim($sub['kd_subkeg5'])])
+    //                         ->whereRaw('TRIM(kd_subkeg6) = ?', [trim($sub['kd_subkeg6'])])
+    //                         ->whereRaw('TRIM(kd_rekening1) = ?', [trim($rek['kd_rekening1'])])
+    //                         ->whereRaw('TRIM(kd_rekening2) = ?', [trim($rek['kd_rekening2'])])
+    //                         ->whereRaw('TRIM(kd_rekening3) = ?', [trim($rek['kd_rekening3'])])
+    //                         ->whereRaw('TRIM(kd_rekening4) = ?', [trim($rek['kd_rekening4'])])
+    //                         ->whereRaw('TRIM(kd_rekening5) = ?', [trim($rek['kd_rekening5'])])
+    //                         ->whereRaw('TRIM(kd_rekening6) = ?', [trim($rek['kd_rekening6'])]);
                         
-                        $terpakai = $queryTerpakai->sum('nilai');
+    //                     $terpakai = $queryTerpakai->sum('nilai');
 
-                            $sisaPagu = $pagu->jumlah_pagu - $terpakai;
+    //                         $sisaPagu = $pagu->jumlah_pagu - $terpakai;
 
-                                if ($rek['nilai'] > $sisaPagu) {
-                                    throw new \Exception(
-                                        'Sisa pagu tidak mencukupi. Sisa: ' .
-                                        number_format($sisaPagu) .
-                                        ', diminta: ' .
-                                        number_format($rek['nilai'])
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    //                             if ($rek['nilai'] > $sisaPagu) {
+    //                                 throw new \Exception(
+    //                                     'Sisa pagu tidak mencukupi. Sisa: ' .
+    //                                     number_format($sisaPagu) .
+    //                                     ', diminta: ' .
+    //                                     number_format($rek['nilai'])
+    //                                 );
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     /**
      * Store SP2D baru
@@ -975,18 +975,18 @@ class SP2DController extends Controller
         $kodeOpd = $skpd->kode_opd;
         $opdFull = $this->parseKodeOpd($kodeOpd);
 
-        if (!empty($validated['sp2d_rek'])) {
-            $sp2dRekPayload = json_decode($validated['sp2d_rek'], true);
+        // if (!empty($validated['sp2d_rek'])) {
+        //     $sp2dRekPayload = json_decode($validated['sp2d_rek'], true);
         
-            try {
-                $this->checkPaguBelanja($sp2dRekPayload, $opdFull, $validated['tahun'], $opdRequest);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'status'  => false,
-                    'message' => $e->getMessage(),
-                ], 422);
-            }
-        }
+        //     try {
+        //         $this->checkPaguBelanja($sp2dRekPayload, $opdFull, $validated['tahun'], $opdRequest);
+        //     } catch (\Exception $e) {
+        //         return response()->json([
+        //             'status'  => false,
+        //             'message' => $e->getMessage(),
+        //         ], 422);
+        //     }
+        // }
 
         if (!empty($validated['sumber_dana'])) {
             $sumberDanaPayload = json_decode($validated['sumber_dana'], true);
