@@ -135,131 +135,106 @@ ORDER BY r.KD_REF1, r.KD_REF2, r.KD_REF3
         if ($kd5) { $filterOpd .= ' AND s.KD_OPD5 = :kd5'; $bindings['kd5'] = $kd5; }
 
         $data = DB::connection('oracle')->select("
+        WITH REKAP AS (
+            SELECT 
+                sr.SP2D_ID,
+                sr.KD_REKENING1,
+                sr.KD_REKENING2,
+                sr.KD_REKENING3,
+                SUM(sr.NILAI) AS TOTAL_NILAI
+            FROM SP2D_REKENING sr
+            GROUP BY 
+                sr.SP2D_ID,
+                sr.KD_REKENING1,
+                sr.KD_REKENING2,
+                sr.KD_REKENING3
+        ),
+        BASE AS (
+            SELECT 
+                NVL(r.KD_REKENING1, s.KD_BELANJA1) AS KD_REF1,
+                NVL(r.KD_REKENING2, s.KD_BELANJA2) AS KD_REF2,
+                NVL(r.KD_REKENING3, s.KD_BELANJA3) AS KD_REF3,
+                NVL(rjb.NM_BELANJA, rjb2.NM_BELANJA) AS NM_BELANJA,
+                s.DITERIMA,
+                NVL(r.TOTAL_NILAI, s.NILAI_BELANJA) AS TOTAL_NILAI
+            FROM SP2D s
+            LEFT JOIN REKAP r
+                ON r.SP2D_ID = s.ID_SP2D
+            LEFT JOIN REF_JENIS_BELANJA rjb
+                ON r.KD_REKENING1 = rjb.KD_REF1
+                AND r.KD_REKENING2 = rjb.KD_REF2
+                AND r.KD_REKENING3 = rjb.KD_REF3
+            LEFT JOIN REF_JENIS_BELANJA rjb2
+                ON s.KD_BELANJA1 = rjb2.KD_REF1
+                AND s.KD_BELANJA2 = rjb2.KD_REF2
+                AND s.KD_BELANJA3 = rjb2.KD_REF3
+            WHERE s.TAHUN = :tahun
+              AND s.DITERIMA IS NOT NULL
+              $filterOpd
+        ),
+        REALISASI AS (
             SELECT 
                 x.KD_REF1,
                 x.KD_REF2,
                 x.KD_REF3,
-                x.NM_BELANJA AS JENIS_BELANJA,
-
-                x.BELANJA_JAN,
-                x.BELANJA_FEB,
-                x.BELANJA_MAR,
-                x.BELANJA_APR,
-                x.BELANJA_MAY,
-                x.BELANJA_JUN,
-                x.BELANJA_JUL,
-                x.BELANJA_AUG,
-                x.BELANJA_SEP,
-                x.BELANJA_OCT,
-                x.BELANJA_NOV,
-                x.BELANJA_DEC,
-
-                (
-                    NVL(x.BELANJA_JAN,0) +
-                    NVL(x.BELANJA_FEB,0) +
-                    NVL(x.BELANJA_MAR,0) +
-                    NVL(x.BELANJA_APR,0) +
-                    NVL(x.BELANJA_MAY,0) +
-                    NVL(x.BELANJA_JUN,0) +
-                    NVL(x.BELANJA_JUL,0) +
-                    NVL(x.BELANJA_AUG,0) +
-                    NVL(x.BELANJA_SEP,0) +
-                    NVL(x.BELANJA_OCT,0) +
-                    NVL(x.BELANJA_NOV,0) +
-                    NVL(x.BELANJA_DEC,0)
-                ) AS TOTAL_REALISASI,
-
-                NVL(p.TOTAL_PAGU, 0) AS TOTAL_PAGU
-
+                x.NM_BELANJA,
+        
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),1,x.TOTAL_NILAI,0)) AS BELANJA_JAN,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),2,x.TOTAL_NILAI,0)) AS BELANJA_FEB,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),3,x.TOTAL_NILAI,0)) AS BELANJA_MAR,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),4,x.TOTAL_NILAI,0)) AS BELANJA_APR,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),5,x.TOTAL_NILAI,0)) AS BELANJA_MAY,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),6,x.TOTAL_NILAI,0)) AS BELANJA_JUN,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),7,x.TOTAL_NILAI,0)) AS BELANJA_JUL,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),8,x.TOTAL_NILAI,0)) AS BELANJA_AUG,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),9,x.TOTAL_NILAI,0)) AS BELANJA_SEP,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),10,x.TOTAL_NILAI,0)) AS BELANJA_OCT,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),11,x.TOTAL_NILAI,0)) AS BELANJA_NOV,
+                SUM(DECODE(EXTRACT(MONTH FROM x.DITERIMA),12,x.TOTAL_NILAI,0)) AS BELANJA_DEC
+        
+            FROM BASE x
+            GROUP BY 
+                x.KD_REF1,
+                x.KD_REF2,
+                x.KD_REF3,
+                x.NM_BELANJA
+        ),
+        
+        PAGU_FINAL AS (
+            SELECT *
             FROM (
                 SELECT 
-                    KD_REF1, KD_REF2, KD_REF3, NM_BELANJA,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 1, TOTAL_NILAI, 0))  AS BELANJA_JAN,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 2, TOTAL_NILAI, 0))  AS BELANJA_FEB,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 3, TOTAL_NILAI, 0))  AS BELANJA_MAR,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 4, TOTAL_NILAI, 0))  AS BELANJA_APR,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 5, TOTAL_NILAI, 0))  AS BELANJA_MAY,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 6, TOTAL_NILAI, 0))  AS BELANJA_JUN,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 7, TOTAL_NILAI, 0))  AS BELANJA_JUL,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 8, TOTAL_NILAI, 0))  AS BELANJA_AUG,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA), 9, TOTAL_NILAI, 0))  AS BELANJA_SEP,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA),10, TOTAL_NILAI, 0))  AS BELANJA_OCT,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA),11, TOTAL_NILAI, 0))  AS BELANJA_NOV,
-                    SUM(DECODE(EXTRACT(MONTH FROM DITERIMA),12, TOTAL_NILAI, 0))  AS BELANJA_DEC
-                FROM (
-
-                    -- SQL 1
-                    SELECT 
-                        TRIM(s.KD_BELANJA1) AS KD_REF1,
-                        TRIM(s.KD_BELANJA2) AS KD_REF2,
-                        TRIM(s.KD_BELANJA3) AS KD_REF3,
-                        rjb.NM_BELANJA,
-                        s.DITERIMA,
-                        SUM(s.NILAI_BELANJA) AS TOTAL_NILAI
-                    FROM SP2D s
-                    LEFT JOIN REF_JENIS_BELANJA rjb 
-                      ON TRIM(s.KD_BELANJA1) = TRIM(rjb.KD_REF1)
-                        AND TRIM(s.KD_BELANJA2) = TRIM(rjb.KD_REF2)
-                        AND TRIM(s.KD_BELANJA3) = TRIM(rjb.KD_REF3)
-                    WHERE s.DITERIMA IS NOT NULL
-                    AND s.KD_BELANJA1 IS NOT NULL
-                    AND s.TAHUN = :tahun
-                       $filterOpd
-                    GROUP BY
-                        TRIM(s.KD_BELANJA1),
-                        TRIM(s.KD_BELANJA2),
-                        TRIM(s.KD_BELANJA3),
-                        rjb.NM_BELANJA,
-                        s.DITERIMA
-
-
-                    UNION ALL
-                    
-                    SELECT 
-                    NVL(rjb.KD_REF1, s.KD_BELANJA1),
-                    NVL(rjb.KD_REF2, s.KD_BELANJA2),
-                    NVL(rjb.KD_REF3, s.KD_BELANJA3),
-                    NVL(rjb.NM_BELANJA, rjb2.NM_BELANJA),
-                    s.DITERIMA,
-                    NVL(SUM(sr.NILAI), 0) AS TOTAL_NILAI
-                FROM SP2D s
-                LEFT JOIN SP2D_REKENING sr 
-                    ON sr.SP2D_ID = s.ID_SP2D
-               LEFT JOIN REF_JENIS_BELANJA rjb 
-                    ON TRIM(sr.KD_REKENING1) = TRIM(rjb.KD_REF1)
-                AND TRIM(sr.KD_REKENING2) = TRIM(rjb.KD_REF2)
-                AND TRIM(sr.KD_REKENING3) = TRIM(rjb.KD_REF3)
-
-                LEFT JOIN REF_JENIS_BELANJA rjb2
-                    ON TRIM(s.KD_BELANJA1) = TRIM(rjb2.KD_REF1)
-                AND TRIM(s.KD_BELANJA2) = TRIM(rjb2.KD_REF2)
-                AND TRIM(s.KD_BELANJA3) = TRIM(rjb2.KD_REF3)
-                WHERE s.DITERIMA IS NOT NULL
-                  AND NVL(rjb.KD_REF1, s.KD_BELANJA1) IS NOT NULL
-                  AND s.TAHUN = :tahun
-                   $filterOpd
-                GROUP BY 
-                    NVL(rjb.KD_REF1, s.KD_BELANJA1),
-                    NVL(rjb.KD_REF2, s.KD_BELANJA2),
-                    NVL(rjb.KD_REF3, s.KD_BELANJA3),
-                    NVL(rjb.NM_BELANJA, rjb2.NM_BELANJA),
-                    s.DITERIMA
-                )
-                GROUP BY KD_REF1, KD_REF2, KD_REF3, NM_BELANJA
-            ) x
-
-            LEFT JOIN PENGEMBALIAN.VW_PAGU_REKENING_3LEVEL_OPD p
-                ON p.TAHUN_REK     = :tahun
-            AND p.KD_REKENING1 = x.KD_REF1
-            AND p.KD_REKENING2 = x.KD_REF2
-            AND p.KD_REKENING3 = x.KD_REF3
+                    v.*,
+                    MAX(KD_BERAPAX) OVER (PARTITION BY TAHUN) AS MAX_KD
+                FROM PENGEMBALIAN.VW_PAGU_REKENING_3LEVEL_OPD v
+                WHERE v.TAHUN_REK = :tahun
+            )
+            WHERE KD_BERAPAX = MAX_KD
+        )
+        
+        SELECT 
+            r.*,
+            (
+                NVL(r.BELANJA_JAN,0)+NVL(r.BELANJA_FEB,0)+NVL(r.BELANJA_MAR,0)+
+                NVL(r.BELANJA_APR,0)+NVL(r.BELANJA_MAY,0)+NVL(r.BELANJA_JUN,0)+
+                NVL(r.BELANJA_JUL,0)+NVL(r.BELANJA_AUG,0)+NVL(r.BELANJA_SEP,0)+
+                NVL(r.BELANJA_OCT,0)+NVL(r.BELANJA_NOV,0)+NVL(r.BELANJA_DEC,0)
+            ) AS TOTAL_REALISASI,
+        
+            NVL(p.TOTAL_PAGU,0) AS TOTAL_PAGU
+        
+        FROM REALISASI r
+        LEFT JOIN PAGU_FINAL p
+            ON p.KD_REKENING1 = r.KD_REF1
+            AND p.KD_REKENING2 = r.KD_REF2
+            AND p.KD_REKENING3 = r.KD_REF3
             AND (:kd1 IS NULL OR p.KD_OPD1 = :kd1)
             AND (:kd2 IS NULL OR p.KD_OPD2 = :kd2)
             AND (:kd3 IS NULL OR p.KD_OPD3 = :kd3)
             AND (:kd4 IS NULL OR p.KD_OPD4 = :kd4)
             AND (:kd5 IS NULL OR p.KD_OPD5 = :kd5)
-
-            ORDER BY x.KD_REF1, x.KD_REF2, x.KD_REF3
+        
+        ORDER BY r.KD_REF1, r.KD_REF2, r.KD_REF3
         ", array_merge(
             $bindings,
             [
