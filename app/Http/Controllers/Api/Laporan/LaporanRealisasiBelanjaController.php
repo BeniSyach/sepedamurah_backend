@@ -205,7 +205,7 @@ ORDER BY r.KD_REF1, r.KD_REF2, r.KD_REF3
             FROM (
                 SELECT 
                     v.*,
-                    MAX(KD_BERAPAX) OVER (PARTITION BY TAHUN) AS MAX_KD
+                    MAX(KD_BERAPAX) OVER (PARTITION BY TAHUN_REK) AS MAX_KD
                 FROM PENGEMBALIAN.VW_PAGU_REKENING_3LEVEL_OPD v
                 WHERE v.TAHUN_REK = :tahun
             )
