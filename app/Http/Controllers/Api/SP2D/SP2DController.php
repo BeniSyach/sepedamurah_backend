@@ -961,7 +961,7 @@ class SP2DController extends Controller
                 if ($nilaiSp2d > $sisaPagu) {
                     return response()->json([
                         'status'  => false,
-                        'message' => 'Pagu UP tidak mencukupi',
+                       'message' => "Nilai SP2D sebesar {$nilaiSp2d} melebihi sisa pagu UP sebesar {$sisaPagu}. Total pagu: {$paguUp->pagu}, terpakai: {$totalUpTerpakai}.",
                         'data'    => [
                             'pagu_up'        => $paguUp->pagu,
                             'terpakai'       => $totalUpTerpakai,
