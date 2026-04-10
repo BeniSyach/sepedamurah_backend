@@ -155,17 +155,17 @@ class LaporanRekGajiSkpdController extends Controller
          * SEARCH
          * =============================== */
         if ($search) {
+            $search = strtolower($search);
         
             $query->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(laporan_rek_gaji_skpd.nama_operator) LIKE ?', ["%$search%"])
-                  ->orWhereRaw('LOWER(laporan_rek_gaji_skpd.file) LIKE ?', ["%$search%"])
-                  ->orWhereRaw('LOWER(ref_opd.nm_opd) LIKE ?', ["%$search%"])
+                $q->whereRaw('LOWER("LAPORAN_REK_GAJI_SKPD"."NAMA_OPERATOR") LIKE ?', ["%$search%"])
+                  ->orWhereRaw('LOWER("LAPORAN_REK_GAJI_SKPD"."FILE") LIKE ?', ["%$search%"])
+                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%$search%"])
                   ->orWhereHas('rekGaji', function ($q2) use ($search) {
-                      $q2->whereRaw('LOWER(nm_rekonsiliasi_gaji_skpd) LIKE ?', ["%$search%"]);
+                      $q2->whereRaw('LOWER("NM_REKONSILIASI_GAJI_SKPD") LIKE ?', ["%$search%"]);
                   });
             });
         }
-
         if ($request->filled('tahun')) {
             $query->where('tahun', $request->tahun);
         }
