@@ -705,10 +705,10 @@ class LaporanFungsionalController extends Controller
         // ===============================
         $bulanMulai = 1;
     
-        if (in_array($kodeOpd, $opdKhusus)) {
-            // OPD khusus hanya cek bulan berjalan
-            $bulanMulai = $bulanSekarang;
-        }
+        // if (in_array($kodeOpd, $opdKhusus)) {
+        //     // OPD khusus hanya cek bulan berjalan
+        //     $bulanMulai = $bulanSekarang;
+        // }
     
         // ===============================
         // AMBIL STATUS PENERIMAAN OPD
