@@ -166,7 +166,10 @@ class LaporanSp2bKeBudController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER("LAPORAN_SP2B_KE_BUD"."NAMA_OPERATOR") LIKE ?', ["%{$search}%"])
                   ->orWhereRaw('LOWER("LAPORAN_SP2B_KE_BUD"."FILE") LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"]);
+                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"])
+                  ->orWhereHas('refSp2bKeBud', function ($q2) use ($search) {
+                    $q2->whereRaw('LOWER("REF_SP2B_KE_BUD"."NM_SP2B_KE_BUD") LIKE ?', ["%$search%"]);
+                });
             });
         }
 

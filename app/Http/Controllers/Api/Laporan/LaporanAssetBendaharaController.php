@@ -165,7 +165,10 @@ class LaporanAssetBendaharaController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER("LAPORAN_ASSET_BENDAHARA"."NAMA_OPERATOR") LIKE ?', ["%{$search}%"])
                   ->orWhereRaw('LOWER("LAPORAN_ASSET_BENDAHARA"."FILE") LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"]);
+                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"])
+                  ->orWhereHas('refAssetBendahara', function ($q2) use ($search) {
+                    $q2->whereRaw('LOWER("REF_ASSET_BENDAHARA"."NM_ASSET_BENDAHARA") LIKE ?', ["%$search%"]);
+                });
             });
         }
 

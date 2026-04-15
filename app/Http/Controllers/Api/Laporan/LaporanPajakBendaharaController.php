@@ -164,7 +164,10 @@ class LaporanPajakBendaharaController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER("LAPORAN_PAJAK_BENDAHARA"."NAMA_OPERATOR") LIKE ?', ["%{$search}%"])
                   ->orWhereRaw('LOWER("LAPORAN_PAJAK_BENDAHARA"."FILE") LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"]);
+                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"])
+                  ->orWhereHas('refPajakBendahara', function ($q2) use ($search) {
+                    $q2->whereRaw('LOWER("REF_PAJAK_BENDAHARA"."NM_PAJAK_BENDAHARA") LIKE ?', ["%$search%"]);
+                });
             });
         }
 
