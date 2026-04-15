@@ -153,7 +153,10 @@ class LaporanDPAController extends Controller
                   ->orWhereRaw('LOWER("LAPORAN_DPA"."FILE") LIKE ?', ["%{$search}%"])
                   ->orWhereRaw('LOWER("LAPORAN_DPA"."PROSES") LIKE ?', ["%{$search}%"])
                   ->orWhereRaw('LOWER("LAPORAN_DPA"."SUPERVISOR_PROSES") LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"]);
+                  ->orWhereRaw('LOWER("REF_OPD"."NM_OPD") LIKE ?', ["%{$search}%"])
+                  ->orWhereHas('dpa', function ($q2) use ($search) {
+                    $q2->whereRaw('LOWER("REF_DPA"."NM_DPA") LIKE ?', ["%$search%"]);
+                });
             });
         }
         
