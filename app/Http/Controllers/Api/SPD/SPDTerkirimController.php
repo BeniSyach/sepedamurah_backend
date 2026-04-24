@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\TelegramService;
 use App\Services\TTE_BSRE;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class SPDTerkirimController extends Controller
 {
@@ -426,7 +427,8 @@ class SPDTerkirimController extends Controller
 
         // Upload PDF sebelum sign
         $uploaded = $request->file('file');
-        $saveName = $request->nama_file . ".pdf";
+        $cleanName = Str::slug($request->nama_file); 
+        $saveName = $cleanName . ".pdf";
         $originalFilePath = $uploaded->storeAs("SPD_original", $saveName, "public");
         $fullPath = storage_path("app/public/" . $originalFilePath);
 
