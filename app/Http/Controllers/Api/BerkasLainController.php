@@ -399,7 +399,7 @@ class BerkasLainController extends Controller
                     'penandatangan'  => $spd->nama_penandatangan ?? '-',
                     'nama_dokumen'   => $spd->keterangan ?? '-',
                     'file_asli'      => $spd->nama_file_asli ?? '-',
-                    'status_tte'     => $spd->tte == 1 ? 'TTE Selesai' : 'Belum TTE',
+                    'status_tte'     => $spd->tte == 'Yes' ? 'TTE Selesai' : 'Belum TTE',
                     'file_sdh_tte'   => $spd->file_tte ?? '-',
                     'tanggal_tte'    => $spd->tgl_tte ?? '-',
                     'raw'            => $spd,
