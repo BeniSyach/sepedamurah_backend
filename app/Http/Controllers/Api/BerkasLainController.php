@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use App\Services\TTE_BSRE;
 use App\Models\LogTTEModel;
+use App\Models\SPDTerkirimModel;
 
 class BerkasLainController extends Controller
 {
@@ -366,42 +367,51 @@ class BerkasLainController extends Controller
 
     public function verify_tte($id)
     {
-        // Ambil data Berkas Lain + Relasi User
+        // 1. Coba ambil dari BerkasLainModel
         $data = BerkasLainModel::with(['user'])
             ->where('id', $id)
             ->first();
     
-        if (!$data) {
+        if ($data) {
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Data tidak ditemukan',
-            ], 404);
+                'status'  => 'success',
+                'message' => 'Data verifikasi ditemukan (BerkasLain)',
+                'data' => [
+                    'penandatangan'  => $data->user->name ?? '-',
+                    'nama_dokumen'   => $data->nama_dokumen ?? '-',
+                    'file_asli'      => $data->nama_file_asli ?? '-',
+                    'status_tte'     => $data->status_tte == 1 ? 'TTE Selesai' : 'Belum TTE',
+                    'file_sdh_tte'   => $data->file_sdh_tte ?? '-',
+                    'tanggal_tte'    => $data->tgl_surat ?? '-',
+                    'raw'            => $data,
+                ]
+            ]);
         }
     
+        // 2. Kalau tidak ada, ambil dari SPDTerkirimModel
+        $spd = SPDTerkirimModel::where('id', $id)->first();
+    
+        if ($spd) {
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Data verifikasi ditemukan (SPD Terkirim)',
+                'data' => [
+                    'penandatangan'  => $spd->nama_penandatangan ?? '-',
+                    'nama_dokumen'   => $spd->keterangan ?? '-',
+                    'file_asli'      => $spd->nama_file_asli ?? '-',
+                    'status_tte'     => $spd->tte == 1 ? 'TTE Selesai' : 'Belum TTE',
+                    'file_sdh_tte'   => $spd->file_tte ?? '-',
+                    'tanggal_tte'    => $spd->tgl_tte ?? '-',
+                    'raw'            => $spd,
+                ]
+            ]);
+        }
+    
+        // 3. Kalau dua-duanya tidak ada
         return response()->json([
-            'status'  => 'success',
-            'message' => 'Data verifikasi ditemukan',
-            'data' => [
-                // Nama penandatangan dari relasi user
-                'penandatangan'  => $data->user->name ?? '-',
-    
-                // Nama file asli / nama dokumen
-                'nama_dokumen'   => $data->nama_dokumen ?? '-',
-                'file_asli'      => $data->nama_file_asli ?? '-',
-    
-                // Status TTE
-                'status_tte'     => $data->status_tte == 1 ? 'TTE Selesai' : 'Belum TTE',
-    
-                // File hasil TTE (jika ada)
-                'file_sdh_tte'   => $data->file_sdh_tte ?? '-',
-    
-                // Tanggal TTE / tanggal surat
-                'tanggal_tte'    => $data->tgl_surat ?? '-',
-    
-                // Raw data
-                'raw'            => $data,
-            ]
-        ]);
+            'status'  => 'error',
+            'message' => 'Data tidak ditemukan di kedua sumber',
+        ], 404);
     }
     
 }
