@@ -112,6 +112,9 @@ Route::middleware('auth:api')->group(function () {
         
         // Get statistics by DPA (for charts)
         Route::get('/monitoring-dpa/statistics', [DashboardController::class, 'getStatisticsByDPA']);
+
+        // Get Belanja SKPD
+        Route::get('/monitoring-belanja-skpd', [DashboardController::class, 'getBelanjaSKPD']);
     });
 
     // Master Data

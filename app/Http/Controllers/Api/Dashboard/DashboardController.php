@@ -700,4 +700,109 @@ class DashboardController extends Controller
             'data' => $statistics
         ]);
     }
+
+    private function getDataBelanjaSKPD($tahun, $kd_belanja1, $kd_belanja2, $kd_belanja3)
+    {
+        $rows = DB::select("
+            SELECT 
+                EXTRACT(MONTH FROM s.TANGGAL_UPLOAD) AS bulan,
+                o.NM_OPD,
+                s.kd_opd1,
+                s.kd_opd2,
+                s.kd_opd3,
+                s.kd_opd4,
+                s.kd_opd5,
+                SUM(r.NILAI) AS total_belanja
+            FROM SP2D s
+            JOIN SP2D_REKENING r 
+              ON s.ID_SP2D = r.SP2D_ID
+            JOIN REF_OPD o
+              ON TRIM(s.kd_opd1) = TRIM(o.kd_opd1)
+             AND TRIM(s.kd_opd2) = TRIM(o.kd_opd2)
+             AND TRIM(s.kd_opd3) = TRIM(o.kd_opd3)
+             AND TRIM(s.kd_opd4) = TRIM(o.kd_opd4)
+             AND TRIM(s.kd_opd5) = TRIM(o.kd_opd5)
+            WHERE s.TAHUN = :tahun
+              AND s.DITERIMA IS NOT NULL
+              AND r.KD_REKENING1 = :k1
+              AND r.KD_REKENING2 = :k2
+              AND r.KD_REKENING3 = :k3
+            GROUP BY 
+                EXTRACT(MONTH FROM s.TANGGAL_UPLOAD),
+                o.NM_OPD,
+                s.kd_opd1,
+                s.kd_opd2,
+                s.kd_opd3,
+                s.kd_opd4,
+                s.kd_opd5
+            ORDER BY o.NM_OPD
+        ", [
+            'tahun' => $tahun,
+            'k1' => $kd_belanja1,
+            'k2' => $kd_belanja2,
+            'k3' => $kd_belanja3,
+        ]);
+    
+        // 🔥 Transform ke format lama kamu
+        $result = [];
+    
+        foreach ($rows as $row) {
+            $key = $row->kd_opd1 . '.' . $row->kd_opd2 . '.' . $row->kd_opd3 . '.' . $row->kd_opd4 . '.' . $row->kd_opd5;
+    
+            if (!isset($result[$key])) {
+                $bulanData = array_fill(1, 12, false);
+    
+                $result[$key] = [
+                    'skpd' => $row->nm_opd,
+                    'kd_opd1' => $row->kd_opd1,
+                    'kd_opd2' => $row->kd_opd2,
+                    'kd_opd3' => $row->kd_opd3,
+                    'kd_opd4' => $row->kd_opd4,
+                    'kd_opd5' => $row->kd_opd5,
+                    'bulan' => $bulanData,
+                ];
+            }
+    
+            // karena sekarang ada nilai → bisa ubah jadi:
+            $result[$key]['bulan'][(int)$row->bulan] = (float)$row->total_belanja;
+        }
+    
+        // convert index ke string (biar sama kayak sebelumnya)
+        foreach ($result as &$item) {
+            $bulanString = [];
+            foreach ($item['bulan'] as $k => $v) {
+                $bulanString[(string)$k] = $v;
+            }
+            $item['bulan'] = $bulanString;
+        }
+    
+        return array_values($result);
+    }
+
+    public function getBelanjaSKPD(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+        
+        // Get tahun list (3 tahun kebelakang dan 3 tahun kedepan)
+        $currentYear = date('Y');
+        $tahunList = [];
+        for ($i = $currentYear - 3; $i <= $currentYear + 3; $i++) {
+            $tahunList[] = (string)$i;
+        }
+
+        $kd_belanja1 = $request->kd_belanja1 ?? '5';
+        $kd_belanja2 = $request->kd_belanja2 ?? '1';
+        $kd_belanja3 = $request->kd_belanja3 ?? '01';
+
+        $dataMasuk = $this->getDataBelanjaSKPD($tahun, $kd_belanja1, $kd_belanja2, $kd_belanja3);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'tahun_list' => $tahunList,
+                'tahun_selected' => $tahun,
+                'belanja' => $dataMasuk,
+            ]
+        ]);
+    }
 }
