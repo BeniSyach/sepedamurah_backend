@@ -399,24 +399,29 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/laporan-pajak-bendahara-terima-multi', [LaporanPajakBendaharaController::class, 'terimaMulti']);
         Route::post('/laporan-pajak-bendahara-tolak-multi', [LaporanPajakBendaharaController::class, 'tolakMulti']);
         Route::get('/laporan-pajak-bendahara/download/{id}', [LaporanPajakBendaharaController::class, 'downloadBerkas'])->name('laporan-pajak-bendahara.download');
+        Route::get('/dashboard-pajak-bendahara', [LaporanPajakBendaharaController::class, 'getDashboardPajakBendahara']);
         Route::apiResource('/laporan-pajak-bendahara', LaporanPajakBendaharaController::class);
+
 
         // Laporan Asset Bendahara
         Route::post('/laporan-asset-bendahara-terima-multi', [LaporanAssetBendaharaController::class, 'terimaMulti']);
         Route::post('/laporan-asset-bendahara-tolak-multi', [LaporanAssetBendaharaController::class, 'tolakMulti']);
         Route::get('/laporan-asset-bendahara/download/{id}', [LaporanAssetBendaharaController::class, 'downloadBerkas'])->name('laporan-asset-bendahara.download');
+        Route::get('/dashboard-asset-bendahara', [LaporanAssetBendaharaController::class, 'getDashboardAssetBendahara']);
         Route::apiResource('/laporan-asset-bendahara', LaporanAssetBendaharaController::class);
 
         // Laporan SP2B Ke BUD
         Route::post('/laporan-sp2b-to-bud-terima-multi', [LaporanSp2bKeBudController::class, 'terimaMulti']);
         Route::post('/laporan-sp2b-to-bud-tolak-multi', [LaporanSp2bKeBudController::class, 'tolakMulti']);
         Route::get('/laporan-sp2b-to-bud/download/{id}', [LaporanSp2bKeBudController::class, 'downloadBerkas'])->name('laporan-sp2b-to-bud.download');
+        Route::get('/dashboard-spb', [LaporanSp2bKeBudController::class, 'getDashboardSpb']);
         Route::apiResource('/laporan-sp2b-to-bud', LaporanSp2bKeBudController::class);
 
         // Laporan Rekonsiliasi Gaji SKPD
         Route::post('/laporan-rekonsiliasi-gaji-skpd-terima-multi', [LaporanRekGajiSkpdController::class, 'terimaMulti']);
         Route::post('/laporan-rekonsiliasi-gaji-skpd-tolak-multi', [LaporanRekGajiSkpdController::class, 'tolakMulti']);
         Route::get('/laporan-rekonsiliasi-gaji-skpd/download/{id}', [LaporanRekGajiSkpdController::class, 'downloadBerkas'])->name('laporan-rekonsiliasi-gaji-skpd.download');
+        Route::get('/dashboard-rekonsiliasi-gaji', [LaporanRekGajiSkpdController::class, 'getDashboardRekonGaji']);
         Route::apiResource('/laporan-rekonsiliasi-gaji-skpd', LaporanRekGajiSkpdController::class);
 
         // Laporan Realisasi Sumber Dana 

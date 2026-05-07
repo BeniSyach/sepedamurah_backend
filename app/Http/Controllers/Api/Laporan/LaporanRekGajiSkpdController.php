@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Services\TelegramService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class LaporanRekGajiSkpdController extends Controller
 {
@@ -327,6 +328,152 @@ class LaporanRekGajiSkpdController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Data berhasil dihapus'
+        ]);
+    }
+
+    private function getDashboardRekonGajiPivot($tahun)
+    {
+        $rows = DB::select("
+            SELECT
+                REF_OPD.NM_OPD AS SKPD,
+    
+                AKSES_REK_GAJI_SKPD.KD_OPD1,
+                AKSES_REK_GAJI_SKPD.KD_OPD2,
+                AKSES_REK_GAJI_SKPD.KD_OPD3,
+                AKSES_REK_GAJI_SKPD.KD_OPD4,
+                AKSES_REK_GAJI_SKPD.KD_OPD5,
+    
+                REF_REKONSILIASI_GAJI_SKPD.NM_REKONSILIASI_GAJI_SKPD AS REFERENSI,
+    
+                CASE
+                    WHEN LAPORAN_REK_GAJI_SKPD.ID IS NOT NULL
+                    THEN 1
+                    ELSE 0
+                END AS STATUS_LAPORAN
+    
+            FROM REF_REKONSILIASI_GAJI_SKPD
+    
+            JOIN AKSES_REK_GAJI_SKPD
+                ON REF_REKONSILIASI_GAJI_SKPD.ID =
+                   AKSES_REK_GAJI_SKPD.REK_GAJI_ID
+               AND AKSES_REK_GAJI_SKPD.TAHUN = :tahun_akses
+               AND AKSES_REK_GAJI_SKPD.DELETED_AT IS NULL
+    
+            JOIN REF_OPD
+                ON AKSES_REK_GAJI_SKPD.KD_OPD1 = REF_OPD.KD_OPD1
+               AND AKSES_REK_GAJI_SKPD.KD_OPD2 = REF_OPD.KD_OPD2
+               AND AKSES_REK_GAJI_SKPD.KD_OPD3 = REF_OPD.KD_OPD3
+               AND AKSES_REK_GAJI_SKPD.KD_OPD4 = REF_OPD.KD_OPD4
+               AND AKSES_REK_GAJI_SKPD.KD_OPD5 = REF_OPD.KD_OPD5
+               AND REF_OPD.DELETED_AT IS NULL
+    
+            LEFT JOIN LAPORAN_REK_GAJI_SKPD
+                ON LAPORAN_REK_GAJI_SKPD.REK_GAJI_ID =
+                   REF_REKONSILIASI_GAJI_SKPD.ID
+    
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD1 =
+                   AKSES_REK_GAJI_SKPD.KD_OPD1
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD2 =
+                   AKSES_REK_GAJI_SKPD.KD_OPD2
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD3 =
+                   AKSES_REK_GAJI_SKPD.KD_OPD3
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD4 =
+                   AKSES_REK_GAJI_SKPD.KD_OPD4
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD5 =
+                   AKSES_REK_GAJI_SKPD.KD_OPD5
+    
+               AND LAPORAN_REK_GAJI_SKPD.TAHUN = :tahun_laporan
+               AND LAPORAN_REK_GAJI_SKPD.DITERIMA IS NOT NULL
+               AND LAPORAN_REK_GAJI_SKPD.DELETED_AT IS NULL
+    
+            WHERE REF_REKONSILIASI_GAJI_SKPD.DELETED_AT IS NULL
+    
+            ORDER BY
+                REF_OPD.NM_OPD,
+                REF_REKONSILIASI_GAJI_SKPD.NM_REKONSILIASI_GAJI_SKPD
+        ", [
+            'tahun_akses' => $tahun,
+            'tahun_laporan' => $tahun,
+        ]);
+    
+        $result = [];
+        $referensiList = [];
+    
+        foreach ($rows as $row) {
+    
+            $referensi = $row->referensi;
+    
+            // simpan header referensi
+            if (!in_array($referensi, $referensiList)) {
+                $referensiList[] = $referensi;
+            }
+    
+            $key =
+                trim($row->kd_opd1) . '.' .
+                trim($row->kd_opd2) . '.' .
+                trim($row->kd_opd3) . '.' .
+                trim($row->kd_opd4) . '.' .
+                trim($row->kd_opd5);
+    
+            // init row
+            if (!isset($result[$key])) {
+    
+                $result[$key] = [
+                    'skpd' => $row->skpd,
+    
+                    'kd_opd1' => $row->kd_opd1,
+                    'kd_opd2' => $row->kd_opd2,
+                    'kd_opd3' => $row->kd_opd3,
+                    'kd_opd4' => $row->kd_opd4,
+                    'kd_opd5' => $row->kd_opd5,
+                ];
+            }
+    
+            // isi status laporan
+            $result[$key][$referensi] =
+                (int)$row->status_laporan;
+        }
+    
+        // isi default 0
+        foreach ($result as &$item) {
+    
+            foreach ($referensiList as $ref) {
+    
+                if (!isset($item[$ref])) {
+                    $item[$ref] = 0;
+                }
+            }
+        }
+    
+        return [
+            'referensi' => $referensiList,
+            'rows' => array_values($result),
+        ];
+    }
+    
+    public function getDashboardRekonGaji(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+    
+        $currentYear = date('Y');
+    
+        $tahunList = [];
+    
+        for ($i = $currentYear - 3; $i <= $currentYear + 3; $i++) {
+            $tahunList[] = (string)$i;
+        }
+    
+        $dataAsset = $this->getDashboardRekonGajiPivot($tahun);
+    
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'tahun_list' => $tahunList,
+                'tahun_selected' => $tahun,
+    
+                'referensi' => $dataAsset['referensi'],
+                'rows' => $dataAsset['rows'],
+            ]
         ]);
     }
 

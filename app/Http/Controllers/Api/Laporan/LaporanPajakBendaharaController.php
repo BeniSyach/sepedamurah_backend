@@ -13,6 +13,7 @@ use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class LaporanPajakBendaharaController extends Controller
 {
@@ -430,6 +431,152 @@ class LaporanPajakBendaharaController extends Controller
             'success' => true,
             'message' => "Berhasil menolak {$updated} berkas Laporan Pajak Bendahara.",
             'updated' => $updated
+        ]);
+    }
+
+    private function getDashboardPajakPivot($tahun)
+    {
+        $rows = DB::select("
+            SELECT
+                REF_OPD.NM_OPD AS SKPD,
+    
+                AKSES_PAJAK_BENDAHARA.KD_OPD1,
+                AKSES_PAJAK_BENDAHARA.KD_OPD2,
+                AKSES_PAJAK_BENDAHARA.KD_OPD3,
+                AKSES_PAJAK_BENDAHARA.KD_OPD4,
+                AKSES_PAJAK_BENDAHARA.KD_OPD5,
+    
+                REF_PAJAK_BENDAHARA.NM_PAJAK_BENDAHARA AS REFERENSI,
+    
+                CASE
+                    WHEN LAPORAN_PAJAK_BENDAHARA.ID IS NOT NULL
+                    THEN 1
+                    ELSE 0
+                END AS STATUS_LAPORAN
+    
+            FROM REF_PAJAK_BENDAHARA
+    
+            JOIN AKSES_PAJAK_BENDAHARA
+                ON REF_PAJAK_BENDAHARA.ID =
+                   AKSES_PAJAK_BENDAHARA.REF_PAJAK_ID
+               AND AKSES_PAJAK_BENDAHARA.TAHUN = :tahun_akses
+               AND AKSES_PAJAK_BENDAHARA.DELETED_AT IS NULL
+    
+            JOIN REF_OPD
+                ON AKSES_PAJAK_BENDAHARA.KD_OPD1 = REF_OPD.KD_OPD1
+               AND AKSES_PAJAK_BENDAHARA.KD_OPD2 = REF_OPD.KD_OPD2
+               AND AKSES_PAJAK_BENDAHARA.KD_OPD3 = REF_OPD.KD_OPD3
+               AND AKSES_PAJAK_BENDAHARA.KD_OPD4 = REF_OPD.KD_OPD4
+               AND AKSES_PAJAK_BENDAHARA.KD_OPD5 = REF_OPD.KD_OPD5
+               AND REF_OPD.DELETED_AT IS NULL
+    
+            LEFT JOIN LAPORAN_PAJAK_BENDAHARA
+                ON LAPORAN_PAJAK_BENDAHARA.REF_PAJAK_ID =
+                   REF_PAJAK_BENDAHARA.ID
+    
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD1 =
+                   AKSES_PAJAK_BENDAHARA.KD_OPD1
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD2 =
+                   AKSES_PAJAK_BENDAHARA.KD_OPD2
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD3 =
+                   AKSES_PAJAK_BENDAHARA.KD_OPD3
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD4 =
+                   AKSES_PAJAK_BENDAHARA.KD_OPD4
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD5 =
+                   AKSES_PAJAK_BENDAHARA.KD_OPD5
+    
+               AND LAPORAN_PAJAK_BENDAHARA.TAHUN = :tahun_laporan
+               AND LAPORAN_PAJAK_BENDAHARA.DITERIMA IS NOT NULL
+               AND LAPORAN_PAJAK_BENDAHARA.DELETED_AT IS NULL
+    
+            WHERE REF_PAJAK_BENDAHARA.DELETED_AT IS NULL
+    
+            ORDER BY
+                REF_OPD.NM_OPD,
+                REF_PAJAK_BENDAHARA.NM_PAJAK_BENDAHARA
+        ", [
+            'tahun_akses' => $tahun,
+            'tahun_laporan' => $tahun,
+        ]);
+    
+        $result = [];
+        $referensiList = [];
+    
+        foreach ($rows as $row) {
+    
+            $referensi = $row->referensi;
+    
+            // simpan header referensi
+            if (!in_array($referensi, $referensiList)) {
+                $referensiList[] = $referensi;
+            }
+    
+            $key =
+                trim($row->kd_opd1) . '.' .
+                trim($row->kd_opd2) . '.' .
+                trim($row->kd_opd3) . '.' .
+                trim($row->kd_opd4) . '.' .
+                trim($row->kd_opd5);
+    
+            // init row
+            if (!isset($result[$key])) {
+    
+                $result[$key] = [
+                    'skpd' => $row->skpd,
+    
+                    'kd_opd1' => $row->kd_opd1,
+                    'kd_opd2' => $row->kd_opd2,
+                    'kd_opd3' => $row->kd_opd3,
+                    'kd_opd4' => $row->kd_opd4,
+                    'kd_opd5' => $row->kd_opd5,
+                ];
+            }
+    
+            // isi status laporan
+            $result[$key][$referensi] =
+                (int)$row->status_laporan;
+        }
+    
+        // isi default 0
+        foreach ($result as &$item) {
+    
+            foreach ($referensiList as $ref) {
+    
+                if (!isset($item[$ref])) {
+                    $item[$ref] = 0;
+                }
+            }
+        }
+    
+        return [
+            'referensi' => $referensiList,
+            'rows' => array_values($result),
+        ];
+    }
+    
+    public function getDashboardPajakBendahara(Request $request)
+    {
+        $tahun = $request->tahun ?? date('Y');
+    
+        $currentYear = date('Y');
+    
+        $tahunList = [];
+    
+        for ($i = $currentYear - 3; $i <= $currentYear + 3; $i++) {
+            $tahunList[] = (string)$i;
+        }
+    
+        $dataPajak = $this->getDashboardPajakPivot($tahun);
+    
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'tahun_list' => $tahunList,
+                'tahun_selected' => $tahun,
+    
+                'referensi' => $dataPajak['referensi'],
+                'rows' => $dataPajak['rows'],
+            ]
         ]);
     }
 
