@@ -501,7 +501,7 @@ class LaporanSp2bKeBudController extends Controller
     
             ORDER BY
                 REF_OPD.NM_OPD,
-                REF_SP2B_KE_BUD.NM_SP2B_KE_BUD
+                REF_SP2B_KE_BUD.CREATED_AT
         ", [
             'tahun_akses' => $tahun,
             'tahun_laporan' => $tahun,

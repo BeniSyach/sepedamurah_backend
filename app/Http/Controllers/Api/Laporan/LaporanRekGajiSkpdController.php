@@ -390,7 +390,7 @@ class LaporanRekGajiSkpdController extends Controller
     
             ORDER BY
                 REF_OPD.NM_OPD,
-                REF_REKONSILIASI_GAJI_SKPD.NM_REKONSILIASI_GAJI_SKPD
+                REF_REKONSILIASI_GAJI_SKPD.CREATED_AT
         ", [
             'tahun_akses' => $tahun,
             'tahun_laporan' => $tahun,

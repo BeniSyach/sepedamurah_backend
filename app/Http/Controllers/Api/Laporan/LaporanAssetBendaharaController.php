@@ -500,7 +500,7 @@ class LaporanAssetBendaharaController extends Controller
     
             ORDER BY
                 REF_OPD.NM_OPD,
-                REF_ASSET_BENDAHARA.NM_ASSET_BENDAHARA
+                REF_ASSET_BENDAHARA.CREATED_AT
         ", [
             'tahun_akses' => $tahun,
             'tahun_laporan' => $tahun,
