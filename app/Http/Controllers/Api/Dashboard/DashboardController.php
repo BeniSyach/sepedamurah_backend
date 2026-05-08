@@ -23,76 +23,170 @@ class DashboardController extends Controller
         $to    = $request->to;
         $tahun = $request->tahun;
     
+        $kd_opd1 = $request->kd_opd1;
+        $kd_opd2 = $request->kd_opd2;
+        $kd_opd3 = $request->kd_opd3;
+        $kd_opd4 = $request->kd_opd4;
+        $kd_opd5 = $request->kd_opd5;
+    
         /**
+         * ==========================================================================================
          * Helper filter tanggal / tahun
+         * ==========================================================================================
          */
         $applyDateFilter = function ($query, $column) use ($from, $to, $tahun) {
+    
             if ($from && $to) {
+    
                 $query->whereBetween($column, [$from, $to]);
+    
             } elseif ($tahun) {
-                // Oracle-friendly
-                $query->whereRaw("EXTRACT(YEAR FROM {$column}) = ?", [$tahun]);
+    
+                // Oracle Friendly
+                $query->whereRaw(
+                    "EXTRACT(YEAR FROM {$column}) = ?",
+                    [$tahun]
+                );
             }
         };
     
-        // ==============================================================================================
-        // TOTAL GABUNGAN SPD (pakai tanggal_upload)
-        // ==============================================================================================
-        $permohonanSPD = DB::table('permohonan_spd')->whereNull('deleted_at');
-        $sp2dKirim     = DB::table('spd_terkirim')->whereNull('deleted_at');
+        /**
+         * ==========================================================================================
+         * Helper filter OPD
+         * ==========================================================================================
+         */
+        $applyOPDFilter = function ($query) use (
+            $kd_opd1,
+            $kd_opd2,
+            $kd_opd3,
+            $kd_opd4,
+            $kd_opd5
+        ) {
+    
+            if ($kd_opd1) {
+                $query->where('kd_opd1', $kd_opd1);
+            }
+    
+            if ($kd_opd2) {
+                $query->where('kd_opd2', $kd_opd2);
+            }
+    
+            if ($kd_opd3) {
+                $query->where('kd_opd3', $kd_opd3);
+            }
+    
+            if ($kd_opd4) {
+                $query->where('kd_opd4', $kd_opd4);
+            }
+    
+            if ($kd_opd5) {
+                $query->where('kd_opd5', $kd_opd5);
+            }
+        };
+    
+        // ==========================================================================================
+        // TOTAL GABUNGAN SPD
+        // ==========================================================================================
+    
+        $permohonanSPD = DB::table('permohonan_spd')
+            ->whereNull('deleted_at');
+    
+        $spdTerkirim = DB::table('spd_terkirim')
+            ->whereNull('deleted_at');
     
         $applyDateFilter($permohonanSPD, 'tanggal_upload');
-        $applyDateFilter($sp2dKirim, 'tanggal_upload');
+        $applyDateFilter($spdTerkirim, 'tanggal_upload');
+    
+        $applyOPDFilter($permohonanSPD);
+        $applyOPDFilter($spdTerkirim);
     
         $totalSPDGabungan = $permohonanSPD
             ->select('id')
             ->union(
-                $sp2dKirim->select('id_berkas as id')
+                $spdTerkirim->select('id_berkas as id')
             )
             ->distinct()
             ->count();
     
-        // ==============================================================================================
+        // ==========================================================================================
         // SPD
-        // ==============================================================================================
+        // ==========================================================================================
+    
+        // TOTAL SPD TERVERIFIKASI
         $spdTerverifikasi = PermohonanSPDModel::whereNotNull('diterima');
+    
         $applyDateFilter($spdTerverifikasi, 'diterima');
+        $applyOPDFilter($spdTerverifikasi);
+    
         $totalSPDTerverifikasi = $spdTerverifikasi->count();
     
+        // TOTAL SPD DITOLAK
         $spdDitolak = PermohonanSPDModel::whereNotNull('ditolak');
+    
         $applyDateFilter($spdDitolak, 'ditolak');
+        $applyOPDFilter($spdDitolak);
+    
         $totalSPDDitolak = $spdDitolak->count();
     
+        // TOTAL SPD TTE
         $spdTTE = SPDTerkirimModel::whereNotNull('tgl_tte');
+    
         $applyDateFilter($spdTTE, 'tgl_tte');
+        $applyOPDFilter($spdTTE);
+    
         $totalSPDTTE = $spdTTE->count();
     
-        // ==============================================================================================
+        // ==========================================================================================
         // SP2D
-        // ==============================================================================================
+        // ==========================================================================================
+    
+        // TOTAL PERMOHONAN SP2D
         $sp2dPermohonan = SP2DModel::query();
+    
         $applyDateFilter($sp2dPermohonan, 'tanggal_upload');
+        $applyOPDFilter($sp2dPermohonan);
+    
         $totalSP2DPermohonan = $sp2dPermohonan->count();
     
+        // TOTAL SP2D TERVERIFIKASI
         $sp2dTerverifikasi = SP2DModel::whereNotNull('diterima');
+    
         $applyDateFilter($sp2dTerverifikasi, 'diterima');
+        $applyOPDFilter($sp2dTerverifikasi);
+    
         $totalSP2DTerverifikasi = $sp2dTerverifikasi->count();
     
+        // TOTAL SP2D DITOLAK
         $sp2dDitolak = SP2DModel::whereNotNull('ditolak');
+    
         $applyDateFilter($sp2dDitolak, 'ditolak');
+        $applyOPDFilter($sp2dDitolak);
+    
         $totalSP2DDitolak = $sp2dDitolak->count();
     
+        // TOTAL SP2D TTE
         $sp2dTTE = SP2DKirimModel::whereNotNull('tgl_tte');
+    
         $applyDateFilter($sp2dTTE, 'tgl_tte');
+        $applyOPDFilter($sp2dTTE);
+    
         $totalSP2DTTE = $sp2dTTE->count();
+    
+        // ==========================================================================================
+        // RESPONSE
+        // ==========================================================================================
     
         return response()->json([
             'status' => true,
             'data' => [
+    
+                // SPD
                 'total_permohonan_spd'      => $totalSPDGabungan,
                 'total_spd_terverifikasi'   => $totalSPDTerverifikasi,
                 'total_spd_ditolak'         => $totalSPDDitolak,
                 'total_spd_tte'             => $totalSPDTTE,
+    
+                // SP2D
                 'total_permohonan_sp2d'     => $totalSP2DPermohonan,
                 'total_sp2d_terverifikasi'  => $totalSP2DTerverifikasi,
                 'total_sp2d_ditolak'        => $totalSP2DDitolak,
@@ -101,19 +195,23 @@ class DashboardController extends Controller
         ]);
     }
     
-    
-    public function berkas_masuk_sp2d()
+    public function berkas_masuk_sp2d(Request $request)
     {
-        $perPage     = 5;
-        $orderColumn = 'sp2d.tanggal_upload'; // gunakan prefix biar aman
+        $perPage     = $request->get('per_page', 5);
+        $orderColumn = 'sp2d.tanggal_upload';
         $orderDir    = 'desc';
     
         // ==========================
         // QUERY DASAR
         // ==========================
-        $query = Sp2dModel::query()
-            ->with(['rekening', 'sumberDana', 'sp2dkirim'])
+        $query = SP2DModel::query()
+            ->with([
+                'rekening',
+                'sumberDana',
+                'sp2dkirim'
+            ])
             ->whereNull('sp2d.deleted_at')
+    
             ->join('ref_opd', function ($join) {
                 $join->on('sp2d.kd_opd1', '=', 'ref_opd.kd_opd1')
                     ->on('sp2d.kd_opd2', '=', 'ref_opd.kd_opd2')
@@ -121,25 +219,51 @@ class DashboardController extends Controller
                     ->on('sp2d.kd_opd4', '=', 'ref_opd.kd_opd4')
                     ->on('sp2d.kd_opd5', '=', 'ref_opd.kd_opd5');
             })
-            ->select('sp2d.*', 'ref_opd.nm_opd');
+    
+            ->select(
+                'sp2d.*',
+                'ref_opd.nm_opd'
+            );
+    
+        // ==========================
+        // FILTER OPD
+        // ==========================
+        if ($request->filled('kd_opd1')) {
+            $query->where('sp2d.kd_opd1', $request->kd_opd1);
+        }
+    
+        if ($request->filled('kd_opd2')) {
+            $query->where('sp2d.kd_opd2', $request->kd_opd2);
+        }
+    
+        if ($request->filled('kd_opd3')) {
+            $query->where('sp2d.kd_opd3', $request->kd_opd3);
+        }
+    
+        if ($request->filled('kd_opd4')) {
+            $query->where('sp2d.kd_opd4', $request->kd_opd4);
+        }
+    
+        if ($request->filled('kd_opd5')) {
+            $query->where('sp2d.kd_opd5', $request->kd_opd5);
+        }
     
         // ==========================
         // FILTER BERKAS MASUK
         // ==========================
-        // belum diproses
-        $query->whereNull('sp2d.proses');
-    
-        // belum diverifikasi
-        $query->whereNull('sp2d.diterima')
-              ->whereNull('sp2d.ditolak');
+        $query->whereNull('sp2d.proses')
+            ->whereNull('sp2d.diterima')
+            ->whereNull('sp2d.ditolak');
     
         // ==========================
-        // PAGINATION & ORDER
+        // ORDER & PAGINATION
         // ==========================
-        $data = $query->orderBy($orderColumn, $orderDir)->paginate($perPage);
+        $data = $query
+            ->orderBy($orderColumn, $orderDir)
+            ->paginate($perPage);
     
         // ==========================
-        // TRANSFORMASI DATA
+        // TRANSFORM DATA
         // ==========================
         $data->getCollection()->transform(function ($item) {
     
@@ -158,6 +282,7 @@ class DashboardController extends Controller
                     $rek->rekening    = $rek->rekening;
                     $rek->bu          = $rek->bu;
                     $rek->urusan      = $rek->urusan;
+    
                     return $rek;
                 });
             }
@@ -165,6 +290,7 @@ class DashboardController extends Controller
             if ($item->relationLoaded('sumberDana')) {
                 $item->sumberDana->transform(function ($sd) {
                     $sd->referensi = $sd->sumberDana;
+    
                     return $sd;
                 });
             }
@@ -173,12 +299,13 @@ class DashboardController extends Controller
         });
     
         // ==========================
-        // RETURN JSON
+        // RESPONSE
         // ==========================
         return response()->json([
             'success' => true,
             'message' => 'Daftar SP2D berhasil diambil',
             'data'    => $data->items(),
+    
             'meta' => [
                 'current_page' => $data->currentPage(),
                 'per_page'     => $data->perPage(),
@@ -187,6 +314,7 @@ class DashboardController extends Controller
                 'from'         => $data->firstItem(),
                 'to'           => $data->lastItem(),
             ],
+    
             'links' => [
                 'first' => $data->url(1),
                 'last'  => $data->url($data->lastPage()),
@@ -198,38 +326,100 @@ class DashboardController extends Controller
 
     public function chartSp2dPerBulan(Request $request)
     {
-        $tahun = $request->tahun ?? date('Y'); // default tahun berjalan
-
-        $data = Sp2dModel::select(
+        $tahun = $request->tahun ?? date('Y');
+    
+        $kd_opd1 = $request->kd_opd1;
+        $kd_opd2 = $request->kd_opd2;
+        $kd_opd3 = $request->kd_opd3;
+        $kd_opd4 = $request->kd_opd4;
+        $kd_opd5 = $request->kd_opd5;
+    
+        // ======================================================
+        // QUERY
+        // ======================================================
+        $query = SP2DModel::query()
+            ->select(
                 DB::raw("TO_CHAR(tanggal_upload, 'MM') AS bulan"),
                 DB::raw("COUNT(*) AS total")
             )
-            ->whereRaw("EXTRACT(YEAR FROM tanggal_upload) = ?", [$tahun])
+            ->whereNull('deleted_at')
+            ->whereRaw("EXTRACT(YEAR FROM tanggal_upload) = ?", [$tahun]);
+    
+        // ======================================================
+        // FILTER OPD
+        // ======================================================
+        if ($kd_opd1) {
+            $query->where('kd_opd1', $kd_opd1);
+        }
+    
+        if ($kd_opd2) {
+            $query->where('kd_opd2', $kd_opd2);
+        }
+    
+        if ($kd_opd3) {
+            $query->where('kd_opd3', $kd_opd3);
+        }
+    
+        if ($kd_opd4) {
+            $query->where('kd_opd4', $kd_opd4);
+        }
+    
+        if ($kd_opd5) {
+            $query->where('kd_opd5', $kd_opd5);
+        }
+    
+        // ======================================================
+        // GROUPING
+        // ======================================================
+        $data = $query
             ->groupBy(DB::raw("TO_CHAR(tanggal_upload, 'MM')"))
             ->orderBy(DB::raw("TO_CHAR(tanggal_upload, 'MM')"))
             ->get();
-
-        // Format agar lebih enak ke Chart.js
-        $result = [
-            'labels' => [],
-            'values' => [],
-        ];
-
+    
+        // ======================================================
+        // FORMAT BULAN
+        // ======================================================
         $namaBulan = [
-            '01'=>'Jan','02'=>'Feb','03'=>'Mar','04'=>'Apr','05'=>'Mei','06'=>'Jun',
-            '07'=>'Jul','08'=>'Agu','09'=>'Sep','10'=>'Okt','11'=>'Nov','12'=>'Des'
+            '01' => 'Jan',
+            '02' => 'Feb',
+            '03' => 'Mar',
+            '04' => 'Apr',
+            '05' => 'Mei',
+            '06' => 'Jun',
+            '07' => 'Jul',
+            '08' => 'Agu',
+            '09' => 'Sep',
+            '10' => 'Okt',
+            '11' => 'Nov',
+            '12' => 'Des',
         ];
-
+    
+        // ======================================================
+        // DEFAULT 12 BULAN
+        // ======================================================
+        $result = [
+            'labels' => array_values($namaBulan),
+            'values' => array_fill(0, 12, 0),
+        ];
+    
+        // ======================================================
+        // MAP DATA KE BULAN
+        // ======================================================
         foreach ($data as $row) {
-            $result['labels'][] = $namaBulan[$row->bulan];
-            $result['values'][] = (int)$row->total;
+    
+            $bulanIndex = (int)$row->bulan - 1;
+    
+            $result['values'][$bulanIndex] = (int)$row->total;
         }
-
+    
+        // ======================================================
+        // RESPONSE
+        // ======================================================
         return response()->json([
             'status' => true,
-            'tahun' => $tahun,
+            'tahun' => (int)$tahun,
             'chart' => $result,
-            'raw' => $data
+            'raw' => $data,
         ]);
     }
 
