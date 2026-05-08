@@ -359,7 +359,7 @@ class LaporanRekGajiSkpdController extends Controller
     
             FROM REF_REKONSILIASI_GAJI_SKPD
     
-            JOIN AKSES_REK_GAJI_SKPD
+            LEFT JOIN AKSES_REK_GAJI_SKPD
                 ON REF_REKONSILIASI_GAJI_SKPD.ID = AKSES_REK_GAJI_SKPD.REK_GAJI_ID
                AND AKSES_REK_GAJI_SKPD.TAHUN = :tahun_akses
                AND AKSES_REK_GAJI_SKPD.DELETED_AT IS NULL
