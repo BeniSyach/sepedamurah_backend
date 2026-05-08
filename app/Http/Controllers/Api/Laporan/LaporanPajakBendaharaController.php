@@ -493,7 +493,7 @@ class LaporanPajakBendaharaController extends Controller
     
             ORDER BY
                 REF_OPD.NM_OPD,
-                REF_PAJAK_BENDAHARA.NM_PAJAK_BENDAHARA
+                REF_PAJAK_BENDAHARA.CREATED_AT
         ", [
             'tahun_akses' => $tahun,
             'tahun_laporan' => $tahun,
