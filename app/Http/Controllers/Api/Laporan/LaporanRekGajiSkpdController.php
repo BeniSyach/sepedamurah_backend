@@ -352,6 +352,7 @@ class LaporanRekGajiSkpdController extends Controller
                 REF_REKONSILIASI_GAJI_SKPD.NM_REKONSILIASI_GAJI_SKPD AS REFERENSI,
     
                 CASE
+                    WHEN AKSES_REK_GAJI_SKPD.ID IS NULL THEN 2
                     WHEN LAPORAN_REK_GAJI_SKPD.ID IS NOT NULL THEN 1
                     ELSE 0
                 END AS STATUS_LAPORAN
