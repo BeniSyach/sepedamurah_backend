@@ -331,8 +331,14 @@ class LaporanRekGajiSkpdController extends Controller
         ]);
     }
 
-    private function getDashboardRekonGajiPivot($tahun)
-    {
+    private function getDashboardRekonGajiPivot(
+        $tahun,
+        $kd_opd1 = null,
+        $kd_opd2 = null,
+        $kd_opd3 = null,
+        $kd_opd4 = null,
+        $kd_opd5 = null
+    ) {
         $rows = DB::select("
             SELECT
                 REF_OPD.NM_OPD AS SKPD,
@@ -346,16 +352,14 @@ class LaporanRekGajiSkpdController extends Controller
                 REF_REKONSILIASI_GAJI_SKPD.NM_REKONSILIASI_GAJI_SKPD AS REFERENSI,
     
                 CASE
-                    WHEN LAPORAN_REK_GAJI_SKPD.ID IS NOT NULL
-                    THEN 1
+                    WHEN LAPORAN_REK_GAJI_SKPD.ID IS NOT NULL THEN 1
                     ELSE 0
                 END AS STATUS_LAPORAN
     
             FROM REF_REKONSILIASI_GAJI_SKPD
     
             JOIN AKSES_REK_GAJI_SKPD
-                ON REF_REKONSILIASI_GAJI_SKPD.ID =
-                   AKSES_REK_GAJI_SKPD.REK_GAJI_ID
+                ON REF_REKONSILIASI_GAJI_SKPD.ID = AKSES_REK_GAJI_SKPD.REK_GAJI_ID
                AND AKSES_REK_GAJI_SKPD.TAHUN = :tahun_akses
                AND AKSES_REK_GAJI_SKPD.DELETED_AT IS NULL
     
@@ -368,33 +372,42 @@ class LaporanRekGajiSkpdController extends Controller
                AND REF_OPD.DELETED_AT IS NULL
     
             LEFT JOIN LAPORAN_REK_GAJI_SKPD
-                ON LAPORAN_REK_GAJI_SKPD.REK_GAJI_ID =
-                   REF_REKONSILIASI_GAJI_SKPD.ID
-    
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD1 =
-                   AKSES_REK_GAJI_SKPD.KD_OPD1
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD2 =
-                   AKSES_REK_GAJI_SKPD.KD_OPD2
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD3 =
-                   AKSES_REK_GAJI_SKPD.KD_OPD3
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD4 =
-                   AKSES_REK_GAJI_SKPD.KD_OPD4
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD5 =
-                   AKSES_REK_GAJI_SKPD.KD_OPD5
-    
+                ON LAPORAN_REK_GAJI_SKPD.REK_GAJI_ID = REF_REKONSILIASI_GAJI_SKPD.ID
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD1 = AKSES_REK_GAJI_SKPD.KD_OPD1
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD2 = AKSES_REK_GAJI_SKPD.KD_OPD2
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD3 = AKSES_REK_GAJI_SKPD.KD_OPD3
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD4 = AKSES_REK_GAJI_SKPD.KD_OPD4
+               AND LAPORAN_REK_GAJI_SKPD.KD_OPD5 = AKSES_REK_GAJI_SKPD.KD_OPD5
                AND LAPORAN_REK_GAJI_SKPD.TAHUN = :tahun_laporan
                AND LAPORAN_REK_GAJI_SKPD.DITERIMA IS NOT NULL
                AND LAPORAN_REK_GAJI_SKPD.DELETED_AT IS NULL
     
             WHERE REF_REKONSILIASI_GAJI_SKPD.DELETED_AT IS NULL
     
+            " . (
+                $kd_opd1 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD1 = :kd_opd1 " : ""
+            ) . (
+                $kd_opd2 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD2 = :kd_opd2 " : ""
+            ) . (
+                $kd_opd3 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD3 = :kd_opd3 " : ""
+            ) . (
+                $kd_opd4 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD4 = :kd_opd4 " : ""
+            ) . (
+                $kd_opd5 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD5 = :kd_opd5 " : ""
+            ) . "
+    
             ORDER BY
                 REF_OPD.NM_OPD,
                 REF_REKONSILIASI_GAJI_SKPD.CREATED_AT
-        ", [
+        ", array_filter([
             'tahun_akses' => $tahun,
             'tahun_laporan' => $tahun,
-        ]);
+            'kd_opd1' => $kd_opd1,
+            'kd_opd2' => $kd_opd2,
+            'kd_opd3' => $kd_opd3,
+            'kd_opd4' => $kd_opd4,
+            'kd_opd5' => $kd_opd5,
+        ]));
     
         $result = [];
         $referensiList = [];
@@ -403,7 +416,6 @@ class LaporanRekGajiSkpdController extends Controller
     
             $referensi = $row->referensi;
     
-            // simpan header referensi
             if (!in_array($referensi, $referensiList)) {
                 $referensiList[] = $referensi;
             }
@@ -415,12 +427,9 @@ class LaporanRekGajiSkpdController extends Controller
                 trim($row->kd_opd4) . '.' .
                 trim($row->kd_opd5);
     
-            // init row
             if (!isset($result[$key])) {
-    
                 $result[$key] = [
                     'skpd' => $row->skpd,
-    
                     'kd_opd1' => $row->kd_opd1,
                     'kd_opd2' => $row->kd_opd2,
                     'kd_opd3' => $row->kd_opd3,
@@ -429,16 +438,11 @@ class LaporanRekGajiSkpdController extends Controller
                 ];
             }
     
-            // isi status laporan
-            $result[$key][$referensi] =
-                (int)$row->status_laporan;
+            $result[$key][$referensi] = (int)$row->status_laporan;
         }
     
-        // isi default 0
         foreach ($result as &$item) {
-    
             foreach ($referensiList as $ref) {
-    
                 if (!isset($item[$ref])) {
                     $item[$ref] = 0;
                 }
@@ -455,22 +459,33 @@ class LaporanRekGajiSkpdController extends Controller
     {
         $tahun = $request->tahun ?? date('Y');
     
+        $kd_opd1 = $request->kd_opd1;
+        $kd_opd2 = $request->kd_opd2;
+        $kd_opd3 = $request->kd_opd3;
+        $kd_opd4 = $request->kd_opd4;
+        $kd_opd5 = $request->kd_opd5;
+    
         $currentYear = date('Y');
     
         $tahunList = [];
-    
         for ($i = $currentYear - 3; $i <= $currentYear + 3; $i++) {
             $tahunList[] = (string)$i;
         }
     
-        $dataAsset = $this->getDashboardRekonGajiPivot($tahun);
+        $dataAsset = $this->getDashboardRekonGajiPivot(
+            $tahun,
+            $kd_opd1,
+            $kd_opd2,
+            $kd_opd3,
+            $kd_opd4,
+            $kd_opd5
+        );
     
         return response()->json([
             'success' => true,
             'data' => [
                 'tahun_list' => $tahunList,
                 'tahun_selected' => $tahun,
-    
                 'referensi' => $dataAsset['referensi'],
                 'rows' => $dataAsset['rows'],
             ]

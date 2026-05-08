@@ -614,29 +614,58 @@ class DashboardController extends Controller
     {
         $tahun = $request->input('tahun', date('Y'));
         $dpaId = $request->input('dpa_id', null);
-
+    
+        $kd_opd1 = $request->kd_opd1;
+        $kd_opd2 = $request->kd_opd2;
+        $kd_opd3 = $request->kd_opd3;
+        $kd_opd4 = $request->kd_opd4;
+        $kd_opd5 = $request->kd_opd5;
+    
         // ================= QUERY AKSES DPA =================
         $aksesQuery = AksesDPAModel::with('dpa')
             ->where('tahun', $tahun);
-
+    
+        // ================= FILTER DPA =================
         if ($dpaId && $dpaId !== 'all') {
             $aksesQuery->where('dpa_id', $dpaId);
         }
-
+    
+        // ================= FILTER OPD =================
+        if ($kd_opd1) {
+            $aksesQuery->where('kd_opd1', $kd_opd1);
+        }
+    
+        if ($kd_opd2) {
+            $aksesQuery->where('kd_opd2', $kd_opd2);
+        }
+    
+        if ($kd_opd3) {
+            $aksesQuery->where('kd_opd3', $kd_opd3);
+        }
+    
+        if ($kd_opd4) {
+            $aksesQuery->where('kd_opd4', $kd_opd4);
+        }
+    
+        if ($kd_opd5) {
+            $aksesQuery->where('kd_opd5', $kd_opd5);
+        }
+    
         $aksesData = $aksesQuery->get();
-
+    
         // ================= INIT =================
         $monitoring = [];
+    
         $summary = [
             'total' => 0,
             'uploaded' => 0,
             'notUploaded' => 0,
             'percentage' => 0,
         ];
-
+    
         // ================= LOOP DATA =================
         foreach ($aksesData as $akses) {
-
+    
             // 🔍 CEK LAPORAN
             $laporan = LaporanDPAModel::where([
                     'kd_opd1' => $akses->kd_opd1,
@@ -650,13 +679,13 @@ class DashboardController extends Controller
                 ->whereNull('deleted_at')
                 ->latest('id')
                 ->first();
-
+    
             // 🏢 KEY SKPD
             $kdOpd = "{$akses->kd_opd1}.{$akses->kd_opd2}.{$akses->kd_opd3}.{$akses->kd_opd4}.{$akses->kd_opd5}";
-
-            // 🏢 INIT SKPD JIKA BELUM ADA
+    
+            // 🏢 INIT SKPD
             if (!isset($monitoring[$kdOpd])) {
-
+    
                 $skpd = SKPDModel::where([
                     'kd_opd1' => $akses->kd_opd1,
                     'kd_opd2' => $akses->kd_opd2,
@@ -664,32 +693,37 @@ class DashboardController extends Controller
                     'kd_opd4' => $akses->kd_opd4,
                     'kd_opd5' => $akses->kd_opd5,
                 ])->first();
-
+    
                 $monitoring[$kdOpd] = [
                     'kd_opd'    => $kdOpd,
-                    'nama_skpd'=> $skpd->nm_opd ?? 'SKPD Tidak Ditemukan',
-                    'items'    => [],
+                    'nama_skpd' => $skpd->nm_opd ?? 'SKPD Tidak Ditemukan',
+                    'items'     => [],
                 ];
             }
-
+    
             // 📌 STATUS UPLOAD
             $status = $laporan ? 'Sudah Upload' : 'Belum Upload';
-
+    
             // 📌 STATUS PROSES
             $prosesStatus = null;
+    
             if ($laporan) {
+    
                 if ($laporan->diterima) {
                     $prosesStatus = 'Berkas telah diverifikasi';
+    
                 } elseif ($laporan->ditolak) {
                     $prosesStatus = 'Berkas ditolak';
+    
                 } elseif ($laporan->proses) {
                     $prosesStatus = 'Berkas sedang diproses';
+    
                 } else {
                     $prosesStatus = 'Berkas terkirim';
                 }
             }
-
-            // 📥 PUSH ITEM DPA
+    
+            // 📥 PUSH ITEM
             $monitoring[$kdOpd]['items'][] = [
                 'id'             => $laporan?->id,
                 'dpa_id'         => $akses->dpa_id,
@@ -700,40 +734,39 @@ class DashboardController extends Controller
                 'operator'       => $laporan?->nama_operator,
                 'user_id'        => $laporan?->user_id,
             ];
-
-
         }
-
-
+    
+        // ================= SORTING & SUMMARY =================
         foreach ($monitoring as &$skpd) {
-
+    
             usort($skpd['items'], function ($a, $b) {
                 return strtotime($b['tanggal_upload'] ?? '1900-01-01')
                     <=> strtotime($a['tanggal_upload'] ?? '1900-01-01');
             });
-        
-            // AMBIL STATUS DARI ITEM PERTAMA
+    
+            // 📊 SUMMARY BERDASARKAN ITEM PERTAMA
             $firstItem = $skpd['items'][0] ?? null;
-        
+    
             $summary['total']++;
-        
+    
             if ($firstItem && $firstItem['status'] === 'Sudah Upload') {
                 $summary['uploaded']++;
             } else {
                 $summary['notUploaded']++;
             }
         }
-
+    
         $monitoring = array_values($monitoring);
-
+    
         // ================= PERCENTAGE =================
         if ($summary['total'] > 0) {
+    
             $summary['percentage'] = round(
                 ($summary['uploaded'] / $summary['total']) * 100,
                 2
             );
         }
-
+    
         // ================= RESPONSE =================
         return response()->json([
             'success' => true,
@@ -897,9 +930,19 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function getDataBelanjaSKPD($tahun, $kd_belanja1, $kd_belanja2, $kd_belanja3)
-    {
-        $rows = DB::select("
+    private function getDataBelanjaSKPD(
+        $tahun,
+        $kd_belanja1,
+        $kd_belanja2,
+        $kd_belanja3,
+        $kd_opd1 = null,
+        $kd_opd2 = null,
+        $kd_opd3 = null,
+        $kd_opd4 = null,
+        $kd_opd5 = null
+    ) {
+    
+        $sql = "
             SELECT 
                 EXTRACT(MONTH FROM s.TANGGAL_UPLOAD) AS bulan,
                 o.NM_OPD,
@@ -923,6 +966,44 @@ class DashboardController extends Controller
               AND r.KD_REKENING1 = :k1
               AND r.KD_REKENING2 = :k2
               AND r.KD_REKENING3 = :k3
+        ";
+    
+        $bindings = [
+            'tahun' => $tahun,
+            'k1' => $kd_belanja1,
+            'k2' => $kd_belanja2,
+            'k3' => $kd_belanja3,
+        ];
+    
+        // =========================
+        // FILTER OPD JIKA ADA
+        // =========================
+        if ($kd_opd1) {
+            $sql .= " AND s.kd_opd1 = :kd_opd1 ";
+            $bindings['kd_opd1'] = $kd_opd1;
+        }
+    
+        if ($kd_opd2) {
+            $sql .= " AND s.kd_opd2 = :kd_opd2 ";
+            $bindings['kd_opd2'] = $kd_opd2;
+        }
+    
+        if ($kd_opd3) {
+            $sql .= " AND s.kd_opd3 = :kd_opd3 ";
+            $bindings['kd_opd3'] = $kd_opd3;
+        }
+    
+        if ($kd_opd4) {
+            $sql .= " AND s.kd_opd4 = :kd_opd4 ";
+            $bindings['kd_opd4'] = $kd_opd4;
+        }
+    
+        if ($kd_opd5) {
+            $sql .= " AND s.kd_opd5 = :kd_opd5 ";
+            $bindings['kd_opd5'] = $kd_opd5;
+        }
+    
+        $sql .= "
             GROUP BY 
                 EXTRACT(MONTH FROM s.TANGGAL_UPLOAD),
                 o.NM_OPD,
@@ -932,20 +1013,23 @@ class DashboardController extends Controller
                 s.kd_opd4,
                 s.kd_opd5
             ORDER BY o.NM_OPD
-        ", [
-            'tahun' => $tahun,
-            'k1' => $kd_belanja1,
-            'k2' => $kd_belanja2,
-            'k3' => $kd_belanja3,
-        ]);
+        ";
     
-        // 🔥 Transform ke format lama kamu
+        $rows = DB::select($sql, $bindings);
+    
+        // 🔥 Transform ke format lama
         $result = [];
     
         foreach ($rows as $row) {
-            $key = $row->kd_opd1 . '.' . $row->kd_opd2 . '.' . $row->kd_opd3 . '.' . $row->kd_opd4 . '.' . $row->kd_opd5;
+    
+            $key = $row->kd_opd1 . '.' .
+                   $row->kd_opd2 . '.' .
+                   $row->kd_opd3 . '.' .
+                   $row->kd_opd4 . '.' .
+                   $row->kd_opd5;
     
             if (!isset($result[$key])) {
+    
                 $bulanData = array_fill(1, 12, false);
     
                 $result[$key] = [
@@ -959,39 +1043,60 @@ class DashboardController extends Controller
                 ];
             }
     
-            // karena sekarang ada nilai → bisa ubah jadi:
             $result[$key]['bulan'][(int)$row->bulan] = (float)$row->total_belanja;
         }
     
-        // convert index ke string (biar sama kayak sebelumnya)
+        // convert index bulan jadi string
         foreach ($result as &$item) {
+    
             $bulanString = [];
+    
             foreach ($item['bulan'] as $k => $v) {
                 $bulanString[(string)$k] = $v;
             }
+    
             $item['bulan'] = $bulanString;
         }
     
         return array_values($result);
     }
-
+    
     public function getBelanjaSKPD(Request $request)
     {
         $tahun = $request->tahun ?? date('Y');
-        
-        // Get tahun list (3 tahun kebelakang dan 3 tahun kedepan)
+    
+        // tahun list
         $currentYear = date('Y');
+    
         $tahunList = [];
+    
         for ($i = $currentYear - 3; $i <= $currentYear + 3; $i++) {
             $tahunList[] = (string)$i;
         }
-
+    
         $kd_belanja1 = $request->kd_belanja1 ?? '5';
         $kd_belanja2 = $request->kd_belanja2 ?? '1';
         $kd_belanja3 = $request->kd_belanja3 ?? '01';
-
-        $dataMasuk = $this->getDataBelanjaSKPD($tahun, $kd_belanja1, $kd_belanja2, $kd_belanja3);
-
+    
+        // FILTER OPD
+        $kd_opd1 = $request->kd_opd1;
+        $kd_opd2 = $request->kd_opd2;
+        $kd_opd3 = $request->kd_opd3;
+        $kd_opd4 = $request->kd_opd4;
+        $kd_opd5 = $request->kd_opd5;
+    
+        $dataMasuk = $this->getDataBelanjaSKPD(
+            $tahun,
+            $kd_belanja1,
+            $kd_belanja2,
+            $kd_belanja3,
+            $kd_opd1,
+            $kd_opd2,
+            $kd_opd3,
+            $kd_opd4,
+            $kd_opd5
+        );
+    
         return response()->json([
             'success' => true,
             'data' => [

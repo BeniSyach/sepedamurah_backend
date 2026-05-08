@@ -434,9 +434,9 @@ class LaporanPajakBendaharaController extends Controller
         ]);
     }
 
-    private function getDashboardPajakPivot($tahun)
+    private function getDashboardPajakPivot($tahun, $kd_opd1 = null, $kd_opd2 = null, $kd_opd3 = null, $kd_opd4 = null, $kd_opd5 = null)
     {
-        $rows = DB::select("
+        $sql = "
             SELECT
                 REF_OPD.NM_OPD AS SKPD,
     
@@ -450,15 +450,13 @@ class LaporanPajakBendaharaController extends Controller
     
                 CASE
                     WHEN LAPORAN_PAJAK_BENDAHARA.ID IS NOT NULL
-                    THEN 1
-                    ELSE 0
+                    THEN 1 ELSE 0
                 END AS STATUS_LAPORAN
     
             FROM REF_PAJAK_BENDAHARA
     
             JOIN AKSES_PAJAK_BENDAHARA
-                ON REF_PAJAK_BENDAHARA.ID =
-                   AKSES_PAJAK_BENDAHARA.REF_PAJAK_ID
+                ON REF_PAJAK_BENDAHARA.ID = AKSES_PAJAK_BENDAHARA.REF_PAJAK_ID
                AND AKSES_PAJAK_BENDAHARA.TAHUN = :tahun_akses
                AND AKSES_PAJAK_BENDAHARA.DELETED_AT IS NULL
     
@@ -471,33 +469,59 @@ class LaporanPajakBendaharaController extends Controller
                AND REF_OPD.DELETED_AT IS NULL
     
             LEFT JOIN LAPORAN_PAJAK_BENDAHARA
-                ON LAPORAN_PAJAK_BENDAHARA.REF_PAJAK_ID =
-                   REF_PAJAK_BENDAHARA.ID
-    
-               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD1 =
-                   AKSES_PAJAK_BENDAHARA.KD_OPD1
-               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD2 =
-                   AKSES_PAJAK_BENDAHARA.KD_OPD2
-               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD3 =
-                   AKSES_PAJAK_BENDAHARA.KD_OPD3
-               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD4 =
-                   AKSES_PAJAK_BENDAHARA.KD_OPD4
-               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD5 =
-                   AKSES_PAJAK_BENDAHARA.KD_OPD5
-    
+                ON LAPORAN_PAJAK_BENDAHARA.REF_PAJAK_ID = REF_PAJAK_BENDAHARA.ID
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD1 = AKSES_PAJAK_BENDAHARA.KD_OPD1
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD2 = AKSES_PAJAK_BENDAHARA.KD_OPD2
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD3 = AKSES_PAJAK_BENDAHARA.KD_OPD3
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD4 = AKSES_PAJAK_BENDAHARA.KD_OPD4
+               AND LAPORAN_PAJAK_BENDAHARA.KD_OPD5 = AKSES_PAJAK_BENDAHARA.KD_OPD5
                AND LAPORAN_PAJAK_BENDAHARA.TAHUN = :tahun_laporan
                AND LAPORAN_PAJAK_BENDAHARA.DITERIMA IS NOT NULL
                AND LAPORAN_PAJAK_BENDAHARA.DELETED_AT IS NULL
     
             WHERE REF_PAJAK_BENDAHARA.DELETED_AT IS NULL
+        ";
     
+        $bindings = [
+            'tahun_akses' => $tahun,
+            'tahun_laporan' => $tahun,
+        ];
+    
+        // =========================
+        // FILTER OPD (optional)
+        // =========================
+        if ($kd_opd1) {
+            $sql .= " AND AKSES_PAJAK_BENDAHARA.KD_OPD1 = :kd_opd1 ";
+            $bindings['kd_opd1'] = $kd_opd1;
+        }
+    
+        if ($kd_opd2) {
+            $sql .= " AND AKSES_PAJAK_BENDAHARA.KD_OPD2 = :kd_opd2 ";
+            $bindings['kd_opd2'] = $kd_opd2;
+        }
+    
+        if ($kd_opd3) {
+            $sql .= " AND AKSES_PAJAK_BENDAHARA.KD_OPD3 = :kd_opd3 ";
+            $bindings['kd_opd3'] = $kd_opd3;
+        }
+    
+        if ($kd_opd4) {
+            $sql .= " AND AKSES_PAJAK_BENDAHARA.KD_OPD4 = :kd_opd4 ";
+            $bindings['kd_opd4'] = $kd_opd4;
+        }
+    
+        if ($kd_opd5) {
+            $sql .= " AND AKSES_PAJAK_BENDAHARA.KD_OPD5 = :kd_opd5 ";
+            $bindings['kd_opd5'] = $kd_opd5;
+        }
+    
+        $sql .= "
             ORDER BY
                 REF_OPD.NM_OPD,
                 REF_PAJAK_BENDAHARA.CREATED_AT
-        ", [
-            'tahun_akses' => $tahun,
-            'tahun_laporan' => $tahun,
-        ]);
+        ";
+    
+        $rows = DB::select($sql, $bindings);
     
         $result = [];
         $referensiList = [];
@@ -506,7 +530,6 @@ class LaporanPajakBendaharaController extends Controller
     
             $referensi = $row->referensi;
     
-            // simpan header referensi
             if (!in_array($referensi, $referensiList)) {
                 $referensiList[] = $referensi;
             }
@@ -518,12 +541,9 @@ class LaporanPajakBendaharaController extends Controller
                 trim($row->kd_opd4) . '.' .
                 trim($row->kd_opd5);
     
-            // init row
             if (!isset($result[$key])) {
-    
                 $result[$key] = [
                     'skpd' => $row->skpd,
-    
                     'kd_opd1' => $row->kd_opd1,
                     'kd_opd2' => $row->kd_opd2,
                     'kd_opd3' => $row->kd_opd3,
@@ -532,16 +552,11 @@ class LaporanPajakBendaharaController extends Controller
                 ];
             }
     
-            // isi status laporan
-            $result[$key][$referensi] =
-                (int)$row->status_laporan;
+            $result[$key][$referensi] = (int)$row->status_laporan;
         }
     
-        // isi default 0
         foreach ($result as &$item) {
-    
             foreach ($referensiList as $ref) {
-    
                 if (!isset($item[$ref])) {
                     $item[$ref] = 0;
                 }
@@ -566,14 +581,20 @@ class LaporanPajakBendaharaController extends Controller
             $tahunList[] = (string)$i;
         }
     
-        $dataPajak = $this->getDashboardPajakPivot($tahun);
+        $dataPajak = $this->getDashboardPajakPivot(
+            $tahun,
+            $request->kd_opd1,
+            $request->kd_opd2,
+            $request->kd_opd3,
+            $request->kd_opd4,
+            $request->kd_opd5
+        );
     
         return response()->json([
             'success' => true,
             'data' => [
                 'tahun_list' => $tahunList,
                 'tahun_selected' => $tahun,
-    
                 'referensi' => $dataPajak['referensi'],
                 'rows' => $dataPajak['rows'],
             ]

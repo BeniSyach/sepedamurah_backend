@@ -441,7 +441,7 @@ class LaporanAssetBendaharaController extends Controller
         ]);
     }
 
-    private function getDashboardAssetPivot($tahun)
+    private function getDashboardAssetPivot($tahun, $kd_opd1 = null, $kd_opd2 = null, $kd_opd3 = null, $kd_opd4 = null, $kd_opd5 = null)
     {
         $rows = DB::select("
             SELECT
@@ -456,16 +456,14 @@ class LaporanAssetBendaharaController extends Controller
                 REF_ASSET_BENDAHARA.NM_ASSET_BENDAHARA AS REFERENSI,
     
                 CASE
-                    WHEN LAPORAN_ASSET_BENDAHARA.ID IS NOT NULL
-                    THEN 1
+                    WHEN LAPORAN_ASSET_BENDAHARA.ID IS NOT NULL THEN 1
                     ELSE 0
                 END AS STATUS_LAPORAN
     
             FROM REF_ASSET_BENDAHARA
     
             JOIN AKSES_ASSET_BENDAHARA
-                ON REF_ASSET_BENDAHARA.ID =
-                   AKSES_ASSET_BENDAHARA.REF_ASSET_ID
+                ON REF_ASSET_BENDAHARA.ID = AKSES_ASSET_BENDAHARA.REF_ASSET_ID
                AND AKSES_ASSET_BENDAHARA.TAHUN = :tahun_akses
                AND AKSES_ASSET_BENDAHARA.DELETED_AT IS NULL
     
@@ -478,33 +476,42 @@ class LaporanAssetBendaharaController extends Controller
                AND REF_OPD.DELETED_AT IS NULL
     
             LEFT JOIN LAPORAN_ASSET_BENDAHARA
-                ON LAPORAN_ASSET_BENDAHARA.REF_ASSET_ID =
-                   REF_ASSET_BENDAHARA.ID
-    
-               AND LAPORAN_ASSET_BENDAHARA.KD_OPD1 =
-                   AKSES_ASSET_BENDAHARA.KD_OPD1
-               AND LAPORAN_ASSET_BENDAHARA.KD_OPD2 =
-                   AKSES_ASSET_BENDAHARA.KD_OPD2
-               AND LAPORAN_ASSET_BENDAHARA.KD_OPD3 =
-                   AKSES_ASSET_BENDAHARA.KD_OPD3
-               AND LAPORAN_ASSET_BENDAHARA.KD_OPD4 =
-                   AKSES_ASSET_BENDAHARA.KD_OPD4
-               AND LAPORAN_ASSET_BENDAHARA.KD_OPD5 =
-                   AKSES_ASSET_BENDAHARA.KD_OPD5
-    
+                ON LAPORAN_ASSET_BENDAHARA.REF_ASSET_ID = REF_ASSET_BENDAHARA.ID
+               AND LAPORAN_ASSET_BENDAHARA.KD_OPD1 = AKSES_ASSET_BENDAHARA.KD_OPD1
+               AND LAPORAN_ASSET_BENDAHARA.KD_OPD2 = AKSES_ASSET_BENDAHARA.KD_OPD2
+               AND LAPORAN_ASSET_BENDAHARA.KD_OPD3 = AKSES_ASSET_BENDAHARA.KD_OPD3
+               AND LAPORAN_ASSET_BENDAHARA.KD_OPD4 = AKSES_ASSET_BENDAHARA.KD_OPD4
+               AND LAPORAN_ASSET_BENDAHARA.KD_OPD5 = AKSES_ASSET_BENDAHARA.KD_OPD5
                AND LAPORAN_ASSET_BENDAHARA.TAHUN = :tahun_laporan
                AND LAPORAN_ASSET_BENDAHARA.DITERIMA IS NOT NULL
                AND LAPORAN_ASSET_BENDAHARA.DELETED_AT IS NULL
     
             WHERE REF_ASSET_BENDAHARA.DELETED_AT IS NULL
     
+            " . (
+                $kd_opd1 ? " AND AKSES_ASSET_BENDAHARA.KD_OPD1 = :kd_opd1 " : ""
+            ) . (
+                $kd_opd2 ? " AND AKSES_ASSET_BENDAHARA.KD_OPD2 = :kd_opd2 " : ""
+            ) . (
+                $kd_opd3 ? " AND AKSES_ASSET_BENDAHARA.KD_OPD3 = :kd_opd3 " : ""
+            ) . (
+                $kd_opd4 ? " AND AKSES_ASSET_BENDAHARA.KD_OPD4 = :kd_opd4 " : ""
+            ) . (
+                $kd_opd5 ? " AND AKSES_ASSET_BENDAHARA.KD_OPD5 = :kd_opd5 " : ""
+            ) . "
+    
             ORDER BY
                 REF_OPD.NM_OPD,
                 REF_ASSET_BENDAHARA.CREATED_AT
-        ", [
+        ", array_filter([
             'tahun_akses' => $tahun,
             'tahun_laporan' => $tahun,
-        ]);
+            'kd_opd1' => $kd_opd1,
+            'kd_opd2' => $kd_opd2,
+            'kd_opd3' => $kd_opd3,
+            'kd_opd4' => $kd_opd4,
+            'kd_opd5' => $kd_opd5,
+        ]));
     
         $result = [];
         $referensiList = [];
@@ -513,7 +520,6 @@ class LaporanAssetBendaharaController extends Controller
     
             $referensi = $row->referensi;
     
-            // simpan header referensi
             if (!in_array($referensi, $referensiList)) {
                 $referensiList[] = $referensi;
             }
@@ -525,12 +531,9 @@ class LaporanAssetBendaharaController extends Controller
                 trim($row->kd_opd4) . '.' .
                 trim($row->kd_opd5);
     
-            // init row
             if (!isset($result[$key])) {
-    
                 $result[$key] = [
                     'skpd' => $row->skpd,
-    
                     'kd_opd1' => $row->kd_opd1,
                     'kd_opd2' => $row->kd_opd2,
                     'kd_opd3' => $row->kd_opd3,
@@ -539,16 +542,11 @@ class LaporanAssetBendaharaController extends Controller
                 ];
             }
     
-            // isi status laporan
-            $result[$key][$referensi] =
-                (int)$row->status_laporan;
+            $result[$key][$referensi] = (int)$row->status_laporan;
         }
     
-        // isi default 0
         foreach ($result as &$item) {
-    
             foreach ($referensiList as $ref) {
-    
                 if (!isset($item[$ref])) {
                     $item[$ref] = 0;
                 }
@@ -565,22 +563,33 @@ class LaporanAssetBendaharaController extends Controller
     {
         $tahun = $request->tahun ?? date('Y');
     
+        $kd_opd1 = $request->kd_opd1;
+        $kd_opd2 = $request->kd_opd2;
+        $kd_opd3 = $request->kd_opd3;
+        $kd_opd4 = $request->kd_opd4;
+        $kd_opd5 = $request->kd_opd5;
+    
         $currentYear = date('Y');
     
         $tahunList = [];
-    
         for ($i = $currentYear - 3; $i <= $currentYear + 3; $i++) {
             $tahunList[] = (string)$i;
         }
     
-        $dataAsset = $this->getDashboardAssetPivot($tahun);
+        $dataAsset = $this->getDashboardAssetPivot(
+            $tahun,
+            $kd_opd1,
+            $kd_opd2,
+            $kd_opd3,
+            $kd_opd4,
+            $kd_opd5
+        );
     
         return response()->json([
             'success' => true,
             'data' => [
                 'tahun_list' => $tahunList,
                 'tahun_selected' => $tahun,
-    
                 'referensi' => $dataAsset['referensi'],
                 'rows' => $dataAsset['rows'],
             ]
