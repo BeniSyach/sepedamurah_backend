@@ -364,7 +364,7 @@ class LaporanRekGajiSkpdController extends Controller
                AND AKSES_REK_GAJI_SKPD.TAHUN = :tahun_akses
                AND AKSES_REK_GAJI_SKPD.DELETED_AT IS NULL
     
-            JOIN REF_OPD
+            LEFT JOIN REF_OPD
                 ON AKSES_REK_GAJI_SKPD.KD_OPD1 = REF_OPD.KD_OPD1
                AND AKSES_REK_GAJI_SKPD.KD_OPD2 = REF_OPD.KD_OPD2
                AND AKSES_REK_GAJI_SKPD.KD_OPD3 = REF_OPD.KD_OPD3
