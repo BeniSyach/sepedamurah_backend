@@ -511,21 +511,29 @@ class DashboardController extends Controller
                 'user_id'        => $laporan?->user_id,
             ];
 
-            // 📊 SUMMARY
-            $summary['total']++;
-            if ($status === 'Sudah Upload') {
-                $summary['uploaded']++;
-            } else {
-                $summary['notUploaded']++;
-            }
+
         }
 
-        // ================= SORTING =================
+
         foreach ($monitoring as &$skpd) {
+
+            // SORTING ITEM
             usort($skpd['items'], function ($a, $b) {
                 return strtotime($b['tanggal_upload'] ?? '1900-01-01')
                     <=> strtotime($a['tanggal_upload'] ?? '1900-01-01');
             });
+
+            // HITUNG BERDASARKAN ITEM
+            foreach ($skpd['items'] as $item) {
+
+                $summary['total']++;
+
+                if ($item['status'] === 'Sudah Upload') {
+                    $summary['uploaded']++;
+                } else {
+                    $summary['notUploaded']++;
+                }
+            }
         }
 
         $monitoring = array_values($monitoring);
