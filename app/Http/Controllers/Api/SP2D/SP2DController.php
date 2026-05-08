@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Http\Resources\SP2DResource;
 use App\Models\AksesKuasaBUDModel;
 use App\Models\AksesOperatorModel;
+use App\Models\BatasWaktuModel;
 use App\Models\BesaranUPSKPDModel;
 use App\Models\PaguBelanjaModel;
 use App\Models\SKPDModel;
@@ -19,6 +20,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use App\Services\TelegramService;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class SP2DController extends Controller
 {
@@ -841,6 +843,18 @@ class SP2DController extends Controller
      */
     public function store(Request $request, TelegramService $telegram)
     {
+
+                // Cek apakah no_spm sudah ada
+                if (!empty($request->no_spm)) {
+                    $exists = SP2DModel::where('no_spm', $request->no_spm)->exists();
+        
+                    if ($exists) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Nomor SPM sudah digunakan, tidak boleh duplikat.'
+                        ], 422);
+                    }
+                }
         $tahunSekarang = date('Y');
         if ($request->has('id_berkas') && is_string($request->id_berkas)) {
             $decoded = json_decode($request->id_berkas, true);
@@ -925,6 +939,66 @@ class SP2DController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'SKPD tidak ditemukan berdasarkan kode OPD'
+            ], 422);
+        }
+
+        // ================= CEK BATAS WAKTU =================
+
+        // contoh: Wednesday
+        $hariIni = Carbon::now()->format('l');
+
+        // contoh: 13:45
+        $jamSekarang = Carbon::now()->format('H:i');
+
+        $batasWaktu = BatasWaktuModel::where([
+                'kd_opd1' => $opdRequest['kd_opd1'],
+                'kd_opd2' => $opdRequest['kd_opd2'],
+                'kd_opd3' => $opdRequest['kd_opd3'],
+                'kd_opd4' => $opdRequest['kd_opd4'],
+                'kd_opd5' => $opdRequest['kd_opd5'],
+            ])
+            ->whereRaw('LOWER(hari) = ?', [strtolower($hariIni)])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$batasWaktu) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Jadwal pelayanan belum tersedia untuk hari ini'
+            ], 422);
+        }
+
+        // ================= CEK JAM OPERASIONAL =================
+
+        if (
+            $jamSekarang < $batasWaktu->waktu_awal ||
+            $jamSekarang > $batasWaktu->waktu_akhir
+        ) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Upload tidak dapat dilakukan karena melebihi batas waktu pelayanan',
+                'data' => [
+                    'waktu_awal' => $batasWaktu->waktu_awal,
+                    'waktu_akhir' => $batasWaktu->waktu_akhir,
+                ]
+            ], 422);
+        }
+
+        // ================= CEK JAM ISTIRAHAT =================
+
+        if (
+            $batasWaktu->istirahat_awal &&
+            $batasWaktu->istirahat_akhir &&
+            $jamSekarang >= $batasWaktu->istirahat_awal &&
+            $jamSekarang <= $batasWaktu->istirahat_akhir
+        ) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Pelayanan sedang istirahat',
+                'data' => [
+                    'istirahat_awal' => $batasWaktu->istirahat_awal,
+                    'istirahat_akhir' => $batasWaktu->istirahat_akhir,
+                ]
             ], 422);
         }
 
