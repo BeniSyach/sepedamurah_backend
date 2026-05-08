@@ -517,22 +517,20 @@ class DashboardController extends Controller
 
         foreach ($monitoring as &$skpd) {
 
-            // SORTING ITEM
             usort($skpd['items'], function ($a, $b) {
                 return strtotime($b['tanggal_upload'] ?? '1900-01-01')
                     <=> strtotime($a['tanggal_upload'] ?? '1900-01-01');
             });
-
-            // HITUNG BERDASARKAN ITEM
-            foreach ($skpd['items'] as $item) {
-
-                $summary['total']++;
-
-                if ($item['status'] === 'Sudah Upload') {
-                    $summary['uploaded']++;
-                } else {
-                    $summary['notUploaded']++;
-                }
+        
+            // AMBIL STATUS DARI ITEM PERTAMA
+            $firstItem = $skpd['items'][0] ?? null;
+        
+            $summary['total']++;
+        
+            if ($firstItem && $firstItem['status'] === 'Sudah Upload') {
+                $summary['uploaded']++;
+            } else {
+                $summary['notUploaded']++;
             }
         }
 
