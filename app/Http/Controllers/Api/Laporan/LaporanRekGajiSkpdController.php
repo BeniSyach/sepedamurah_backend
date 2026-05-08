@@ -340,75 +340,69 @@ class LaporanRekGajiSkpdController extends Controller
         $kd_opd5 = null
     ) {
         $rows = DB::select("
-            SELECT
-                REF_OPD.NM_OPD AS SKPD,
-    
-                AKSES_REK_GAJI_SKPD.KD_OPD1,
-                AKSES_REK_GAJI_SKPD.KD_OPD2,
-                AKSES_REK_GAJI_SKPD.KD_OPD3,
-                AKSES_REK_GAJI_SKPD.KD_OPD4,
-                AKSES_REK_GAJI_SKPD.KD_OPD5,
-    
-                REF_REKONSILIASI_GAJI_SKPD.NM_REKONSILIASI_GAJI_SKPD AS REFERENSI,
-    
-                CASE
-                    WHEN AKSES_REK_GAJI_SKPD.ID IS NULL THEN 2
-                    WHEN LAPORAN_REK_GAJI_SKPD.ID IS NOT NULL THEN 1
-                    ELSE 0
-                END AS STATUS_LAPORAN
-    
-            FROM REF_REKONSILIASI_GAJI_SKPD
-    
-            LEFT JOIN AKSES_REK_GAJI_SKPD
-                ON REF_REKONSILIASI_GAJI_SKPD.ID = AKSES_REK_GAJI_SKPD.REK_GAJI_ID
-               AND AKSES_REK_GAJI_SKPD.TAHUN = :tahun_akses
-               AND AKSES_REK_GAJI_SKPD.DELETED_AT IS NULL
-    
-            LEFT JOIN REF_OPD
-                ON AKSES_REK_GAJI_SKPD.KD_OPD1 = REF_OPD.KD_OPD1
-               AND AKSES_REK_GAJI_SKPD.KD_OPD2 = REF_OPD.KD_OPD2
-               AND AKSES_REK_GAJI_SKPD.KD_OPD3 = REF_OPD.KD_OPD3
-               AND AKSES_REK_GAJI_SKPD.KD_OPD4 = REF_OPD.KD_OPD4
-               AND AKSES_REK_GAJI_SKPD.KD_OPD5 = REF_OPD.KD_OPD5
-               AND REF_OPD.DELETED_AT IS NULL
-    
-            LEFT JOIN LAPORAN_REK_GAJI_SKPD
-                ON LAPORAN_REK_GAJI_SKPD.REK_GAJI_ID = REF_REKONSILIASI_GAJI_SKPD.ID
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD1 = AKSES_REK_GAJI_SKPD.KD_OPD1
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD2 = AKSES_REK_GAJI_SKPD.KD_OPD2
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD3 = AKSES_REK_GAJI_SKPD.KD_OPD3
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD4 = AKSES_REK_GAJI_SKPD.KD_OPD4
-               AND LAPORAN_REK_GAJI_SKPD.KD_OPD5 = AKSES_REK_GAJI_SKPD.KD_OPD5
-               AND LAPORAN_REK_GAJI_SKPD.TAHUN = :tahun_laporan
-               AND LAPORAN_REK_GAJI_SKPD.DITERIMA IS NOT NULL
-               AND LAPORAN_REK_GAJI_SKPD.DELETED_AT IS NULL
-    
-            WHERE REF_REKONSILIASI_GAJI_SKPD.DELETED_AT IS NULL
-    
-            " . (
-                $kd_opd1 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD1 = :kd_opd1 " : ""
-            ) . (
-                $kd_opd2 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD2 = :kd_opd2 " : ""
-            ) . (
-                $kd_opd3 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD3 = :kd_opd3 " : ""
-            ) . (
-                $kd_opd4 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD4 = :kd_opd4 " : ""
-            ) . (
-                $kd_opd5 ? " AND AKSES_REK_GAJI_SKPD.KD_OPD5 = :kd_opd5 " : ""
-            ) . "
-    
-            ORDER BY
-                REF_OPD.NM_OPD,
-                REF_REKONSILIASI_GAJI_SKPD.CREATED_AT
-        ", array_filter([
-            'tahun_akses' => $tahun,
-            'tahun_laporan' => $tahun,
-            'kd_opd1' => $kd_opd1,
-            'kd_opd2' => $kd_opd2,
-            'kd_opd3' => $kd_opd3,
-            'kd_opd4' => $kd_opd4,
-            'kd_opd5' => $kd_opd5,
-        ]));
+        SELECT
+            O.NM_OPD AS SKPD,
+
+            A.KD_OPD1,
+            A.KD_OPD2,
+            A.KD_OPD3,
+            A.KD_OPD4,
+            A.KD_OPD5,
+
+            R.NM_REKONSILIASI_GAJI_SKPD AS REFERENSI,
+
+            CASE
+                WHEN A.ID IS NULL THEN 2
+                WHEN L.ID IS NOT NULL THEN 1
+                ELSE 0
+            END AS STATUS_LAPORAN
+
+        FROM REF_REKONSILIASI_GAJI_SKPD R
+
+        LEFT JOIN AKSES_REK_GAJI_SKPD A
+            ON R.ID = A.REK_GAJI_ID
+           AND A.TAHUN = :tahun_akses
+           AND A.DELETED_AT IS NULL
+
+        LEFT JOIN REF_OPD O
+            ON A.KD_OPD1 = O.KD_OPD1
+           AND A.KD_OPD2 = O.KD_OPD2
+           AND A.KD_OPD3 = O.KD_OPD3
+           AND A.KD_OPD4 = O.KD_OPD4
+           AND A.KD_OPD5 = O.KD_OPD5
+           AND O.DELETED_AT IS NULL
+
+        LEFT JOIN LAPORAN_REK_GAJI_SKPD L
+            ON L.REK_GAJI_ID = R.ID
+           AND L.KD_OPD1 = A.KD_OPD1
+           AND L.KD_OPD2 = A.KD_OPD2
+           AND L.KD_OPD3 = A.KD_OPD3
+           AND L.KD_OPD4 = A.KD_OPD4
+           AND L.KD_OPD5 = A.KD_OPD5
+           AND L.TAHUN = :tahun_laporan
+           AND L.DITERIMA IS NOT NULL
+           AND L.DELETED_AT IS NULL
+
+        WHERE R.DELETED_AT IS NULL
+
+        AND (:kd_opd1 IS NULL OR A.KD_OPD1 = :kd_opd1)
+        AND (:kd_opd2 IS NULL OR A.KD_OPD2 = :kd_opd2)
+        AND (:kd_opd3 IS NULL OR A.KD_OPD3 = :kd_opd3)
+        AND (:kd_opd4 IS NULL OR A.KD_OPD4 = :kd_opd4)
+        AND (:kd_opd5 IS NULL OR A.KD_OPD5 = :kd_opd5)
+
+        ORDER BY
+            O.NM_OPD,
+            R.CREATED_AT
+    ", [
+        'tahun_akses' => $tahun,
+        'tahun_laporan' => $tahun,
+        'kd_opd1' => $kd_opd1 ?: null,
+        'kd_opd2' => $kd_opd2 ?: null,
+        'kd_opd3' => $kd_opd3 ?: null,
+        'kd_opd4' => $kd_opd4 ?: null,
+        'kd_opd5' => $kd_opd5 ?: null,
+    ]);
     
         $result = [];
         $referensiList = [];
