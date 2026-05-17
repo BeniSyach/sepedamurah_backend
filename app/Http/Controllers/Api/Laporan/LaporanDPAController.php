@@ -234,6 +234,8 @@ class LaporanDPAController extends Controller
         );
         }
         $validated['created_at'] = $tanggal_upload;
+        $validated['proses'] = 1;
+        $validated['supervisor_proses'] = 'supervisor';
     
         $data = LaporanDPAModel::create($validated);
         if ($data) {

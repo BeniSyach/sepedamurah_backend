@@ -1110,6 +1110,8 @@ class SP2DController extends Controller
         
                 // 1. Simpan SP2D utama
                 $sp2d = SP2DModel::create(array_merge($validated, [
+                    'proses'          => 1,
+                    'supervisor_proses' => 'supervisor',
                     'created_at'      => now(),
                     'kode_file'       => $kodeFile,
                     'tanggal_upload'  => now(),

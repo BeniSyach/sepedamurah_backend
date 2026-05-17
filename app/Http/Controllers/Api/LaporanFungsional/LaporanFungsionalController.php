@@ -355,8 +355,10 @@ class LaporanFungsionalController extends Controller
             // 🧱 Simpan data ke database
             $laporan = LaporanFungsionalModel::create([
                 ...$validated,
-               'tanggal_upload' => $tanggal_upload,
-               'kode_file' => Str::random(10),
+                'proses' => 1,
+                'supervisor_proses' => 'supervisor',
+                'tanggal_upload' => $tanggal_upload,
+                'kode_file' => Str::random(10),
                 'nama_file_asli' => $pathNamaFile,
                 'berkas_tte' => $pathBerkasTte,
                 'date_created' => now(),

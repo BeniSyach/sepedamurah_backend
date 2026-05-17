@@ -314,6 +314,8 @@ class PermohonanSPDController extends Controller
                 'kd_opd3' => $validated['kd_opd3'] ?? null,
                 'kd_opd4' => $validated['kd_opd4'] ?? null,
                 'kd_opd5' => $validated['kd_opd5'] ?? null,
+                'proses' => 1,
+                'supervisor_proses' => 'supervisor',
                 'tanggal_upload' => now(),
                 'date_created' => now(),
             ]);

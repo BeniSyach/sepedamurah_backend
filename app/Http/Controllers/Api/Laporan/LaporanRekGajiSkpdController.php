@@ -236,7 +236,9 @@ class LaporanRekGajiSkpdController extends Controller
         );
         }
         $validated['created_at'] = $tanggal_upload;
-
+        $validated['proses'] = 1;
+        $validated['supervisor_proses'] = 'supervisor';
+        
         $data = LaporanRekGajiSkpdModel::create($validated);
 
         // Notif supervisor
