@@ -1151,6 +1151,19 @@ class SP2DController extends Controller
                     }
                 }
 
+                $operator = AksesOperatorModel::where('kd_opd1', $sp2d->kd_opd1)
+                ->where('kd_opd2', $sp2d->kd_opd2)
+                ->where('kd_opd3', $sp2d->kd_opd3)
+                ->where('kd_opd4', $sp2d->kd_opd4)
+                ->where('kd_opd5', $sp2d->kd_opd5)
+                ->first();
+
+                $noSpm = $sp2d->no_spm;
+                $chatId = $operator->user->chat_id ?? null;
+                if ($chatId) {
+                    $telegram->sendSp2dToOperator($chatId, $noSpm);
+                }
+
                 return response()->json([
                     'status'  => true,
                     'message' => 'Data berhasil disimpan',
