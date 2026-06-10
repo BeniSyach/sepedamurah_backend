@@ -76,9 +76,9 @@ class AksesRekGajiSkpdController extends Controller
                 'tahun' => $first->tahun,
                 'nama_opd' => $skpd?->nm_opd ?? 'Tidak ditemukan',
                 'rekonsiliasi' => $items->map(fn ($x) => [
-                    'id' => $x->rekonsiliasiGajiSkpd->id,
-                    'nm_rekonsiliasi_gaji_skpd' => $x->rekonsiliasiGajiSkpd->nm_rekonsiliasi_gaji_skpd,
-                ])->values(),
+                'id' => $x->rekonsiliasiGajiSkpd?->id,
+                'nm_rekonsiliasi_gaji_skpd' => $x->rekonsiliasiGajiSkpd?->nm_rekonsiliasi_gaji_skpd,
+            ])->values(),
             ];
         }
 
