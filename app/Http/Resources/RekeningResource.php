@@ -9,6 +9,7 @@ class RekeningResource extends JsonResource
     public function toArray($request)
     {
         return [
+            'id' => $this->id,
             'kd_rekening1' => $this->kd_rekening1,
             'kd_rekening2' => $this->kd_rekening2,
             'kd_rekening3' => $this->kd_rekening3 ,

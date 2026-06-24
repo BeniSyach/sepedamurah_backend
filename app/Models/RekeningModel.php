@@ -11,9 +11,9 @@ class RekeningModel extends Model
 
     protected $connection = 'oracle';
     protected $table = 'ref_rekening';
-    public $incrementing = false;
-    protected $primaryKey = null; // karena pakai composite key
-    protected $keyType = 'string';
+    public $incrementing = true;
+    protected $primaryKey = 'ID';
+    protected $keyType = 'int';
     public $timestamps = true;
 
     protected $fillable = [

@@ -154,7 +154,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Rekening
         Route::get('/rekening/{kd_rekening1}/{kd_rekening2}/{kd_rekening3}/{kd_rekening4}/{kd_rekening5}/{kd_rekening6}', [RekeningController::class, 'show']);
-        Route::put('/rekening/{kd_rekening1}/{kd_rekening2}/{kd_rekening3}/{kd_rekening4}/{kd_rekening5}/{kd_rekening6}', [RekeningController::class, 'update']);
+        Route::put('/rekening/{id}', [RekeningController::class, 'update']);
         Route::delete('/rekening/{kd_rekening1}/{kd_rekening2}/{kd_rekening3}/{kd_rekening4}/{kd_rekening5}/{kd_rekening6}', [RekeningController::class, 'destroy']);
         Route::apiResource('/rekening', RekeningController::class)->only(['index', 'store']);
         Route::get('/rekening-by-pagu-belanja', [RekeningController::class, 'get_rekening_sp2d']);

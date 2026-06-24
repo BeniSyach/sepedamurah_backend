@@ -137,37 +137,61 @@ class RekeningController extends Controller
     /**
      * Update data Rekening.
      */
-    public function update(Request $request, $kd_rekening1, $kd_rekening2, $kd_rekening3, $kd_rekening4, $kd_rekening5, $kd_rekening6)
+    public function update(Request $request, $id)
     {
         try {
-            $rekening = RekeningModel::whereRaw('TRIM(KD_REKENING1) = ?', [trim($kd_rekening1)])
-                ->whereRaw('TRIM(KD_REKENING2) = ?', [trim($kd_rekening2)])
-                ->whereRaw('TRIM(KD_REKENING3) = ?', [trim($kd_rekening3)])
-                ->whereRaw('TRIM(KD_REKENING4) = ?', [trim($kd_rekening4)])
-                ->whereRaw('TRIM(KD_REKENING5) = ?', [trim($kd_rekening5)])
-                ->whereRaw('TRIM(KD_REKENING6) = ?', [trim($kd_rekening6)])
-                ->first();
-
+            $rekening = RekeningModel::where('ID', $id)->first();
+    
             if (!$rekening) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Data rekening tidak ditemukan',
                 ], 404);
             }
-
+    
             $validated = $request->validate([
-                'nm_rekening' => 'required|string|max:255',
+                'kd_rekening1' => 'required|string|max:10',
+                'kd_rekening2' => 'required|string|max:10',
+                'kd_rekening3' => 'required|string|max:10',
+                'kd_rekening4' => 'required|string|max:10',
+                'kd_rekening5' => 'required|string|max:10',
+                'kd_rekening6' => 'required|string|max:10',
+                'nm_rekening'  => 'required|string|max:500',
             ]);
-
-            $rekening->nm_rekening = $validated['nm_rekening'];
+    
+            // cek duplikasi kombinasi rekening
+            $exists = RekeningModel::where('ID', '<>', $id)
+                ->where('KD_REKENING1', $validated['kd_rekening1'])
+                ->where('KD_REKENING2', $validated['kd_rekening2'])
+                ->where('KD_REKENING3', $validated['kd_rekening3'])
+                ->where('KD_REKENING4', $validated['kd_rekening4'])
+                ->where('KD_REKENING5', $validated['kd_rekening5'])
+                ->where('KD_REKENING6', $validated['kd_rekening6'])
+                ->exists();
+    
+            if ($exists) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Kode rekening sudah digunakan',
+                ], 422);
+            }
+    
+            $rekening->KD_REKENING1 = $validated['kd_rekening1'];
+            $rekening->KD_REKENING2 = $validated['kd_rekening2'];
+            $rekening->KD_REKENING3 = $validated['kd_rekening3'];
+            $rekening->KD_REKENING4 = $validated['kd_rekening4'];
+            $rekening->KD_REKENING5 = $validated['kd_rekening5'];
+            $rekening->KD_REKENING6 = $validated['kd_rekening6'];
+            $rekening->NM_REKENING  = $validated['nm_rekening'];
+    
             $rekening->save();
-
+    
             return response()->json([
                 'status' => true,
                 'message' => 'Data rekening berhasil diperbarui',
                 'data' => new RekeningResource($rekening),
             ]);
-
+    
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
