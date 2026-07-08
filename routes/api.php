@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\Laporan\LaporanRealisasiSumberDanaController;
 use App\Http\Controllers\Api\Laporan\LaporanRekGajiSkpdController;
 use App\Http\Controllers\Api\Laporan\LaporanSp2bKeBudController;
 use App\Http\Controllers\Api\LaporanFungsional\LaporanFungsionalController;
+use App\Http\Controllers\Api\LaporanPembukuan\LraSumberDanaController;
 use App\Http\Controllers\Api\MasterData\BidangUrusanController;
 use App\Http\Controllers\Api\MasterData\JenisBelanjaController;
 use App\Http\Controllers\Api\MasterData\JenisSPMController;
@@ -89,6 +90,9 @@ Route::post('/telegram/webhook', [TelegramBotController::class, 'webhook'])->nam
 Route::get('/verify-tte-sp2d/{id}', [SP2DKirimController::class, 'verify_tte']);
 Route::get('/verify-tte-berkaslain/{id}', [BerkasLainController::class, 'verify_tte']);
 Route::get('/verify-tte-fungsional/{id}', [LaporanFungsionalController::class, 'verify_tte']);
+
+// testing laporan pembukuan
+Route::get('/pembukuan-lra-sumber-dana/pdf', [LraSumberDanaController::class, 'index']);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
@@ -441,6 +445,9 @@ Route::middleware('auth:api')->group(function () {
         [LaporanDaftarBelanjaPerSKPDController::class, 'detail_daftar_belanja_SKPD']);
         Route::get('/daftar-belanja-skpd/download/pdf', [LaporanDaftarBelanjaPerSKPDController::class, 'export_pdf'])->name('daftar-belanja-skpd.download_pdf');
         Route::get('/daftar-belanja-skpd/download/excel', [LaporanDaftarBelanjaPerSKPDController::class, 'export_excel'])->name('daftar-belanja-skpd.download_excel');
+
+        // laporan Pembukuan
+        Route::get('/pembukuan-lra-sumber-dana/pdf', [LraSumberDanaController::class, 'index']);
     });
 
     // Berkas Berkas Lain

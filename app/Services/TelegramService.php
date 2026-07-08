@@ -56,9 +56,9 @@ class TelegramService
 
     // ==== SP2D ====
 
-    public function sendSp2dFromBendahara($chat_id, $no_spm, $keperluan)
+    public function sendSp2dFromBendahara($chat_id, $no_spm, $keperluan, $skpd)
     {
-        $message = "📄 Permohonan SP2D 📄\n\nHalo! Kami ingin menginformasikan bahwa *ADA SPM MASUK DENGAN NO. $no_spm* dengan uraian keperluan : *$keperluan*. Pesan ini dikirim secara otomatis melalui aplikasi sepedamurah. Jika ada pertanyaan lebih lanjut atau Anda memerlukan bantuan, silakan hubungi kami melalui aplikasi atau nomor kontak yang tersedia.\n\nTerima kasih atas perhatian Anda! 🚴‍♂️✨\n\n🌐 Aplikasi sepedamurah\n🌍 Kunjungi website kami di: https://sepedamurah.serdangbedagaikab.go.id\n🏛️ BPKAD Kabupaten Serdang Bedagai";
+        $message = "📄 Permohonan SP2D 📄\n\nHalo! Kami ingin menginformasikan bahwa *ADA SPM MASUK DENGAN NO. $no_spm* dengan uraian keperluan : *$keperluan*. *$skpd* Pesan ini dikirim secara otomatis melalui aplikasi sepedamurah. Jika ada pertanyaan lebih lanjut atau Anda memerlukan bantuan, silakan hubungi kami melalui aplikasi atau nomor kontak yang tersedia.\n\nTerima kasih atas perhatian Anda! 🚴‍♂️✨\n\n🌐 Aplikasi sepedamurah\n🌍 Kunjungi website kami di: https://sepedamurah.serdangbedagaikab.go.id\n🏛️ BPKAD Kabupaten Serdang Bedagai";
 
         return $this->sendMessage($chat_id, $message);
     }

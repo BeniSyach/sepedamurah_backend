@@ -1147,7 +1147,7 @@ class SP2DController extends Controller
                     $chatId = $supervisor->user->chat_id ?? null;
 
                     if ($chatId) {
-                        $telegram->sendSp2dFromBendahara($chatId, $request->no_spm, $request->nama_file);
+                        $telegram->sendSp2dFromBendahara($chatId, $request->no_spm, $request->nama_file, $skpd->nm_opd);
                     }
                 }
 
