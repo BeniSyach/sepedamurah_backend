@@ -167,6 +167,7 @@ class SumberDanaController extends Controller
             $validated = $request->validate([
                 'nm_ref' => 'required|string|max:255',
                 'status' => 'nullable|integer',
+                'jenis_sumber_dana' => 'nullable|string'
             ]);
 
             $sumberDana->update($validated);
