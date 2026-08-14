@@ -264,7 +264,7 @@ class BerkasLainController extends Controller
     public function sign(Request $request)
     {
         $request->validate([
-            'file'       => 'required|mimes:pdf|max:2048',
+            'file'       => 'required|mimes:pdf|max:5120',
             'passphrase' => 'required',
             'tampilan'   => 'required',
             'nama_file'  => 'required',
