@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Services\TTE_BSRE;
 use App\Models\LogTTEModel;
 use App\Models\SPDTerkirimModel;
+use Illuminate\Support\Str;
 
 class BerkasLainController extends Controller
 {
@@ -275,9 +276,34 @@ class BerkasLainController extends Controller
 
         // Upload PDF sebelum sign
         $uploaded = $request->file('file');
-        $saveName = $request->nama_file . ".pdf";
+        if (!$uploaded->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => $uploaded->getErrorMessage(),
+            ], 422);
+        }
+        if ($uploaded->getMimeType() !== 'application/pdf') {
+            return response()->json([
+                'success' => false,
+                'message' => 'File bukan PDF yang valid.',
+                'mime' => $uploaded->getMimeType(),
+            ], 422);
+        }
+        $saveName = Str::slug($request->nama_file) . '.pdf';
         $originalFilePath = $uploaded->storeAs("berkas_lain_original", $saveName, "public");
+        if (!$originalFilePath) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan file.',
+            ], 500);
+        }
         $fullPath = storage_path("app/public/" . $originalFilePath);
+        if (!file_exists($fullPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File tidak ditemukan setelah disimpan.',
+            ], 500);
+        }
 
         // Kirim ke BSRE
         $service = new TTE_BSRE();
