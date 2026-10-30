@@ -27,6 +27,7 @@ class PaguBelanjaModel extends Model
         'jumlah_pagu',
         'kd_opd1', 'kd_opd2', 'kd_opd3', 'kd_opd4', 'kd_opd5', 'kd_opd6', 'kd_opd7', 'kd_opd8',
         'kd_bu1', 'kd_bu2',
+        'kd_pagu_sd1', 'kd_pagu_sd2', 'kd_pagu_sd3', 'kd_pagu_sd4', 'kd_pagu_sd5', 'kd_pagu_sd6',
         'kd_relasi',
         'kd_berapax',
         'is_deleted',
@@ -206,4 +207,30 @@ class PaguBelanjaModel extends Model
 
         return $this->hasOne(SKPDModel::class, 'kode_opd', 'kode_opd')->where('kode_opd', $kodeOpd);
     }
+
+    // ============================
+    // Sumber Dana (mapping via kd_pagu_sd1..kd_pagu_sd6)
+    // ============================
+    public function getSumberDanaAttribute()
+    {
+        return SumberDanaModel::whereRaw("NVL(TRIM(kd_pagu_sd1), 'NULL') = ?", [trim($this->kd_pagu_sd1 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd2), 'NULL') = ?", [trim($this->kd_pagu_sd2 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd3), 'NULL') = ?", [trim($this->kd_pagu_sd3 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd4), 'NULL') = ?", [trim($this->kd_pagu_sd4 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd5), 'NULL') = ?", [trim($this->kd_pagu_sd5 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd6), 'NULL') = ?", [trim($this->kd_pagu_sd6 ?? '') ?: 'NULL'])
+            ->first();
+    }
+
+    public function sumberDana()
+    {
+        return $this->hasOne(SumberDanaModel::class, null, null, null)
+            ->whereRaw("NVL(TRIM(kd_pagu_sd1), 'NULL') = ?", [trim($this->kd_pagu_sd1 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd2), 'NULL') = ?", [trim($this->kd_pagu_sd2 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd3), 'NULL') = ?", [trim($this->kd_pagu_sd3 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd4), 'NULL') = ?", [trim($this->kd_pagu_sd4 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd5), 'NULL') = ?", [trim($this->kd_pagu_sd5 ?? '') ?: 'NULL'])
+            ->whereRaw("NVL(TRIM(kd_pagu_sd6), 'NULL') = ?", [trim($this->kd_pagu_sd6 ?? '') ?: 'NULL']);
+    }
 }
+

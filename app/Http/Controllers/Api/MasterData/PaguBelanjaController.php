@@ -76,6 +76,15 @@ class PaguBelanjaController extends Controller
                         pagu_belanja.kd_opd7||'.'||pagu_belanja.kd_opd8,
                     ' ', ''))
                 "));
+            })
+    
+            ->leftJoin('ref_sumber_dana', function ($join) {
+                $join->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd1), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd1), 'NULL')"))
+                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd2), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd2), 'NULL')"))
+                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd3), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd3), 'NULL')"))
+                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd4), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd4), 'NULL')"))
+                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd5), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd5), 'NULL')"))
+                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd6), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd6), 'NULL')"));
             });
     
         // ================= SEARCH =================
@@ -88,7 +97,8 @@ class PaguBelanjaController extends Controller
                   ->orWhereRaw('LOWER(ref_program.nm_program) LIKE ?', ["%$s%"])
                   ->orWhereRaw('LOWER(ref_kegiatan.nm_kegiatan) LIKE ?', ["%$s%"])
                   ->orWhereRaw('LOWER(ref_subkegiatan.nm_subkegiatan) LIKE ?', ["%$s%"])
-                  ->orWhereRaw('LOWER(ref_rekening.nm_rekening) LIKE ?', ["%$s%"]);
+                  ->orWhereRaw('LOWER(ref_rekening.nm_rekening) LIKE ?', ["%$s%"])
+                  ->orWhereRaw('LOWER(ref_sumber_dana.nm_ref) LIKE ?', ["%$s%"]);
             });
         }
     
@@ -102,6 +112,13 @@ class PaguBelanjaController extends Controller
             'ref_subkegiatan.nm_subkegiatan',
             'ref_rekening.nm_rekening',
             'skpd.nm_opd',
+            'ref_sumber_dana.nm_ref as nm_sumber_dana',
+            'ref_sumber_dana.kd_ref1',
+            'ref_sumber_dana.kd_ref2',
+            'ref_sumber_dana.kd_ref3',
+            'ref_sumber_dana.kd_ref4',
+            'ref_sumber_dana.kd_ref5',
+            'ref_sumber_dana.kd_ref6',
         ]);
     
         // ================= SORT (NO ALIAS!) =================
@@ -113,6 +130,7 @@ class PaguBelanjaController extends Controller
             'NM_KEGIATAN'    => 'ref_kegiatan.nm_kegiatan',
             'NM_SUBKEGIATAN' => 'ref_subkegiatan.nm_subkegiatan',
             'NM_REKENING'    => 'ref_rekening.nm_rekening',
+            'NM_SUMBER_DANA' => 'ref_sumber_dana.nm_ref',
             'JUMLAH_PAGU'    => 'pagu_belanja.jumlah_pagu',
         ];
     
@@ -155,7 +173,13 @@ class PaguBelanjaController extends Controller
             'kd_rekening4' => 'required|string|max:2',
             'kd_rekening5' => 'required|string|max:2',
             'kd_rekening6' => 'required|string|max:2',
-            'jumlah_pagu' => 'required|numeric',
+            'kd_pagu_sd1'  => 'nullable|string|max:10',
+            'kd_pagu_sd2'  => 'nullable|string|max:10',
+            'kd_pagu_sd3'  => 'nullable|string|max:10',
+            'kd_pagu_sd4'  => 'nullable|string|max:10',
+            'kd_pagu_sd5'  => 'nullable|string|max:10',
+            'kd_pagu_sd6'  => 'nullable|string|max:10',
+            'jumlah_pagu'  => 'required|numeric',
         ]);
 
         try {

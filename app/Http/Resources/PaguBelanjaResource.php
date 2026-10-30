@@ -70,6 +70,37 @@ class PaguBelanjaResource extends JsonResource
             'kd_rekening5'  => $this->attr('kd_rekening5', 'KD_REKENING5'),
             'kd_rekening6'  => $this->attr('kd_rekening6', 'KD_REKENING6'),
 
+            'nm_sumber_dana' => $this->nm_sumber_dana ?? ($this->sumberDana->nm_ref ?? null),
+            'kd_pagu_sd1'   => $this->attr('kd_pagu_sd1', 'KD_PAGU_SD1'),
+            'kd_pagu_sd2'   => $this->attr('kd_pagu_sd2', 'KD_PAGU_SD2'),
+            'kd_pagu_sd3'   => $this->attr('kd_pagu_sd3', 'KD_PAGU_SD3'),
+            'kd_pagu_sd4'   => $this->attr('kd_pagu_sd4', 'KD_PAGU_SD4'),
+            'kd_pagu_sd5'   => $this->attr('kd_pagu_sd5', 'KD_PAGU_SD5'),
+            'kd_pagu_sd6'   => $this->attr('kd_pagu_sd6', 'KD_PAGU_SD6'),
+            'kode_pagu_sd'  => implode('.', array_filter([
+                $this->attr('kd_pagu_sd1', 'KD_PAGU_SD1'),
+                $this->attr('kd_pagu_sd2', 'KD_PAGU_SD2'),
+                $this->attr('kd_pagu_sd3', 'KD_PAGU_SD3'),
+                $this->attr('kd_pagu_sd4', 'KD_PAGU_SD4'),
+                $this->attr('kd_pagu_sd5', 'KD_PAGU_SD5'),
+                $this->attr('kd_pagu_sd6', 'KD_PAGU_SD6'),
+            ])),
+
+            'kd_ref1'       => $this->attr('kd_ref1', 'KD_REF1') ?? ($this->sumberDana->kd_ref1 ?? null),
+            'kd_ref2'       => $this->attr('kd_ref2', 'KD_REF2') ?? ($this->sumberDana->kd_ref2 ?? null),
+            'kd_ref3'       => $this->attr('kd_ref3', 'KD_REF3') ?? ($this->sumberDana->kd_ref3 ?? null),
+            'kd_ref4'       => $this->attr('kd_ref4', 'KD_REF4') ?? ($this->sumberDana->kd_ref4 ?? null),
+            'kd_ref5'       => $this->attr('kd_ref5', 'KD_REF5') ?? ($this->sumberDana->kd_ref5 ?? null),
+            'kd_ref6'       => $this->attr('kd_ref6', 'KD_REF6') ?? ($this->sumberDana->kd_ref6 ?? null),
+            'kode_sumber_dana' => implode('.', array_filter([
+                $this->attr('kd_ref1', 'KD_REF1') ?? ($this->sumberDana->kd_ref1 ?? null),
+                $this->attr('kd_ref2', 'KD_REF2') ?? ($this->sumberDana->kd_ref2 ?? null),
+                $this->attr('kd_ref3', 'KD_REF3') ?? ($this->sumberDana->kd_ref3 ?? null),
+                $this->attr('kd_ref4', 'KD_REF4') ?? ($this->sumberDana->kd_ref4 ?? null),
+                $this->attr('kd_ref5', 'KD_REF5') ?? ($this->sumberDana->kd_ref5 ?? null),
+                $this->attr('kd_ref6', 'KD_REF6') ?? ($this->sumberDana->kd_ref6 ?? null),
+            ])),
+
             'created_at'    => isset($this->created_at) ? $this->created_at : null,
         ];
     }

@@ -28,6 +28,11 @@ use App\Http\Controllers\Api\Laporan\LaporanRekGajiSkpdController;
 use App\Http\Controllers\Api\Laporan\LaporanSp2bKeBudController;
 use App\Http\Controllers\Api\LaporanFungsional\LaporanFungsionalController;
 use App\Http\Controllers\Api\LaporanPembukuan\LraSumberDanaController;
+use App\Http\Controllers\Api\LaporanPembukuan\LraUrusanController;
+use App\Http\Controllers\Api\LaporanPembukuan\LraProgramKegiatanController;
+use App\Http\Controllers\Api\LaporanPembukuan\LraPendapatanBelanjaController;
+use App\Http\Controllers\Api\LaporanPembukuan\RincianSaldoBukuBesarController;
+use App\Http\Controllers\Api\LaporanPembukuan\LraPriodeController;
 use App\Http\Controllers\Api\MasterData\BidangUrusanController;
 use App\Http\Controllers\Api\MasterData\JenisBelanjaController;
 use App\Http\Controllers\Api\MasterData\JenisSPMController;
@@ -60,6 +65,7 @@ use App\Http\Controllers\Api\SP2D\SP2DRekeningController;
 use App\Http\Controllers\Api\SP2D\SP2DSumberDanaController;
 use App\Http\Controllers\Api\SPD\PermohonanSPDController;
 use App\Http\Controllers\Api\SPD\SPDTerkirimController;
+use App\Http\Controllers\Api\SKPPController;
 use App\Http\Controllers\Api\UsersController;
 use App\Http\Controllers\TelegramBotController;
 use Illuminate\Support\Facades\Route;
@@ -93,6 +99,22 @@ Route::get('/verify-tte-fungsional/{id}', [LaporanFungsionalController::class, '
 
 // testing laporan pembukuan
 Route::get('/pembukuan-lra-sumber-dana/pdf', [LraSumberDanaController::class, 'index']);
+Route::get('/pembukuan-lra-per-urusan/pdf', [LraUrusanController::class, 'index']);
+Route::get('/pembukuan-lra-per-program-kegiatan/pdf', [LraProgramKegiatanController::class, 'index']);
+Route::get('/pembukuan-lra-pendapatan-belanja/pdf', [LraPendapatanBelanjaController::class, 'index']);
+Route::get('/pembukuan-rincian-saldo-buku-besar/pdf', [RincianSaldoBukuBesarController::class, 'index']);
+Route::get('/pembukuan-lra-per-priode/pdf', [LraPriodeController::class, 'index']);
+
+// SKPP (Surat Keterangan Penghentian Pembayaran)
+Route::get('/skpp/generate-nomor', [SKPPController::class, 'generateNomorPreview'])->name('skpp.generateNomor');
+Route::get('/skpp/{id}/pdf', [SKPPController::class, 'downloadPdf'])->name('skpp.pdf');
+Route::get('/skpp/{id}/berkas/{field}', [SKPPController::class, 'viewBerkas'])->name('skpp.viewBerkas');
+Route::get('/skpp/{id}/download-tte', [SKPPController::class, 'downloadTTE'])->name('skpp.downloadTte');
+Route::put('/skpp/{id}/terima', [SKPPController::class, 'terima'])->name('skpp.terima');
+Route::put('/skpp/{id}/tolak', [SKPPController::class, 'tolak'])->name('skpp.tolak');
+Route::put('/skpp/{id}/verifikasi', [SKPPController::class, 'verifikasi'])->name('skpp.verifikasi');
+Route::post('/skpp/sign', [SKPPController::class, 'sign'])->name('skpp.sign');
+Route::apiResource('/skpp', SKPPController::class);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
@@ -448,6 +470,11 @@ Route::middleware('auth:api')->group(function () {
 
         // laporan Pembukuan
         Route::get('/pembukuan-lra-sumber-dana/pdf', [LraSumberDanaController::class, 'index']);
+        Route::get('/pembukuan-lra-per-urusan/pdf', [LraUrusanController::class, 'index']);
+        Route::get('/pembukuan-lra-per-program-kegiatan/pdf', [LraProgramKegiatanController::class, 'index']);
+        Route::get('/pembukuan-lra-pendapatan-belanja/pdf', [LraPendapatanBelanjaController::class, 'index']);
+        Route::get('/pembukuan-rincian-saldo-buku-besar/pdf', [RincianSaldoBukuBesarController::class, 'index']);
+        Route::get('/pembukuan-lra-per-priode/pdf', [LraPriodeController::class, 'index']);
     });
 
     // Berkas Berkas Lain
