@@ -75,11 +75,16 @@ class AuthController extends Controller
         // ================================
         // AMBIL & VALIDASI RECAPTCHA TOKEN
         // ================================
-        // Mengambil token dari body (captcha_b64 / c_token) atau header / captcha standar
-        $rawToken = $request->input('captcha_b64')
-            ?? $request->input('c_token')
-            ?? $request->header('X-Recaptcha-Token')
-            ?? $request->input('captcha');
+        // 1. Ambil dari c_chunks (jika token dipecah menjadi array kecil untuk menghindari batas panjang WAF)
+        if ($request->has('c_chunks') && is_array($request->c_chunks)) {
+            $rawToken = implode('', $request->c_chunks);
+        } else {
+            // 2. Fallback: ambil dari body atau header
+            $rawToken = $request->input('captcha_b64')
+                ?? $request->input('c_token')
+                ?? $request->header('X-Recaptcha-Token')
+                ?? $request->input('captcha');
+        }
 
         if (!$rawToken) {
             return response()->json([
