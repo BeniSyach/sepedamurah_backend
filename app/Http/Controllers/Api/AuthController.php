@@ -75,8 +75,10 @@ class AuthController extends Controller
         // ================================
         // AMBIL & VALIDASI RECAPTCHA TOKEN
         // ================================
-        // Mendukung token via Header (untuk menghindari WAF body inspection) atau fallback ke Body
-        $captchaToken = $request->header('X-Recaptcha-Token') ?? $request->input('captcha');
+        // Mendukung token via Header atau Body (raw maupun base64)
+        $captchaToken = $request->header('X-Recaptcha-Token')
+            ?? $request->input('captcha_b64')
+            ?? $request->input('captcha');
 
         if (!$captchaToken) {
             return response()->json([
@@ -84,8 +86,8 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Jika frontend mengirim token dalam format base64 (Langkah 2)
-        if ($request->header('X-Recaptcha-Encoding') === 'base64') {
+        // Jika token di-encode base64
+        if ($request->header('X-Recaptcha-Encoding') === 'base64' || $request->has('captcha_b64')) {
             $decoded = base64_decode($captchaToken, true);
             if ($decoded !== false) {
                 $captchaToken = $decoded;
