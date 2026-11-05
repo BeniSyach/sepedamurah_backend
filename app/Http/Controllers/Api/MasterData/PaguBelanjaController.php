@@ -84,7 +84,7 @@ class PaguBelanjaController extends Controller
                      ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd3), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd3), 'NULL')"))
                      ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd4), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd4), 'NULL')"))
                      ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd5), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd5), 'NULL')"))
-                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd6), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd6), 'NULL')"));
+                      ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd6), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd6), 'NULL')"));
             });
     
         // ================= SEARCH =================
@@ -177,8 +177,8 @@ class PaguBelanjaController extends Controller
             'kd_pagu_sd2'  => 'nullable|string|max:10',
             'kd_pagu_sd3'  => 'nullable|string|max:10',
             'kd_pagu_sd4'  => 'nullable|string|max:10',
-            'kd_pagu_sd5'  => 'nullable|string|max:10',
-            'kd_pagu_sd6'  => 'nullable|string|max:10',
+            'kd_pagu_sd5'  => 'nullable|string|max:10',            'kd_pagu_sd6'  => 'nullable|string|max:10',
+
             'jumlah_pagu'  => 'required|numeric',
         ]);
 

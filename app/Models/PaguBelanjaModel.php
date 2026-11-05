@@ -209,7 +209,7 @@ class PaguBelanjaModel extends Model
     }
 
     // ============================
-    // Sumber Dana (mapping via kd_pagu_sd1..kd_pagu_sd6)
+    // Sumber Dana (mapping via kd_pagu_sd1..kd_pagu_sd5)
     // ============================
     public function getSumberDanaAttribute()
     {
@@ -218,7 +218,6 @@ class PaguBelanjaModel extends Model
             ->whereRaw("NVL(TRIM(kd_pagu_sd3), 'NULL') = ?", [trim($this->kd_pagu_sd3 ?? '') ?: 'NULL'])
             ->whereRaw("NVL(TRIM(kd_pagu_sd4), 'NULL') = ?", [trim($this->kd_pagu_sd4 ?? '') ?: 'NULL'])
             ->whereRaw("NVL(TRIM(kd_pagu_sd5), 'NULL') = ?", [trim($this->kd_pagu_sd5 ?? '') ?: 'NULL'])
-            ->whereRaw("NVL(TRIM(kd_pagu_sd6), 'NULL') = ?", [trim($this->kd_pagu_sd6 ?? '') ?: 'NULL'])
             ->first();
     }
 
@@ -229,8 +228,7 @@ class PaguBelanjaModel extends Model
             ->whereRaw("NVL(TRIM(kd_pagu_sd2), 'NULL') = ?", [trim($this->kd_pagu_sd2 ?? '') ?: 'NULL'])
             ->whereRaw("NVL(TRIM(kd_pagu_sd3), 'NULL') = ?", [trim($this->kd_pagu_sd3 ?? '') ?: 'NULL'])
             ->whereRaw("NVL(TRIM(kd_pagu_sd4), 'NULL') = ?", [trim($this->kd_pagu_sd4 ?? '') ?: 'NULL'])
-            ->whereRaw("NVL(TRIM(kd_pagu_sd5), 'NULL') = ?", [trim($this->kd_pagu_sd5 ?? '') ?: 'NULL'])
-            ->whereRaw("NVL(TRIM(kd_pagu_sd6), 'NULL') = ?", [trim($this->kd_pagu_sd6 ?? '') ?: 'NULL']);
+            ->whereRaw("NVL(TRIM(kd_pagu_sd5), 'NULL') = ?", [trim($this->kd_pagu_sd5 ?? '') ?: 'NULL']);
     }
 }
 

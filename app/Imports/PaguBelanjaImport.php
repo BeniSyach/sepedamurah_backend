@@ -67,7 +67,6 @@ class PaguBelanjaImport implements
                 'kd_pagu_sd3' => $row['KD_PAGU_SD3'] ?? $row['kd_pagu_sd3'] ?? null,
                 'kd_pagu_sd4' => $row['KD_PAGU_SD4'] ?? $row['kd_pagu_sd4'] ?? null,
                 'kd_pagu_sd5' => $row['KD_PAGU_SD5'] ?? $row['kd_pagu_sd5'] ?? null,
-                'kd_pagu_sd6' => $row['KD_PAGU_SD6'] ?? $row['kd_pagu_sd6'] ?? null,
                 'kd_relasi' => $row['KD_RELASI'] ?? null,
                 'kd_berapax' => $this->kdBerapax,
                 'jumlah_pagu' => $row['JUMLAH_PAGU'] ?? 0,
