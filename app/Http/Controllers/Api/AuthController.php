@@ -70,20 +70,44 @@ class AuthController extends Controller
         $request->validate([
             'nip' => 'required|string',
             'password' => 'required|string',
-            'captcha' => 'required|string',
         ]);
+
+        // ================================
+        // AMBIL & VALIDASI RECAPTCHA TOKEN
+        // ================================
+        // Mendukung token via Header (untuk menghindari WAF body inspection) atau fallback ke Body
+        $captchaToken = $request->header('X-Recaptcha-Token') ?? $request->input('captcha');
+
+        if (!$captchaToken) {
+            return response()->json([
+                'error' => 'Token reCAPTCHA wajib disertakan.'
+            ], 422);
+        }
+
+        // Jika frontend mengirim token dalam format base64 (Langkah 2)
+        if ($request->header('X-Recaptcha-Encoding') === 'base64') {
+            $decoded = base64_decode($captchaToken, true);
+            if ($decoded !== false) {
+                $captchaToken = $decoded;
+            }
+        }
     
         // ================================
-        // VALIDASI RECAPTCHA
+        // VALIDASI KE GOOGLE RECAPTCHA
         // ================================
         $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
             'secret' => env('RECAPTCHA_SECRET_KEY'),
-            'response' => $request->captcha,
+            'response' => $captchaToken,
         ]);
     
         $googleResponse = $response->json();
     
         if (!($googleResponse['success'] ?? false)) {
+            \Log::warning('reCAPTCHA verification failed', [
+                'nip' => $request->nip,
+                'google_response' => $googleResponse,
+            ]);
+
             return response()->json([
                 'error' => 'Verifikasi reCAPTCHA gagal. Silakan coba lagi.'
             ], 400);
