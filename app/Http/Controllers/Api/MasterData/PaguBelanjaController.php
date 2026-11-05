@@ -78,14 +78,14 @@ class PaguBelanjaController extends Controller
                 "));
             })
     
-            ->leftJoin('ref_sumber_dana', function ($join) {
-                $join->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd1), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd1), 'NULL')"))
-                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd2), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd2), 'NULL')"))
-                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd3), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd3), 'NULL')"))
-                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd4), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd4), 'NULL')"))
-                     ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd5), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd5), 'NULL')"))
-                      ->on(DB::raw("NVL(TRIM(ref_sumber_dana.kd_pagu_sd6), 'NULL')"), '=', DB::raw("NVL(TRIM(pagu_belanja.kd_pagu_sd6), 'NULL')"));
-            });
+           ->leftJoin('ref_sumber_dana', function ($join) {
+    $join->on('pagu_belanja.kd_pagu_sd1', '=', 'ref_sumber_dana.kd_pagu_sd1')
+         ->on('pagu_belanja.kd_pagu_sd2', '=', 'ref_sumber_dana.kd_pagu_sd2')
+         ->on('pagu_belanja.kd_pagu_sd3', '=', 'ref_sumber_dana.kd_pagu_sd3')
+         ->on('pagu_belanja.kd_pagu_sd4', '=', 'ref_sumber_dana.kd_pagu_sd4')
+         ->on('pagu_belanja.kd_pagu_sd5', '=', 'ref_sumber_dana.kd_pagu_sd5')
+         ->on('pagu_belanja.kd_pagu_sd6', '=', 'ref_sumber_dana.kd_pagu_sd6');
+});
     
         // ================= SEARCH =================
         if ($search) {
