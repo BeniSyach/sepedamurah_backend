@@ -75,23 +75,25 @@ class AuthController extends Controller
         // ================================
         // AMBIL & VALIDASI RECAPTCHA TOKEN
         // ================================
-        // Mendukung token via Header atau Body (raw maupun base64)
-        $captchaToken = $request->header('X-Recaptcha-Token')
-            ?? $request->input('captcha_b64')
+        // Mengambil token dari body (captcha_b64 / c_token) atau header / captcha standar
+        $rawToken = $request->input('captcha_b64')
+            ?? $request->input('c_token')
+            ?? $request->header('X-Recaptcha-Token')
             ?? $request->input('captcha');
 
-        if (!$captchaToken) {
+        if (!$rawToken) {
             return response()->json([
                 'error' => 'Token reCAPTCHA wajib disertakan.'
             ], 422);
         }
 
-        // Jika token di-encode base64
-        if ($request->header('X-Recaptcha-Encoding') === 'base64' || $request->has('captcha_b64')) {
-            $decoded = base64_decode($captchaToken, true);
-            if ($decoded !== false) {
-                $captchaToken = $decoded;
-            }
+        // Jika dikirim dalam format base64, decode kembali
+        if ($request->has('captcha_b64') || $request->has('c_token') || $request->header('X-Recaptcha-Encoding') === 'base64') {
+            $normalized = strtr($rawToken, '-_', '+/');
+            $decoded = base64_decode($normalized, true);
+            $captchaToken = ($decoded !== false) ? $decoded : $rawToken;
+        } else {
+            $captchaToken = $rawToken;
         }
     
         // ================================
