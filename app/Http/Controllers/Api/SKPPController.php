@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SKPPModel;
+use App\Models\AksesOperatorModel;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
@@ -15,41 +17,138 @@ use App\Services\TTE_BSRE;
 class SKPPController extends Controller
 {
     /**
+     * Resolve authenticated user (JWT API guard -> Default guard -> Request user_id fallback)
+     */
+    protected function getAuthUser(Request $request = null): ?User
+    {
+        $user = null;
+        try {
+            $user = auth('api')->user();
+        } catch (\Throwable $e) {
+            $user = null;
+        }
+
+        if (!$user) {
+            $user = Auth::user();
+        }
+
+        if (!$user && $request && ($request->filled('user_id') || $request->filled('users_id'))) {
+            $uid = $request->get('user_id') ?: $request->get('users_id');
+            $user = User::find($uid);
+        }
+
+        return $user;
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+        $user = $this->getAuthUser($request);
+        $userId = $user?->id ?? $request->get('user_id');
+
         $query = SKPPModel::query()
             ->with(['user:id,name,nip,email'])
             ->whereNull('deleted_at');
 
-        // Filter Berdasarkan OPD (untuk Bendahara atau filter OPD tertentu)
-        if ($request->filled('kd_opd1') && $request->filled('kd_opd2')) {
-            $kdOpd1 = str_pad($request->get('kd_opd1'), 2, '0', STR_PAD_LEFT);
-            $kdOpd2 = str_pad($request->get('kd_opd2'), 2, '0', STR_PAD_LEFT);
-            $query->where(function ($q) use ($request, $kdOpd1, $kdOpd2) {
-                $q->where(function ($qSub) use ($request, $kdOpd1, $kdOpd2) {
-                    $qSub->whereRaw("RTRIM(kd_opd1) = ?", [$kdOpd1])
-                         ->whereRaw("RTRIM(kd_opd2) = ?", [$kdOpd2]);
-                    if ($request->filled('kd_opd3')) {
-                        $qSub->whereRaw("RTRIM(kd_opd3) = ?", [str_pad($request->get('kd_opd3'), 2, '0', STR_PAD_LEFT)]);
-                    }
-                    if ($request->filled('kd_opd4')) {
-                        $qSub->whereRaw("RTRIM(kd_opd4) = ?", [str_pad($request->get('kd_opd4'), 2, '0', STR_PAD_LEFT)]);
-                    }
-                    if ($request->filled('kd_opd5')) {
-                        $qSub->whereRaw("RTRIM(kd_opd5) = ?", [str_pad($request->get('kd_opd5'), 2, '0', STR_PAD_LEFT)]);
+        // Cek apakah user adalah Admin / Superadmin
+        $isAdmin = false;
+        if ($user) {
+            $user->loadMissing('rules');
+            $isAdmin = $user->rules->contains(function ($r) {
+                $name = strtolower($r->rule ?? '');
+                return str_contains($name, 'admin') || str_contains($name, 'superadmin');
+            });
+        }
+
+        // Cek apakah user adalah Operator
+        $isOperator = false;
+        if ($userId && !$isAdmin) {
+            $isOperator = AksesOperatorModel::where('id_operator', $userId)->exists();
+            if (!$isOperator && $user) {
+                $user->loadMissing('rules');
+                $isOperator = $user->rules->contains(function ($r) {
+                    return str_contains(strtolower($r->rule ?? ''), 'operator');
+                });
+            }
+        }
+
+        // 1. FILTER AKSES OPERATOR (Hanya tampilkan dokumen SKPP dari OPD yang diampu oleh Operator)
+        if ($isOperator && $userId) {
+            $operatorSkpds = AksesOperatorModel::where('id_operator', $userId)->get();
+            if ($operatorSkpds->isNotEmpty()) {
+                $query->where(function ($q) use ($operatorSkpds) {
+                    foreach ($operatorSkpds as $op) {
+                        $q->orWhere(function ($qSub) use ($op) {
+                            $qSub->whereRaw("RTRIM(kd_opd1) = ?", [str_pad($op->kd_opd1, 2, '0', STR_PAD_LEFT)])
+                                 ->whereRaw("RTRIM(kd_opd2) = ?", [str_pad($op->kd_opd2, 2, '0', STR_PAD_LEFT)]);
+                            if (!empty($op->kd_opd3)) {
+                                $qSub->whereRaw("RTRIM(kd_opd3) = ?", [str_pad($op->kd_opd3, 2, '0', STR_PAD_LEFT)]);
+                            }
+                            if (!empty($op->kd_opd4)) {
+                                $qSub->whereRaw("RTRIM(kd_opd4) = ?", [str_pad($op->kd_opd4, 2, '0', STR_PAD_LEFT)]);
+                            }
+                            if (!empty($op->kd_opd5)) {
+                                $qSub->whereRaw("RTRIM(kd_opd5) = ?", [str_pad($op->kd_opd5, 2, '0', STR_PAD_LEFT)]);
+                            }
+                        });
                     }
                 });
-                if ($userId = $request->get('user_id')) {
-                    $q->orWhere(function ($qUser) use ($userId) {
-                        $qUser->where('users_id', $userId)
-                              ->whereNull('kd_opd1');
+            } else {
+                // User terdaftar sebagai operator tapi belum diberikan akses OPD
+                $query->whereRaw("1 = 2");
+            }
+        }
+        // 2. FILTER BENDAHARA (Hanya tampilkan dokumen SKPP dari OPD Bendahara atau yang dibuat oleh dirinya)
+        elseif ($this->isBendaharaOnly($request)) {
+            $opd1 = $request->get('kd_opd1') ?: $user?->kd_opd1;
+            $opd2 = $request->get('kd_opd2') ?: $user?->kd_opd2;
+            if ($opd1 && $opd2) {
+                $kdOpd1 = str_pad($opd1, 2, '0', STR_PAD_LEFT);
+                $kdOpd2 = str_pad($opd2, 2, '0', STR_PAD_LEFT);
+                $query->where(function ($q) use ($request, $user, $kdOpd1, $kdOpd2, $userId) {
+                    $q->where(function ($qSub) use ($request, $user, $kdOpd1, $kdOpd2) {
+                        $qSub->whereRaw("RTRIM(kd_opd1) = ?", [$kdOpd1])
+                             ->whereRaw("RTRIM(kd_opd2) = ?", [$kdOpd2]);
+                        $opd3 = $request->get('kd_opd3') ?: $user?->kd_opd3;
+                        if ($opd3) {
+                            $qSub->whereRaw("RTRIM(kd_opd3) = ?", [str_pad($opd3, 2, '0', STR_PAD_LEFT)]);
+                        }
+                        $opd4 = $request->get('kd_opd4') ?: $user?->kd_opd4;
+                        if ($opd4) {
+                            $qSub->whereRaw("RTRIM(kd_opd4) = ?", [str_pad($opd4, 2, '0', STR_PAD_LEFT)]);
+                        }
+                        $opd5 = $request->get('kd_opd5') ?: $user?->kd_opd5;
+                        if ($opd5) {
+                            $qSub->whereRaw("RTRIM(kd_opd5) = ?", [str_pad($opd5, 2, '0', STR_PAD_LEFT)]);
+                        }
                     });
+                    if ($userId) {
+                        $q->orWhere('users_id', $userId);
+                    }
+                });
+            } elseif ($userId) {
+                $query->where('users_id', $userId);
+            }
+        }
+        // 3. ADMIN / ROLE LAINNYA (Dapat melihat semua atau memfilter berdasarkan OPD jika dikirimkan)
+        elseif ($request->filled('kd_opd1') && $request->filled('kd_opd2')) {
+            $kdOpd1 = str_pad($request->get('kd_opd1'), 2, '0', STR_PAD_LEFT);
+            $kdOpd2 = str_pad($request->get('kd_opd2'), 2, '0', STR_PAD_LEFT);
+            $query->where(function ($qSub) use ($request, $kdOpd1, $kdOpd2) {
+                $qSub->whereRaw("RTRIM(kd_opd1) = ?", [$kdOpd1])
+                     ->whereRaw("RTRIM(kd_opd2) = ?", [$kdOpd2]);
+                if ($request->filled('kd_opd3')) {
+                    $qSub->whereRaw("RTRIM(kd_opd3) = ?", [str_pad($request->get('kd_opd3'), 2, '0', STR_PAD_LEFT)]);
+                }
+                if ($request->filled('kd_opd4')) {
+                    $qSub->whereRaw("RTRIM(kd_opd4) = ?", [str_pad($request->get('kd_opd4'), 2, '0', STR_PAD_LEFT)]);
+                }
+                if ($request->filled('kd_opd5')) {
+                    $qSub->whereRaw("RTRIM(kd_opd5) = ?", [str_pad($request->get('kd_opd5'), 2, '0', STR_PAD_LEFT)]);
                 }
             });
-        } elseif ($userId = $request->get('user_id')) {
-            $query->where('users_id', $userId);
         }
 
         // Filter Status / Menu
@@ -228,6 +327,29 @@ class SKPPController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'nip' => 'required|string|max:30',
+            'unit_kerja' => 'required|string|max:255',
+            'sk_dari' => 'required|string|max:255',
+            'nomor_sk' => 'required|string|max:100',
+            'tgl_sk' => 'required|string|max:20',
+            'tmt_sk' => 'required|string|max:20',
+            'berkas_pengantar_opd' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'berkas_sk' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'berkas_daftar_gaji' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'berkas_kk' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'berkas_pendukung' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ], [
+            'nama.required' => 'Nama pegawai wajib diisi',
+            'nip.required' => 'NIP pegawai wajib diisi',
+            'unit_kerja.required' => 'Unit Kerja (OPD) wajib dipilih',
+            'sk_dari.required' => 'Instansi/Pejabat penerbit SK wajib diisi',
+            'nomor_sk.required' => 'Nomor SK wajib diisi',
+            'tgl_sk.required' => 'Tanggal SK wajib diisi',
+            'tmt_sk.required' => 'TMT SK wajib diisi',
+            'berkas_pengantar_opd.required' => 'Berkas Surat Pengantar OPD wajib diunggah',
+            'berkas_sk.required' => 'Berkas SK (Pensiun/Mutasi) wajib diunggah',
+            'berkas_daftar_gaji.required' => 'Berkas Daftar Gaji Terakhir wajib diunggah',
+            'berkas_kk.required' => 'Berkas Kartu Keluarga wajib diunggah',
+            'berkas_pendukung.required' => 'Berkas Dokumen Pendukung wajib diunggah',
         ]);
 
         if ($validator->fails()) {
@@ -320,9 +442,11 @@ class SKPPController extends Controller
             }
 
             // User yang membuat
-            if (Auth::check()) {
-                $data['users_id'] = Auth::id();
-                $user = Auth::user();
+            $user = $this->getAuthUser($request);
+            $creatorId = $user?->id ?? ($request->input('user_id') ?: $request->input('users_id'));
+            $data['users_id'] = $creatorId;
+
+            if ($user) {
                 if (empty($data['kd_opd1']) && !empty($user->kd_opd1)) {
                     $data['kd_opd1'] = $user->kd_opd1;
                     $data['kd_opd2'] = $user->kd_opd2;
@@ -330,8 +454,6 @@ class SKPPController extends Controller
                     $data['kd_opd4'] = $user->kd_opd4;
                     $data['kd_opd5'] = $user->kd_opd5;
                 }
-            } elseif (empty($data['users_id'])) {
-                $data['users_id'] = $request->input('user_id') ?: $request->input('users_id');
             }
 
             // Normalisasi kd_opd agar 2 digit dengan leading zero jika ada
@@ -341,8 +463,17 @@ class SKPPController extends Controller
                 }
             }
 
-            // Jika role pembuat adalah Bendahara, status wajib Draft (di-acc oleh Administrator / Operator)
-            if ($this->isBendaharaOnly()) {
+            // Saat permohonan SKPP baru dibuat, pejabat penandatangan dikosongkan (ditentukan saat pemeriksaan oleh operator/pemeriksa)
+            unset(
+                $data['penandatangan_id'],
+                $data['penandatangan_nik'],
+                $data['nama_penandatangan'],
+                $data['nip_penandatangan'],
+                $data['jabatan_penandatangan']
+            );
+
+            // Jika role pembuat adalah Bendahara, status wajib Draft
+            if ($this->isBendaharaOnly($request)) {
                 $data['status'] = 'Draft';
             }
 
@@ -569,9 +700,9 @@ class SKPPController extends Controller
     /**
      * Helper untuk cek apakah user yang login hanya memiliki role Bendahara
      */
-    private function isBendaharaOnly(): bool
+    private function isBendaharaOnly(Request $request = null): bool
     {
-        $user = Auth::user();
+        $user = $this->getAuthUser($request);
         if (!$user) return false;
 
         $user->loadMissing('rules');
@@ -594,7 +725,7 @@ class SKPPController extends Controller
      */
     public function terima(Request $request, $id)
     {
-        if ($this->isBendaharaOnly()) {
+        if ($this->isBendaharaOnly($request)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bendahara tidak memiliki hak akses untuk menyetujui permohonan SKPP',
@@ -611,8 +742,9 @@ class SKPPController extends Controller
                 ], 404);
             }
 
-            $operatorId = Auth::id() ?? $request->input('id_operator', '0');
-            $operatorNama = Auth::user()?->name ?? $request->input('nama_operator', 'Operator BPKAD');
+            $authUser = $this->getAuthUser($request);
+            $operatorId = $authUser?->id ?? $request->input('id_operator', '0');
+            $operatorNama = $authUser?->name ?? $request->input('nama_operator', 'Operator BPKAD');
 
             $skpp->update([
                 'status'        => 'Diterima',
@@ -642,7 +774,7 @@ class SKPPController extends Controller
      */
     public function tolak(Request $request, $id)
     {
-        if ($this->isBendaharaOnly()) {
+        if ($this->isBendaharaOnly($request)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bendahara tidak memiliki hak akses untuk menolak permohonan SKPP',
@@ -673,8 +805,9 @@ class SKPPController extends Controller
                 ], 422);
             }
 
-            $operatorId = Auth::id() ?? $request->input('id_operator', '0');
-            $operatorNama = Auth::user()?->name ?? $request->input('nama_operator', 'Operator BPKAD');
+            $authUser = $this->getAuthUser($request);
+            $operatorId = $authUser?->id ?? $request->input('id_operator', '0');
+            $operatorNama = $authUser?->name ?? $request->input('nama_operator', 'Operator BPKAD');
 
             $skpp->update([
                 'status'        => 'Ditolak',
@@ -703,7 +836,7 @@ class SKPPController extends Controller
      */
     public function verifikasi(Request $request, $id)
     {
-        if ($this->isBendaharaOnly()) {
+        if ($this->isBendaharaOnly($request)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bendahara tidak memiliki hak akses untuk memeriksa berkas SKPP',
@@ -787,8 +920,9 @@ class SKPPController extends Controller
                 $alasan = null;
             }
 
-            $operatorId = Auth::id() ?? $request->input('id_operator', '0');
-            $operatorNama = Auth::user()?->name ?? $request->input('nama_operator', 'Operator BPKAD');
+            $authUser = $this->getAuthUser($request);
+            $operatorId = $authUser?->id ?? $request->input('id_operator', '0');
+            $operatorNama = $authUser?->name ?? $request->input('nama_operator', 'Operator BPKAD');
 
             $updateData = [
                 'status'            => $status,
@@ -801,6 +935,28 @@ class SKPPController extends Controller
                 $updateData['tgl_diterima'] = now()->format('Y-m-d H:i:s');
                 $updateData['alasan_tolak'] = null;
                 $updateData['catatan_perbaikan'] = null;
+
+                if ($request->filled('penandatangan_id')) {
+                    $updateData['penandatangan_id'] = (string) $request->penandatangan_id;
+                }
+                if ($request->filled('penandatangan_nik')) {
+                    $updateData['penandatangan_nik'] = (string) $request->penandatangan_nik;
+                }
+                if ($request->filled('nama_penandatangan')) {
+                    $updateData['nama_penandatangan'] = (string) $request->nama_penandatangan;
+                }
+                if ($request->filled('nip_penandatangan')) {
+                    $updateData['nip_penandatangan'] = (string) $request->nip_penandatangan;
+                }
+                if ($request->filled('jabatan_penandatangan')) {
+                    $updateData['jabatan_penandatangan'] = (string) $request->jabatan_penandatangan;
+                }
+                if ($request->filled('tempat_penetapan')) {
+                    $updateData['tempat_penetapan'] = (string) $request->tempat_penetapan;
+                }
+                if ($request->filled('tgl_penetapan')) {
+                    $updateData['tgl_penetapan'] = (string) $request->tgl_penetapan;
+                }
             } elseif ($status === 'Ditolak') {
                 $updateData['tgl_ditolak'] = now()->format('Y-m-d H:i:s');
                 $updateData['alasan_tolak'] = $alasan;
@@ -863,7 +1019,7 @@ class SKPPController extends Controller
      */
     public function sign(Request $request)
     {
-            if ($this->isBendaharaOnly()) {
+            if ($this->isBendaharaOnly($request)) {
                 return response()->json([
                     'status'  => 'error',
                     'message' => 'Bendahara tidak memiliki hak akses untuk menandatangani (TTE) dokumen SKPP',
@@ -886,7 +1042,20 @@ class SKPPController extends Controller
                 ], 404);
             }
 
-            $user = Auth::user();
+            $user = $this->getAuthUser($request);
+
+            // Verifikasi bahwa user yang login adalah penandatangan yang dituju
+            if ($user && $skpp->penandatangan_id && (string)$skpp->penandatangan_id !== (string)$user->id) {
+                $nikMatches = $skpp->penandatangan_nik && $user->nik && (string)$skpp->penandatangan_nik === (string)$user->nik;
+                $nipMatches = $skpp->nip_penandatangan && $user->nip && (string)$skpp->nip_penandatangan === (string)$user->nip;
+                if (!$nikMatches && !$nipMatches) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => 'Anda bukan pejabat penandatangan yang ditugaskan untuk menandatangani dokumen SKPP ini',
+                    ], 403);
+                }
+            }
+
             $nik = $user->nik ?? '1234567890123456';
             $namaFile = $request->input('nama_file', 'SKPP_' . str_replace(['/', ' '], '_', $skpp->nomor_surat));
             $signedFileName = "signed-skpp-{$skpp->id}-" . time() . ".pdf";
@@ -994,13 +1163,15 @@ class SKPPController extends Controller
         $disk = Storage::disk('public');
         if ($skpp->berkas_tte && $disk->exists($skpp->berkas_tte)) {
             $fileName = "SKPP_TTE_" . str_replace(['/', ' '], '_', $skpp->nomor_surat) . ".pdf";
-            return response()->download($disk->path($skpp->berkas_tte), $fileName);
+            return response()->file($disk->path($skpp->berkas_tte), [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+            ]);
         }
 
-        // Jika belum ada file TTE fisik, stream PDF biasa
-        $pdf = Pdf::loadView('pdf.skpp_pdf', compact('skpp'))
-                  ->setPaper('legal', 'portrait');
-        $cleanNomor = str_replace(['/', ' '], '_', $skpp->nomor_surat);
-        return $pdf->stream("SKPP_TTE_{$cleanNomor}.pdf");
+        return response()->json([
+            'success' => false,
+            'message' => 'Dokumen SKPP belum ditandatangani secara elektronik (berkas TTE belum tersedia)',
+        ], 404);
     }
 }

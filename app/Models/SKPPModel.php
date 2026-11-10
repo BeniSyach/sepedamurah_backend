@@ -68,6 +68,8 @@ class SKPPModel extends Model
         'jabatan_penandatangan',
         'nama_penandatangan',
         'nip_penandatangan',
+        'penandatangan_id',
+        'penandatangan_nik',
         'tembusan',
         'catatan',
         'status',

@@ -105,18 +105,19 @@ Route::get('/pembukuan-lra-pendapatan-belanja/pdf', [LraPendapatanBelanjaControl
 Route::get('/pembukuan-rincian-saldo-buku-besar/pdf', [RincianSaldoBukuBesarController::class, 'index']);
 Route::get('/pembukuan-lra-per-priode/pdf', [LraPriodeController::class, 'index']);
 
-// SKPP (Surat Keterangan Penghentian Pembayaran)
-Route::get('/skpp/generate-nomor', [SKPPController::class, 'generateNomorPreview'])->name('skpp.generateNomor');
+// SKPP Download & Berkas View (Dapat diakses publik / preview dokumen)
 Route::get('/skpp/{id}/pdf', [SKPPController::class, 'downloadPdf'])->name('skpp.pdf');
 Route::get('/skpp/{id}/berkas/{field}', [SKPPController::class, 'viewBerkas'])->name('skpp.viewBerkas');
 Route::get('/skpp/{id}/download-tte', [SKPPController::class, 'downloadTTE'])->name('skpp.downloadTte');
-Route::put('/skpp/{id}/terima', [SKPPController::class, 'terima'])->name('skpp.terima');
-Route::put('/skpp/{id}/tolak', [SKPPController::class, 'tolak'])->name('skpp.tolak');
-Route::put('/skpp/{id}/verifikasi', [SKPPController::class, 'verifikasi'])->name('skpp.verifikasi');
-Route::post('/skpp/sign', [SKPPController::class, 'sign'])->name('skpp.sign');
-Route::apiResource('/skpp', SKPPController::class);
 
 Route::middleware('auth:api')->group(function () {
+    // SKPP (Surat Keterangan Penghentian Pembayaran)
+    Route::get('/skpp/generate-nomor', [SKPPController::class, 'generateNomorPreview'])->name('skpp.generateNomor');
+    Route::put('/skpp/{id}/terima', [SKPPController::class, 'terima'])->name('skpp.terima');
+    Route::put('/skpp/{id}/tolak', [SKPPController::class, 'tolak'])->name('skpp.tolak');
+    Route::put('/skpp/{id}/verifikasi', [SKPPController::class, 'verifikasi'])->name('skpp.verifikasi');
+    Route::post('/skpp/sign', [SKPPController::class, 'sign'])->name('skpp.sign');
+    Route::apiResource('/skpp', SKPPController::class);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
