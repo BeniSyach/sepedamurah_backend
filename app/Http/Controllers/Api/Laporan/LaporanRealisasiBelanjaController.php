@@ -412,7 +412,7 @@ ORDER BY r.KD_REF1, r.KD_REF2, r.KD_REF3
                     COALESCE(SUM(sr.NILAI), 0) AS TOTAL_NILAI
                 FROM SP2D s
                 LEFT JOIN PENGEMBALIAN.SP2D_REKENING sr 
-                    ON sr.SP2D_ID = s.ID_SP2D
+                    ON sr.SP2D_ID = s.ID_SP2D AND sr.DELETED_AT IS NOT NULL
                 LEFT JOIN PENGEMBALIAN.REF_JENIS_BELANJA rjb 
                     ON sr.KD_REKENING1 = rjb.KD_REF1
                     AND sr.KD_REKENING2 = rjb.KD_REF2
