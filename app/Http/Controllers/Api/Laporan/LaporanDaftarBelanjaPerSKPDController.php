@@ -93,7 +93,7 @@ class LaporanDaftarBelanjaPerSKPDController extends Controller
                             AND SR.KD_REKENING4 = R.KD_REKENING4
                             AND SR.KD_REKENING5 = R.KD_REKENING5
                             AND SR.KD_REKENING6 = R.KD_REKENING6
-                        WHERE SR.SP2D_ID = d.id_sp2d
+                        WHERE SR.SP2D_ID = d.id_sp2d AND SR.DELETED_AT IS NOT NULL
                     )
                 ) AS jenis_belanja,
     
@@ -188,7 +188,7 @@ class LaporanDaftarBelanjaPerSKPDController extends Controller
                             AND SR.KD_REKENING4 = R.KD_REKENING4
                             AND SR.KD_REKENING5 = R.KD_REKENING5
                             AND SR.KD_REKENING6 = R.KD_REKENING6
-                        WHERE SR.SP2D_ID = d.id_sp2d
+                        WHERE SR.SP2D_ID = d.id AND SR.DELETED_AT IS NOT NULL
                     )
                 ) AS jenis_belanja,
     
@@ -287,7 +287,7 @@ class LaporanDaftarBelanjaPerSKPDController extends Controller
                             AND SR.KD_REKENING4 = R.KD_REKENING4
                             AND SR.KD_REKENING5 = R.KD_REKENING5
                             AND SR.KD_REKENING6 = R.KD_REKENING6
-                        WHERE SR.SP2D_ID = d.id_sp2d
+                        WHERE SR.SP2D_ID = d.id_sp2d AND SR.DELETED_AT IS NOT NULL
                     )
                 ) AS jenis_belanja,
 
